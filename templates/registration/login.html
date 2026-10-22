@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Sign in | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container auth-shell">
+  {% include "partials/auth_aside.html" with aside_title="Welcome back" %}
+  <section class="auth-card">
+    <h1>Sign in</h1>
+    <p class="form-intro">Save ads, message sellers, and manage your shop.</p>
+    {% if throttled %}<p class="notice notice-danger">Too many sign-in attempts. For your security, please wait 15 minutes and try again, or reset your password.</p>
+    {% elif form.errors %}<p class="notice notice-danger">Your username or password did not match. Please try again.</p>{% endif %}
+    <form method="post" class="stack-form">
+      {% csrf_token %}
+      {% for field in form %}{% include "partials/field.html" %}{% endfor %}
+      <input type="hidden" name="next" value="{{ next }}">
+      <p class="form-aside-link"><a href="{% url 'password_reset' %}">Forgot password?</a></p>
+      <button class="button button-primary button-block" type="submit">Log in</button>
+    </form>
+    <p class="form-footnote">New to GhanaMarket? <a href="{% url 'register' %}">Create an account</a></p>
+    <p class="form-footnote">Account suspended? <a href="{% url 'contact_support' %}?topic=appeal">Send an appeal</a></p>
+  </section>
+</div>
+{% endblock %}

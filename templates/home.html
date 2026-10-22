@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+{% load market static %}
+{% block title %}GhanaMarket | Buy and Sell Anything in Ghana{% endblock %}
+{% block body_class %}page-home{% endblock %}
+{% block content %}
+<div class="container home-top">
+  <section class="hero-banner" aria-labelledby="hero-title">
+    <div class="hero-copy">
+      <h1 id="hero-title">Everything You Need,<br><span>All in One Place</span></h1>
+      <p>Buy and sell new and used products, find services, and discover great listings from sellers across Ghana.</p>
+      <ul class="hero-trust">
+        <li>{% include "partials/icon.html" with name="shield" %}Verified payments</li>
+        <li>{% include "partials/icon.html" with name="shield" %}Verified sellers</li>
+        <li>{% include "partials/icon.html" with name="shield" %}Reviewed before publishing</li>
+      </ul>
+      {% if has_demo_listings %}<span class="preview-pill">Preview catalogue</span>{% endif %}
+    </div>
+    <div class="hero-art" aria-hidden="true">
+      <img class="hero-artwork" src="{% static 'marketplace/brand/hero-products.png' %}" alt="" width="504" height="216" fetchpriority="high">
+      <span class="hero-seal">Every ad<br>reviewed</span>
+    </div>
+  </section>
+
+  <aside class="sell-card" aria-labelledby="sell-card-title">
+    <div>
+      <h2 id="sell-card-title">Sell Your Items</h2>
+      <p>Reach buyers across Ghana. Posting is free during launch.</p>
+      <a class="button button-primary" href="{{ sell_url }}">Start Selling {% include "partials/icon.html" with name="chevron" %}</a>
+    </div>
+    <img class="sell-card-photo" src="{% static 'marketplace/brand/sell-woman.png' %}" alt="" width="181" height="200" loading="lazy">
+  </aside>
+</div>
+
+{% if own_pending %}
+  <div class="container">
+    <a class="status-banner" href="{% url 'seller_listings' %}">
+      {% include "partials/icon.html" with name="clock" %}
+      <span><strong>{% if own_pending|length == 1 %}Your ad “{{ own_pending.0.title }}” is {% if own_pending.0.status == "rejected" %}waiting for your changes{% else %}being reviewed{% endif %}{% else %}You have {{ own_pending|length }} ads in review or needing changes{% endif %}</strong>
+      <small>Ads go live as soon as our team approves them. Open My shop to check the status.</small></span>
+      {% include "partials/icon.html" with name="chevron" %}
+    </a>
+  </div>
+{% endif %}
+
+<section class="container home-section" id="categories" aria-labelledby="categories-heading">
+  <div class="section-heading">
+    <h2 id="categories-heading">Shop by Category</h2>
+    <a href="{% url 'category_index' %}">View All Categories {% include "partials/icon.html" with name="chevron" %}</a>
+  </div>
+  <div class="category-tiles">
+    {% for category in categories|slice:":11" %}
+      <a class="category-tile cat-{{ category.value }}" href="{% url 'product_list' %}?category={{ category.value|urlencode }}">
+        <span class="category-tile-icon">{% include "partials/icon.html" with name=category.icon %}</span>
+        <span class="category-tile-name">{{ category.label }}</span>
+        {% if category.count %}<span class="category-tile-count">{{ category.count }} ad{{ category.count|pluralize }}</span>{% endif %}
+      </a>
+    {% endfor %}
+    <a class="category-tile" href="{% url 'category_index' %}">
+      <span class="category-tile-icon">{% include "partials/icon.html" with name="grid" %}</span>
+      <span class="category-tile-name">All Categories</span>
+      <span class="category-tile-count">{{ categories|length }} in total</span>
+    </a>
+  </div>
+</section>
+
+<div class="container home-grid">
+  <div class="home-main">
+    <section class="panel products-panel" aria-labelledby="products-heading">
+      <div class="panel-head">
+        <h2 id="products-heading">{% if product_tabs %}Featured Products{% else %}Get started{% endif %}</h2>
+        {% if product_tabs|length > 1 %}
+          <div class="tabs" role="tablist" aria-label="Product lists">
+            {% for key, label, items in product_tabs %}<button type="button" role="tab" id="tab-{{ key }}" aria-controls="panel-{{ key }}" aria-selected="{% if forloop.first %}true{% else %}false{% endif %}" data-tab="{{ key }}">{{ label }}</button>{% endfor %}
+          </div>
+        {% endif %}
+        {% if product_tabs %}<a class="panel-link" href="{% url 'product_list' %}">View All {% include "partials/icon.html" with name="chevron" %}</a>{% endif %}
+      </div>
+      {% for key, label, items in product_tabs %}
+        <div class="product-grid" role="tabpanel" id="panel-{{ key }}" aria-labelledby="tab-{{ key }}"{% if not forloop.first %} hidden{% endif %}>
+          {% for product in items %}{% include "marketplace/_product_card.html" %}{% endfor %}
+        </div>
+      {% empty %}
+        <div class="launch-inline">
+          <div class="launch-inline-copy">
+            <span class="launch-badge">Now launching in Ghana</span>
+            <h3>No listings yet. Your ad could be the first.</h3>
+            <p>Posting is free during launch, and our team reviews every ad before buyers see it.</p>
+            <div class="launch-actions">
+              <a class="button button-primary" href="{{ sell_url }}">{% include "partials/icon.html" with name="plus" %}Post the first ad</a>
+              <a class="button button-quiet" href="{% url 'category_index' %}">Explore categories</a>
+            </div>
+          </div>
+          <ol class="launch-steps">
+            <li><span class="launch-step-icon">{% include "partials/icon.html" with name="camera" %}</span><strong>Post your ad</strong><small>Photos, price and location in about two minutes.</small></li>
+            <li><span class="launch-step-icon">{% include "partials/icon.html" with name="shield" %}</span><strong>We review it</strong><small>Every ad is checked before it goes live.</small></li>
+            <li><span class="launch-step-icon">{% include "partials/icon.html" with name="chat" %}</span><strong>Buyers reach you</strong><small>Private chat, or online payment with Mobile Money or card.</small></li>
+          </ol>
+        </div>
+      {% endfor %}
+    </section>
+
+    {% if collections %}
+    <section class="panel" aria-labelledby="popular-categories-heading">
+      <div class="panel-head"><h2 id="popular-categories-heading">Popular Categories</h2><a class="panel-link" href="{% url 'category_index' %}">View All {% include "partials/icon.html" with name="chevron" %}</a></div>
+      <div class="photo-categories">
+        {% for item in collections %}
+          <a class="photo-category" href="{% url 'product_list' %}?category={{ item.value|urlencode }}">
+            <span class="photo-category-image"><img src="{{ item.cover.image|thumbnail:480 }}" alt="" loading="lazy" decoding="async"></span>
+            <strong>{{ item.label }}</strong><small>{{ item.count }} ad{{ item.count|pluralize }}</small>
+          </a>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    {% if nearby %}
+    <section class="panel" aria-labelledby="nearby-heading">
+      <div class="panel-head"><h2 id="nearby-heading">Near you in {{ user.region }}</h2><a class="panel-link" href="{% url 'product_list' %}?region={{ user.region|urlencode }}">View All {% include "partials/icon.html" with name="chevron" %}</a></div>
+      <div class="product-grid">{% for product in nearby %}{% include "marketplace/_product_card.html" %}{% endfor %}</div>
+    </section>
+    {% endif %}
+
+    {% if recently_viewed %}
+    <section class="panel" aria-labelledby="recent-heading">
+      <div class="panel-head"><h2 id="recent-heading">Recently Viewed</h2></div>
+      <div class="product-grid">{% for product in recently_viewed|slice:":4" %}{% include "marketplace/_product_card.html" %}{% endfor %}</div>
+    </section>
+    {% endif %}
+
+    {% if popular_regions %}
+    <section class="panel" aria-labelledby="regions-heading">
+      <div class="panel-head"><h2 id="regions-heading">Explore Ghana by region</h2></div>
+      <div class="chip-row">
+        {% for region in popular_regions %}<a class="chip" href="{% url 'product_list' %}?region={{ region.name|urlencode }}">{{ region.label }} <span>{{ region.count }}</span></a>{% endfor %}
+        <a class="chip chip-outline" href="{% url 'product_list' %}">All regions</a>
+      </div>
+    </section>
+    {% endif %}
+  </div>
+
+  <aside class="home-aside">
+    <a class="promo-card" href="{% url 'product_list' %}?checkout=1">
+      <span class="promo-copy">
+        <strong>Buy Online, Pay Your Way</strong>
+        <small>Mobile Money or card on items marked “Buy online”.</small>
+        <span class="promo-button">Shop Online {% include "partials/icon.html" with name="chevron" %}</span>
+      </span>
+      <img class="promo-photo" src="{% static 'marketplace/brand/deals-headphones.png' %}" alt="" width="174" height="142" loading="lazy">
+    </a>
+
+    <section class="panel side-list" aria-labelledby="popular-searches-heading">
+      <h2 id="popular-searches-heading">{% include "partials/icon.html" with name="search" %}{% if popular_searches %}Popular Searches{% else %}Start Exploring{% endif %}</h2>
+      {% if popular_searches %}
+        {% for search in popular_searches|slice:":6" %}<a href="{% url 'product_list' %}?q={{ search.term|urlencode }}">{% include "partials/icon.html" with name="search" %}<span>{{ search.term }}</span>{% include "partials/icon.html" with name="chevron" %}</a>{% endfor %}
+      {% else %}
+        {% for category in categories|slice:":6" %}<a href="{% url 'product_list' %}?category={{ category.value|urlencode }}">{% include "partials/icon.html" with name=category.icon %}<span>{{ category.label }}</span>{% include "partials/icon.html" with name="chevron" %}</a>{% endfor %}
+      {% endif %}
+    </section>
+
+    <a class="side-card side-card-green" href="{% url 'product_list' %}?verified=1">
+      <span class="side-card-icon">{% include "partials/icon.html" with name="shield" %}</span>
+      <span><strong>Verified Sellers</strong><small>{% if verified_sellers %}{{ verified_sellers|length }} with identity checked{% else %}Identity checked by our team{% endif %}</small></span>
+      {% include "partials/icon.html" with name="chevron" %}
+    </a>
+
+    <a class="side-card" href="{{ sell_url }}">
+      <span class="side-card-icon">{% include "partials/icon.html" with name="store" %}</span>
+      <span><strong>Become a Seller</strong><small>Grow your business on GhanaMarket</small></span>
+      {% include "partials/icon.html" with name="chevron" %}
+    </a>
+
+    <a class="side-card" href="{% url 'help_page' 'safety' %}">
+      <span class="side-card-icon">{% include "partials/icon.html" with name="check" %}</span>
+      <span><strong>Stay Safe</strong><small>Never pay before you see the item</small></span>
+      {% include "partials/icon.html" with name="chevron" %}
+    </a>
+  </aside>
+</div>
+{% if has_demo_listings %}<p class="container preview-disclaimer">Preview listings are examples, not real products or offers. <a href="/static/marketplace/demo/photo-credits.html">View photo credits</a>.</p>{% endif %}
+{% endblock %}
+{% block scripts %}<script>
+// Product list tabs (Featured / Trending / New Arrivals / Recommended).
+document.querySelectorAll('[role="tablist"]').forEach((list) => {
+  const tabs = [...list.querySelectorAll('[role="tab"]')];
+  const select = (tab) => {
+    tabs.forEach((other) => {
+      const active = other === tab;
+      other.setAttribute("aria-selected", String(active));
+      other.tabIndex = active ? 0 : -1;
+      document.getElementById(other.getAttribute("aria-controls")).hidden = !active;
+    });
+  };
+  tabs.forEach((tab, index) => {
+    tab.tabIndex = index === 0 ? 0 : -1;
+    tab.addEventListener("click", () => select(tab));
+    tab.addEventListener("keydown", (event) => {
+      const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+      if (!step) return;
+      const next = tabs[(index + step + tabs.length) % tabs.length];
+      next.focus();
+      select(next);
+    });
+  });
+});
+</script>{% endblock %}

@@ -1,0 +1,39 @@
+{% load market %}<article class="product-card">
+  <a class="product-card-link" href="{% url 'product_detail' product.pk %}">
+    <div class="product-card-image">
+      {% if product.image %}<img src="{{ product.image|thumbnail:480 }}" alt="{{ product.title }}" loading="lazy" decoding="async" width="480" height="480">{% else %}<div class="product-placeholder">{% include "partials/icon.html" with name="camera" %}<span>No photo</span></div>{% endif %}
+      {% if product.is_demo %}<span class="demo-badge">Preview example</span>
+      {% elif product.attributes.listing_type %}<span class="card-badge badge-blue">{{ product.attributes.listing_type }}</span>
+      {% elif product.condition == "new" %}<span class="card-badge badge-green">New</span>
+      {% else %}<span class="card-badge badge-orange">Used</span>{% endif %}
+      {% if product.extra_photo_count %}{% with photo_count=product.extra_photo_count|add:1 %}<span class="product-photo-count" aria-label="{{ photo_count }} listing photos">{% include "partials/icon.html" with name="camera" %}{{ photo_count }} photos</span>{% endwith %}{% endif %}
+    </div>
+    <div class="product-card-body">
+      {% if product.is_promoted %}<p class="promoted-label">Promoted</p>{% endif %}
+      <h3 class="product-title">{{ product.title }}</h3>
+      <p class="product-price">{{ product.price|cedis }}{% if product.price_negotiable %}<span class="price-note">Negotiable</span>{% endif %}</p>
+      <p class="product-meta"><span class="meta-condition meta-{{ product.condition }}">{{ product.get_condition_display }}</span><span>{{ product.category_label }}</span></p>
+      <p class="product-location">{% include "partials/icon.html" with name="pin" class="product-location-icon" %}<span>{{ product.city }}{% if product.region %}, {{ product.region }}{% else %}, {{ product.country }}{% endif %}</span>{% if product.seller.verified_at %}<span class="verified-tick" title="Verified seller">{% include "partials/icon.html" with name="check" %}<span class="visually-hidden">Verified seller</span></span>{% endif %}</p>
+    </div>
+  </a>
+  {% if product.is_demo %}
+    <div class="card-actions"><span class="card-btn card-btn-disabled" title="Preview examples are not for sale">Preview only</span></div>
+  {% elif user != product.seller %}
+    <div class="card-actions">
+      {% if product.can_checkout %}
+        <form method="post" action="{% url 'commerce:cart_add' product.pk %}">{% csrf_token %}<input type="hidden" name="quantity" value="1">
+          {% if product.allows_direct_contact %}<button class="card-btn card-btn-solid" type="submit" name="next" value="cart">Add to Cart</button>{% else %}<button class="card-btn" type="submit" name="next" value="checkout">Buy Now</button>{% endif %}
+        </form>
+        {% if product.allows_direct_contact %}
+          <a class="card-icon-btn" href="{% url 'product_detail' product.pk %}#contact" aria-label="Chat with the seller about {{ product.title }}">{% include "partials/icon.html" with name="chat" %}</a>
+        {% else %}
+          <form method="post" action="{% url 'commerce:cart_add' product.pk %}">{% csrf_token %}<input type="hidden" name="quantity" value="1"><button class="card-icon-btn" type="submit" name="next" value="cart" aria-label="Add {{ product.title }} to cart">{% include "partials/icon.html" with name="cart" %}</button></form>
+        {% endif %}
+      {% else %}
+        <a class="card-btn" href="{% url 'product_detail' product.pk %}#contact">Contact Seller</a>
+        <a class="card-icon-btn" href="{% url 'product_detail' product.pk %}#contact" aria-label="Chat with the seller about {{ product.title }}">{% include "partials/icon.html" with name="chat" %}</a>
+      {% endif %}
+    </div>
+  {% endif %}
+  {% if product.is_demo %}{% elif user.is_authenticated %}<form class="favorite-form" method="post" action="{% url 'toggle_favorite' product.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ favorite_return|default:'list' }}"><button type="submit" class="favorite-button{% if product.pk in favorite_ids %} is-saved{% endif %}" aria-label="{% if product.pk in favorite_ids %}Remove {{ product.title }} from saved items{% else %}Save {{ product.title }}{% endif %}" aria-pressed="{% if product.pk in favorite_ids %}true{% else %}false{% endif %}">{% include "partials/icon.html" with name="heart" %}</button></form>{% else %}<a class="favorite-button" href="{% url 'login' %}?next={% url 'product_detail' product.pk %}" aria-label="Log in to save {{ product.title }}">{% include "partials/icon.html" with name="heart" %}</a>{% endif %}
+</article>

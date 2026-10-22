@@ -1,0 +1,24 @@
+{% extends "help/base.html" %}
+{% block help_content %}
+<p class="lead">What we collect, who can see it, and how to remove it.</p>
+<h2>What we collect</h2>
+<ul class="plain-list">
+  <li><strong>Account details:</strong> username, name, email, phone number, city and region.</li>
+  <li><strong>Listings:</strong> photos, descriptions and location you publish.</li>
+  <li><strong>Messages:</strong> conversations about listings, so we can act on reports.</li>
+  <li><strong>Orders:</strong> items, delivery details, and payment status and references. Card details are entered on the payment provider's page and never reach GhanaMarket.</li>
+  <li><strong>Seller verification:</strong> the document and number you submit, stored privately and visible only to authorised staff.</li>
+</ul>
+<h2>Who can see what</h2>
+<ul class="plain-list">
+  <li>Buyers see your public name, city and listings. Your phone number and email are not shown publicly.</li>
+  <li>When you buy online, the seller sees the delivery name, phone number and address for that order so they can deliver.</li>
+  <li>Authorised staff can see account, listing, message, order and verification data to review listings, handle reports and support you.</li>
+</ul>
+<h2>Your choices</h2>
+<ul class="plain-list">
+  <li>Update your details in <a href="{% url 'account_settings' %}">account settings</a>.</li>
+  <li>Delete your account from account settings. Your personal details are removed. Order and payment records are kept without your contact details for accounting and dispute resolution.</li>
+  <li>For any other privacy request, <a href="{% url 'contact_support' %}?topic=privacy">contact support</a>.</li>
+</ul>
+{% endblock %}

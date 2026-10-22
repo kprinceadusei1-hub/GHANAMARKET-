@@ -1,0 +1,79 @@
+{% extends "admin/base.html" %}
+{% load i18n static %}
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{% if title %}{{ title }} | {% endif %}GhanaMarket Control Centre{% endblock %}
+{% block extrastyle %}{{ block.super }}
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'css/admin-review.css' %}">
+<link rel="stylesheet" href="{% static 'css/control-centre.css' %}">
+<script>try { if (localStorage.getItem("gm.cc.collapsed") === "1") document.documentElement.classList.add("cc-collapsed"); } catch (e) {}</script>
+{% endblock %}
+{% block bodyclass %}{{ block.super }} cc-body{% endblock %}
+
+{% block header %}
+<header id="header" class="cc-topbar"{% if user.is_authenticated and user.is_staff %} data-pulse-url="{% url 'marketplace_admin_pulse' %}"{% endif %}>
+  {% if user.is_authenticated and user.is_staff %}
+  <button type="button" class="cc-icon-btn cc-nav-toggle" data-cc-nav-toggle aria-controls="nav-sidebar" aria-label="Toggle admin navigation">{% include "partials/icon.html" with name="menu" %}</button>
+  {% endif %}
+  <a class="cc-brand" href="{% url 'admin:index' %}">
+    <span class="cc-brand-mark" aria-hidden="true"><svg viewBox="0 0 40 42" fill="none"><path d="M8 12h24l2.4 25.5a2 2 0 0 1-2 2.2H7.6a2 2 0 0 1-2-2.2L8 12Z" fill="currentColor"/><path d="M14 15V9.5a6 6 0 0 1 12 0V15" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="m20 19.5 1.9 4.6h4.9l-4 3 1.5 4.7-4.3-2.9-4.3 2.9 1.5-4.7-4-3h4.9z" fill="#fff"/></svg></span>
+    <span class="cc-brand-text"><strong>GhanaMarket</strong><small>Marketplace Control</small></span>
+  </a>
+  {% if user.is_authenticated and user.is_staff %}
+    {% if cc_can_search %}
+    <form class="cc-search" action="{% url 'marketplace_admin_search' %}" method="get" role="search">
+      {% include "partials/icon.html" with name="search" %}
+      <label class="visually-hidden" for="cc-search-input">Search users, listings and orders</label>
+      <input id="cc-search-input" type="search" name="q" value="{{ query|default:'' }}" placeholder="Search users, listings, orders…" autocomplete="off">
+    </form>
+    {% endif %}
+    <span class="cc-country" title="Active market">{% include "partials/icon.html" with name="pin" %}Ghana<span class="cc-flag" aria-hidden="true"><i></i><i></i><i></i></span></span>
+    <div class="cc-top-actions">
+      <details class="cc-menu">
+        <summary class="cc-icon-btn" aria-label="Notifications{% if cc_alert_total %}, {{ cc_alert_total }} items need attention{% endif %}">{% include "partials/icon.html" with name="bell" %}<b class="cc-badge" data-pulse-total{% if not cc_alert_total %} hidden{% endif %}>{{ cc_alert_total }}</b></summary>
+        <div class="cc-menu-panel cc-menu-wide">
+          <p class="cc-menu-title">Needs attention</p>
+          {% for queue in cc_queues %}<a href="{{ queue.url }}"><span>{{ queue.label }}</span><b class="cc-pill{% if queue.count %} is-hot{% endif %}" data-pulse-queue="{{ queue.key }}">{{ queue.count }}</b></a>{% empty %}<p class="cc-menu-empty">No queues for your role.</p>{% endfor %}
+        </div>
+      </details>
+      {% if cc_can_view_conversations %}<a class="cc-icon-btn" href="{% url 'admin:marketplace_conversation_changelist' %}" aria-label="Buyer and seller conversations">{% include "partials/icon.html" with name="chat" %}</a>{% endif %}
+      <details class="cc-menu">
+        <summary class="cc-profile">
+          <span class="cc-avatar" aria-hidden="true">{{ user.first_name|default:user.username|slice:":1"|upper }}{{ user.last_name|slice:":1"|upper }}</span>
+          <span class="cc-profile-text"><strong>{{ user.get_full_name|default:user.username }}</strong><small>{% if user.is_superuser %}Super admin{% else %}Staff{% endif %}</small></span>
+          {% include "partials/icon.html" with name="chevron-down" %}
+        </summary>
+        <div class="cc-menu-panel">
+          <a href="{% url 'home' %}" target="_blank" rel="noopener">{% include "partials/icon.html" with name="external" %}Open marketplace</a>
+          {% if user.has_usable_password %}<a href="{% url 'admin:password_change' %}">{% include "partials/icon.html" with name="settings" %}Change password</a>{% endif %}
+          <form id="logout-form" method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<button type="submit">{% include "partials/icon.html" with name="logout" %}Log out</button></form>
+        </div>
+      </details>
+    </div>
+  {% endif %}
+</header>
+{% endblock %}
+
+{% block nav-sidebar %}
+<nav class="cc-sidebar" id="nav-sidebar" aria-label="Admin navigation">
+  <a class="cc-nav-top{% if request.resolver_match.url_name == 'index' %} is-active{% endif %}" href="{% url 'admin:index' %}"{% if request.resolver_match.url_name == 'index' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="dashboard" %}<span>Dashboard</span></a>
+  {% if cc_review_total is not None %}<a class="cc-nav-top{% if request.resolver_match.url_name == 'marketplace_review_centre' %} is-active{% endif %}" href="{% url 'marketplace_review_centre' %}">{% include "partials/icon.html" with name="check" %}<span>Review Centre</span>{% if cc_review_total %}<b class="cc-pill is-hot" data-pulse-review>{{ cc_review_total }}</b>{% endif %}</a>{% endif %}
+  {% for group in cc_sidebar %}
+    <details class="cc-nav-group"{% if group.active %} open{% endif %}>
+      <summary title="{{ group.label }}">{% include "partials/icon.html" with name=group.icon %}<span>{{ group.label }}</span>{% if group.count %}<b class="cc-pill is-hot">{{ group.count }}</b>{% endif %}{% include "partials/icon.html" with name="chevron-down" class="cc-caret" %}</summary>
+      <div class="cc-nav-links">
+        {% for link in group.links %}<a href="{{ link.url }}"{% if link.active %} aria-current="page"{% endif %}><span>{{ link.label }}</span>{% if link.count %}<b class="cc-pill is-hot">{{ link.count }}</b>{% endif %}</a>{% endfor %}
+      </div>
+    </details>
+  {% endfor %}
+  {% if perms.admin.view_logentry %}<a class="cc-nav-top{% if request.resolver_match.app_name == 'admin' and request.resolver_match.url_name == 'admin_logentry_changelist' %} is-active{% endif %}" href="{% url 'admin:admin_logentry_changelist' %}">{% include "partials/icon.html" with name="audit" %}<span>Audit logs</span></a>{% endif %}
+  <div class="cc-sidebar-note">
+    {% include "partials/icon.html" with name="shield" %}
+    <strong>A safer marketplace</strong>
+    <small>Every action you take here is recorded in the audit log.</small>
+  </div>
+</nav>
+<div class="cc-scrim" data-cc-nav-close hidden></div>
+{% endblock %}
+{% block nav-global %}{% endblock %}
+{% block footer %}{{ block.super }}<script src="{% static 'js/control-centre.js' %}" defer></script>{% endblock %}

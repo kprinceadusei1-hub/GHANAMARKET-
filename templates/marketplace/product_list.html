@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}{% if selected_category_label %}{{ selected_category_label }}{% elif query %}“{{ query }}”{% else %}All ads{% endif %}{% if selected_region %} in {{ selected_region }}{% endif %} | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container browse-page">
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="{% url 'home' %}">Home</a>{% include "partials/icon.html" with name="chevron" %}
+    {% if category %}<a href="{% url 'product_list' %}">All ads</a>{% include "partials/icon.html" with name="chevron" %}
+      {% if subcategory %}<a href="{% querystring sub=None page=None %}">{{ category.name }}</a>{% include "partials/icon.html" with name="chevron" %}<span aria-current="page">{{ subcategory.name }}</span>
+      {% else %}<span aria-current="page">{{ category.name }}</span>{% endif %}
+    {% else %}<span aria-current="page">All ads</span>{% endif %}
+  </nav>
+
+  <div class="browse-layout">
+    <aside class="browse-sidebar" aria-label="Marketplace filters">
+      <nav class="panel filter-categories" aria-label="Browse by category">
+        <h2>Categories</h2>
+        <a class="{% if not selected_category %}is-selected{% endif %}" href="{% url 'product_list' %}{% if query %}?q={{ query|urlencode }}{% endif %}">{% include "partials/icon.html" with name="list" %}All categories</a>
+        {% for value, label in categories %}
+          <a class="{% if selected_category == value %}is-selected{% endif %}" href="{% url 'product_list' %}?category={{ value|urlencode }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}{% if selected_region %}&amp;region={{ selected_region|urlencode }}{% endif %}">{% include "partials/icon.html" with name=value %}{{ label }}</a>
+        {% endfor %}
+      </nav>
+
+      <details class="panel filters-panel" data-filters>
+        <summary>{% include "partials/icon.html" with name="filter" %}Filters{% if has_extra_filters %} <span class="filter-dot" aria-label="active"></span>{% endif %}{% include "partials/icon.html" with name="chevron-down" class="summary-chevron" %}</summary>
+        <form class="filter-form" method="get">
+          {% if selected_category %}<input type="hidden" name="category" value="{{ selected_category }}">{% endif %}
+          {% if subcategory %}<input type="hidden" name="sub" value="{{ subcategory.slug }}">{% endif %}
+          {% if selected_sort != default_sort %}<input type="hidden" name="sort" value="{{ selected_sort }}">{% endif %}
+          <label class="field"><span>Keyword</span><input type="search" name="q" aria-label="Search products" placeholder="e.g. iPhone, sofa, Corolla" value="{{ query }}"></label>
+          <label class="field"><span>Region</span>
+            <select name="region" aria-label="Filter by region"><option value="">All Ghana</option>{% for value, label in regions %}<option value="{{ value }}"{% if selected_region == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+          </label>
+          <label class="field"><span>City or town</span><input name="city" aria-label="Filter by city or town" placeholder="e.g. Kumasi" value="{{ selected_city }}"></label>
+          <fieldset class="field price-range">
+            <legend>Price (GH₵)</legend>
+            <div><input type="number" inputmode="decimal" min="0" step="0.01" name="min_price" value="{{ minimum_price }}" placeholder="Min" aria-label="Minimum price"><span aria-hidden="true">–</span><input type="number" inputmode="decimal" min="0" step="0.01" name="max_price" value="{{ maximum_price }}" placeholder="Max" aria-label="Maximum price"></div>
+          </fieldset>
+          {% for widget in attribute_widgets %}
+            {% with d=widget.definition %}
+            {% if d.kind == "number" %}
+              <fieldset class="field price-range">
+                <legend>{{ d.label }}{% if d.unit %} ({{ d.unit }}){% endif %}</legend>
+                <div><input type="number" inputmode="decimal" min="0" step="any" name="{{ widget.min_param }}" value="{{ widget.min_value }}" placeholder="Min" aria-label="Minimum {{ d.label|lower }}"><span aria-hidden="true">–</span><input type="number" inputmode="decimal" min="0" step="any" name="{{ widget.max_param }}" value="{{ widget.max_value }}" placeholder="Max" aria-label="Maximum {{ d.label|lower }}"></div>
+              </fieldset>
+            {% elif d.kind == "choice" %}
+              <label class="field"><span>{{ d.label }}</span>
+                <select name="{{ widget.param }}"><option value="">Any</option>{% for option in d.choice_list %}<option value="{{ option }}"{% if widget.value == option %} selected{% endif %}>{{ option }}</option>{% endfor %}</select>
+              </label>
+            {% elif d.kind == "boolean" %}
+              <label class="field"><span>{{ d.label }}</span>
+                <select name="{{ widget.param }}"><option value="">Any</option><option value="yes"{% if widget.value == "yes" %} selected{% endif %}>Yes</option><option value="no"{% if widget.value == "no" %} selected{% endif %}>No</option></select>
+              </label>
+            {% else %}
+              <label class="field"><span>{{ d.label }}</span><input name="{{ widget.param }}" value="{{ widget.value }}" maxlength="60"></label>
+            {% endif %}
+            {% endwith %}
+          {% endfor %}
+          <label class="checkbox-field verified-filter"><input type="checkbox" name="verified" value="1"{% if verified_only %} checked{% endif %}><span>Verified sellers only</span></label>
+          <label class="checkbox-field verified-filter"><input type="checkbox" name="checkout" value="1"{% if checkout_only %} checked{% endif %}><span>Buy online (Mobile Money / card)</span></label>
+          <fieldset class="field">
+            <legend>Condition</legend>
+            <div class="radio-pills">
+              <label><input type="radio" name="condition" value=""{% if not selected_condition %} checked{% endif %}><span>Any</span></label>
+              {% for value, label in condition_options %}<label><input type="radio" name="condition" value="{{ value }}"{% if selected_condition == value %} checked{% endif %}><span>{{ label }}</span></label>{% endfor %}
+            </div>
+          </fieldset>
+          <div class="filter-actions">
+            <button class="button button-primary" type="submit">Find listings</button>
+            {% if has_extra_filters %}<a class="button button-quiet" href="{% url 'product_list' %}{% if selected_category %}?category={{ selected_category|urlencode }}{% if subcategory %}&amp;sub={{ subcategory.slug|urlencode }}{% endif %}{% endif %}">Clear filters</a>{% endif %}
+          </div>
+        </form>
+      </details>
+    </aside>
+
+    <section class="browse-results" aria-labelledby="browse-results-title">
+      <div class="results-header">
+        <div>
+          <h1 id="browse-results-title">{% if query %}Results for “{{ query }}”{% if category %} in {{ subcategory.name|default:category.name }}{% endif %}{% elif subcategory %}{{ subcategory.name }}{% elif category %}{{ category.name }}{% else %}All ads in Ghana{% endif %}</h1>
+          <p class="results-count">{% if result_count %}{{ result_count }} listing{{ result_count|pluralize }}{% if selected_city or selected_region %} in {% if selected_city %}{{ selected_city }}{% endif %}{% if selected_city and selected_region %}, {% endif %}{{ selected_region }}{% endif %}{% else %}No listings match these filters yet{% endif %}</p>
+        </div>
+        <form class="sort-form" method="get">
+          {% for key, value in request.GET.items %}{% if key != "sort" and key != "page" and value %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
+          <label><span>Sort by</span>
+            <select name="sort" aria-label="Sort listings" data-autosubmit>{% for value, label in sort_options %}<option value="{{ value }}"{% if selected_sort == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+          </label>
+          <noscript><button class="button button-quiet" type="submit">Sort</button></noscript>
+        </form>
+      </div>
+
+      {% if subcategories %}
+        <nav class="subcategory-chips" aria-label="Subcategories">
+          <a class="chip{% if not subcategory %} is-selected{% endif %}" href="{% querystring sub=None page=None %}">All {{ category.name }}</a>
+          {% for sub in subcategories %}<a class="chip{% if subcategory.pk == sub.pk %} is-selected{% endif %}" href="{% querystring sub=sub.slug page=None %}">{{ sub.name }}</a>{% endfor %}
+        </nav>
+      {% endif %}
+
+      {% if facet %}
+        <nav class="facet-tiles" aria-label="Filter by {{ facet.definition.label|lower }}">
+          {% for option in facet.options %}<a class="facet-tile{% if option.selected %} is-selected{% endif %}" href="{{ option.url }}"><strong>{{ option.value }}</strong><small>{{ option.count }} ad{{ option.count|pluralize }}</small></a>{% endfor %}
+        </nav>
+      {% endif %}
+      {% if quick_prices %}
+        <nav class="price-quick" aria-label="Quick price ranges">
+          {% for bucket in quick_prices %}<a class="{% if minimum_price == bucket.min|stringformat:'s' and maximum_price == bucket.max|stringformat:'s' %}is-selected{% endif %}" href="{% querystring min_price=bucket.min max_price=bucket.max page=None %}">{{ bucket.label }}</a>{% endfor %}
+        </nav>
+      {% endif %}
+
+      {% if query or has_extra_filters %}
+        <div class="active-filters" aria-label="Active filters">
+          {% if checkout_only %}<a class="chip chip-removable" href="{% querystring checkout=None page=None %}" aria-label="Remove buy online filter">Buy online{% include "partials/icon.html" with name="close" %}</a>{% endif %}
+          {% if verified_only %}<a class="chip chip-removable" href="{% querystring verified=None page=None %}" aria-label="Remove verified sellers filter">Verified sellers{% include "partials/icon.html" with name="close" %}</a>{% endif %}
+          {% for chip in attribute_chips %}<a class="chip chip-removable" href="{{ chip.remove_url }}" aria-label="Remove {{ chip.label }} filter">{{ chip.label }}: {{ chip.value }}{% include "partials/icon.html" with name="close" %}</a>{% endfor %}
+          {% if query %}<a class="chip chip-removable" href="{% querystring q=None page=None %}" aria-label="Remove keyword filter">“{{ query }}”{% include "partials/icon.html" with name="close" %}</a>{% endif %}
+          {% if selected_region %}<a class="chip chip-removable" href="{% querystring region=None page=None %}" aria-label="Remove region filter">{{ selected_region }}{% include "partials/icon.html" with name="close" %}</a>{% endif %}
+          {% if selected_city %}<a class="chip chip-removable" href="{% querystring city=None page=None %}" aria-label="Remove city filter">{{ selected_city }}{% include "partials/icon.html" with name="close" %}</a>{% endif %}
+          {% if minimum_price %}<a class="chip chip-removable" href="{% querystring min_price=None page=None %}" aria-label="Remove minimum price">From GH₵ {{ minimum_price }}{% include "partials/icon.html" with name="close" %}</a>{% endif %}
+          {% if maximum_price %}<a class="chip chip-removable" href="{% querystring max_price=None page=None %}" aria-label="Remove maximum price">Up to GH₵ {{ maximum_price }}{% include "partials/icon.html" with name="close" %}</a>{% endif %}
+          {% if selected_condition %}<a class="chip chip-removable" href="{% querystring condition=None page=None %}" aria-label="Remove condition filter">{% for value, label in condition_options %}{% if value == selected_condition %}{{ label }}{% endif %}{% endfor %}{% include "partials/icon.html" with name="close" %}</a>{% endif %}
+        </div>
+      {% endif %}
+
+      {% if products %}
+        <div class="product-grid product-grid-browse">{% for product in products %}{% include "marketplace/_product_card.html" %}{% endfor %}</div>
+        {% if page.has_other_pages %}
+          <nav class="pagination" aria-label="Listing pages">
+            {% if page.has_previous %}<a class="button button-quiet" href="{% querystring page=page.previous_page_number %}">{% include "partials/icon.html" with name="back" %}Previous</a>{% else %}<span></span>{% endif %}
+            <span>Page <strong>{{ page.number }}</strong> of {{ page.paginator.num_pages }}</span>
+            {% if page.has_next %}<a class="button button-quiet" href="{% querystring page=page.next_page_number %}">Next{% include "partials/icon.html" with name="chevron" %}</a>{% else %}<span></span>{% endif %}
+          </nav>
+        {% endif %}
+      {% else %}
+        <div class="empty-state">
+          <span class="empty-state-icon">{% include "partials/icon.html" with name="search" %}</span>
+          <h2>No listings found</h2>
+          <p>Try a broader keyword, another region, or remove a filter to see more items from across Ghana.</p>
+          <a class="button button-primary" href="{% url 'product_list' %}">Show all listings</a>
+        </div>
+      {% endif %}
+      {% if has_demo_listings %}<p class="preview-disclaimer">Listings marked “Preview example” are for demonstration only, not real products or offers.</p>{% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script>
+(() => {
+  const filters = document.querySelector("[data-filters]");
+  if (filters && window.matchMedia("(min-width: 960px)").matches) filters.open = true;
+  document.querySelectorAll("[data-autosubmit]").forEach((select) => {
+    select.addEventListener("change", () => select.form.submit());
+  });
+})();
+</script>{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% load market %}
+{% block title %}Order {{ order.number }} | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container container-medium page-narrow-top">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="{% url 'commerce:order_list' %}">My orders</a>{% include "partials/icon.html" with name="chevron" %}<span aria-current="page">{{ order.number }}</span></nav>
+  <div class="page-heading">
+    <div><h1>Order {{ order.number }}</h1><p>From {{ order.seller.get_full_name|default:order.seller.username }} · placed {{ order.created_at|date:"j M Y" }}</p></div>
+    <span class="status status-{{ order.status }} status-lg">{{ order.get_status_display }}</span>
+  </div>
+  {% if order.cancellation_reason %}<p class="notice notice-warn"><strong>Cancelled</strong>{{ order.cancellation_reason }}</p>{% endif %}
+  {% if can_complete %}
+    <section class="panel next-step">
+      <div><strong>Received your items?</strong><p class="muted">Confirm once you have checked them. If something is wrong, open a request below instead.</p></div>
+      <form method="post">{% csrf_token %}<input type="hidden" name="action" value="complete"><button class="button button-primary" type="submit">Yes, I received my order</button></form>
+    </section>
+  {% endif %}
+  {% if review_form %}
+    <section class="panel next-step review-box">
+      <form method="post" action="{% url 'review_order' order.number %}" class="stack-form">
+        {% csrf_token %}
+        <h2 class="section-title">Rate {{ order.seller.first_name|default:order.seller.username }}</h2>
+        <div class="star-input">{% for choice in review_form.rating %}{{ choice.tag }}<label for="{{ choice.id_for_label }}" title="{{ choice.choice_label }}">★</label>{% endfor %}</div>
+        {% with field=review_form.comment %}{% include "partials/field.html" %}{% endwith %}
+        <button class="button button-primary" type="submit">Post review</button>
+      </form>
+    </section>
+  {% elif review %}
+    <p class="notice">You rated this seller {{ review.rating }} out of 5. Thank you.</p>
+  {% endif %}
+  {% include "commerce/_order_summary.html" %}
+  {% if issue_form %}
+    <details class="panel report-panel">
+      <summary>{% include "partials/icon.html" with name="flag" %}Problem with this order?</summary>
+      <p>Ask the seller to cancel, request a return or refund, or open a dispute. Our support team can see every request.</p>
+      <form method="post" action="{% url 'commerce:order_issue' order.number %}" class="stack-form">
+        {% csrf_token %}
+        {% for field in issue_form %}{% include "partials/field.html" %}{% endfor %}
+        <button class="button button-primary" type="submit">Send request</button>
+      </form>
+    </details>
+  {% endif %}
+</div>
+{% endblock %}

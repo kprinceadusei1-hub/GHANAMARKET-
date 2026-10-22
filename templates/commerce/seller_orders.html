@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load market %}
+{% block title %}Orders to fulfil | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container container-medium page-narrow-top">
+  <div class="page-heading">
+    <div><h1>Orders to fulfil</h1><p>Only paid orders appear here. Payment is verified before you are notified.</p></div>
+    <a class="button button-quiet" href="{% url 'seller_listings' %}">{% include "partials/icon.html" with name="list" %}My listings</a>
+  </div>
+  <nav class="subcategory-chips" aria-label="Filter orders by status">
+    <a class="chip{% if not selected_status %} is-selected{% endif %}" href="{% url 'commerce:seller_orders' %}">All</a>
+    {% for value, label in status_options %}<a class="chip{% if selected_status == value %} is-selected{% endif %}" href="?status={{ value }}">{{ label }}</a>{% endfor %}
+  </nav>
+  {% if orders %}
+    <div class="panel conversation-list">
+      {% for order in orders %}
+        <a class="order-row" href="{% url 'commerce:seller_order_detail' order.number %}">
+          <span class="order-row-main">
+            <strong>{% for item in order.items.all %}{{ item.quantity }} × {{ item.title }}{% if not forloop.last %}, {% endif %}{% endfor %}</strong>
+            <small>{{ order.number }} · {{ order.buyer.get_full_name|default:order.buyer.username }} · {{ order.delivery_method }} · {{ order.total|cedis }}</small>
+          </span>
+          <span class="status status-{{ order.status }}">{{ order.get_status_display }}</span>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state"><span class="empty-state-icon">{% include "partials/icon.html" with name="truck" %}</span><h2>No orders here</h2><p>Turn on “Sell online with checkout” on a listing to start receiving paid orders.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

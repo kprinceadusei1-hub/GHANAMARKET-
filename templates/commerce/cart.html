@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% load market %}
+{% block title %}Your cart | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container page-narrow-top">
+  <div class="page-heading"><div><h1>Your cart</h1><p>Items are grouped by seller. Each seller ships or hands over their own items.</p></div></div>
+  {% if groups %}
+    <div class="checkout-layout">
+      <div class="checkout-main">
+        {% for group in groups %}
+          <section class="panel cart-group">
+            <h2 class="cart-seller">{% include "partials/icon.html" with name="store" %}{{ group.seller.get_full_name|default:group.seller.username }}</h2>
+            {% for line in group.items %}
+              {% with item=line.item product=line.item.product %}
+              <article class="cart-line{% if line.problem %} has-problem{% endif %}">
+                <a class="cart-thumb" href="{% url 'product_detail' product.pk %}">{% if product.image %}<img src="{{ product.image|thumbnail:160 }}" alt="" loading="lazy" decoding="async">{% else %}{% include "partials/icon.html" with name="camera" %}{% endif %}</a>
+                <div class="cart-line-main">
+                  <a class="cart-line-title" href="{% url 'product_detail' product.pk %}">{{ product.title }}</a>
+                  <p class="cart-line-price">{{ product.price|cedis }} each</p>
+                  {% if line.problem %}<p class="field-error">{{ line.problem }}</p>{% endif %}
+                  <div class="cart-line-actions">
+                    <form method="post" action="{% url 'commerce:cart_update' item.pk %}" class="cart-qty">
+                      {% csrf_token %}
+                      <label class="visually-hidden" for="qty-{{ item.pk }}">Quantity for {{ product.title }}</label>
+                      <input id="qty-{{ item.pk }}" type="number" name="quantity" min="0" max="{{ product.stock_quantity }}" value="{{ item.quantity }}" inputmode="numeric">
+                      <button class="button button-quiet" type="submit">Update</button>
+                    </form>
+                    <form method="post" action="{% url 'commerce:cart_remove' item.pk %}">{% csrf_token %}<button class="button button-text button-text-danger" type="submit">Remove</button></form>
+                  </div>
+                </div>
+                <strong class="cart-line-total">{{ item.line_total|cedis }}</strong>
+              </article>
+              {% endwith %}
+            {% endfor %}
+          </section>
+        {% endfor %}
+      </div>
+      <aside class="panel checkout-summary">
+        <h2>Summary</h2>
+        <dl>
+          <div><dt>Items subtotal</dt><dd>{{ subtotal|cedis }}</dd></div>
+          <div><dt>Delivery</dt><dd>Chosen at checkout</dd></div>
+        </dl>
+        {% if not payments_enabled %}
+          <p class="notice notice-warn">Online payment is not available yet. You can still message sellers directly from each listing.</p>
+        {% elif has_problems %}
+          <p class="notice notice-danger">Fix the highlighted items before checking out.</p>
+        {% else %}
+          <a class="button button-gold button-block" href="{% url 'commerce:checkout' %}">Continue to checkout</a>
+        {% endif %}
+        <p class="summary-note">{% include "partials/icon.html" with name="shield" %}Payments are confirmed with the payment provider before sellers are told to ship.</p>
+      </aside>
+    </div>
+  {% else %}
+    <div class="empty-state"><span class="empty-state-icon">{% include "partials/icon.html" with name="cart" %}</span><h2>Your cart is empty</h2><p>Look for listings marked “Buy online” to pay with Mobile Money or card.</p><a class="button button-primary" href="{% url 'product_list' %}">Browse listings</a></div>
+  {% endif %}
+</div>
+{% endblock %}

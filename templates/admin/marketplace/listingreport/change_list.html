@@ -1,0 +1,9 @@
+{% extends "admin/change_list.html" %}
+{% block content %}
+  <div class="module marketplace-report-queue">
+    <strong>Marketplace report desk</strong>
+    <p>{{ open_report_count }} open user report(s) / <a href="{% url 'admin:marketplace_product_changelist' %}?status__exact=pending">{{ pending_listing_count }} listing(s) awaiting approval</a></p>
+    <p>Select reports and use the admin action menu to review, dismiss, or remove the reported listings.</p>
+  </div>
+  {{ block.super }}
+{% endblock %}

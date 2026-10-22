@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load market %}
+{% block title %}My orders | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container container-medium page-narrow-top">
+  <div class="page-heading"><div><h1>My orders</h1><p>Track payments, deliveries and requests.</p></div></div>
+  {% for checkout in checkouts %}
+    <section class="panel order-group">
+      <header class="order-group-head">
+        <div><strong>{{ checkout.reference }}</strong><small>{{ checkout.created_at|date:"j M Y, g:i a" }}</small></div>
+        <div class="order-group-total"><span class="status status-{{ checkout.status }}">{{ checkout.get_status_display }}</span><strong>{{ checkout.total|cedis }}</strong></div>
+      </header>
+      {% for order in checkout.orders.all %}
+        <a class="order-row" href="{% if checkout.status == 'pending' %}{% url 'commerce:checkout_pay' checkout.reference %}{% else %}{% url 'commerce:order_detail' order.number %}{% endif %}">
+          <span class="order-row-main">
+            <strong>{% for item in order.items.all %}{{ item.title }}{% if not forloop.last %}, {% endif %}{% endfor %}</strong>
+            <small>Order {{ order.number }} · from {{ order.seller.get_full_name|default:order.seller.username }} · {{ order.delivery_method }}</small>
+          </span>
+          <span class="status status-{{ order.status }}">{{ order.get_status_display }}</span>
+        </a>
+      {% endfor %}
+      {% if checkout.status == "pending" %}<a class="button button-gold" href="{% url 'commerce:checkout_pay' checkout.reference %}">Complete payment</a>{% endif %}
+    </section>
+  {% empty %}
+    <div class="empty-state"><span class="empty-state-icon">{% include "partials/icon.html" with name="package" %}</span><h2>No orders yet</h2><p>When you buy online, your orders appear here.</p><a class="button button-primary" href="{% url 'product_list' %}">Browse listings</a></div>
+  {% endfor %}
+</div>
+{% endblock %}

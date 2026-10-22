@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Account settings | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container container-narrow page-narrow-top">
+  <section class="auth-card">
+    <h1>Account settings</h1>
+    <p class="form-intro">Keep your contact and location details up to date.</p>
+    <form method="post" class="stack-form form-grid">
+      {% csrf_token %}
+      {% for field in form %}{% include "partials/field.html" %}{% endfor %}
+      {% for error in form.non_field_errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      <button type="submit" class="button button-primary button-block">Save changes</button>
+    </form>
+    <div class="settings-links">
+      {% if user.role == "seller" %}<a href="{% url 'seller_verification' %}">{% include "partials/icon.html" with name="shield" %}{% if user.is_verified_seller %}Verified seller{% else %}Get verified{% endif %}</a>
+      {% else %}<a href="{% url 'become_seller' %}">{% include "partials/icon.html" with name="store" %}Set up a seller account</a>{% endif %}
+      <a href="{% url 'commerce:addresses' %}">{% include "partials/icon.html" with name="pin" %}Delivery addresses</a>
+      <a href="{% url 'password_reset' %}">{% include "partials/icon.html" with name="settings" %}Change password</a>
+      <a class="danger-link" href="{% url 'delete_account' %}">{% include "partials/icon.html" with name="close" %}Delete my account</a>
+    </div>
+  </section>
+</div>
+{% endblock %}

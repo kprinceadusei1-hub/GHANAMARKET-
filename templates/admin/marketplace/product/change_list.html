@@ -1,0 +1,14 @@
+{% extends "admin/change_list.html" %}
+{% load static %}
+{% block content %}
+  <div class="module marketplace-review-queue">
+    <h2>Marketplace review desk</h2>
+    <p>Open each listing to inspect the item information, seller details, and every uploaded photo. Listings stay private until you approve them.</p>
+    <div class="marketplace-review-queue-links">
+      <a href="{% url 'admin:marketplace_product_changelist' %}?status__exact=pending"><strong>{{ pending_listing_count }}</strong> awaiting individual review</a>
+      <a href="{% url 'admin:marketplace_listingreport_changelist' %}?status__exact=open"><strong>{{ open_report_count }}</strong> open buyer reports</a>
+      <a href="{% url 'admin:marketplace_product_changelist' %}">View all listings</a>
+    </div>
+  </div>
+  {{ block.super }}
+{% endblock %}

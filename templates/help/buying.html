@@ -1,0 +1,15 @@
+{% extends "help/base.html" %}
+{% block help_content %}
+<p class="lead">There are two ways to buy, and each listing shows which ones the seller offers.</p>
+<h2>Chat with the seller</h2>
+<p>Ask questions, negotiate, and agree how to meet or deliver. Your phone number is not shown to sellers unless you share it. Payment is agreed directly between you and the seller, so follow our <a href="{% url 'help_page' 'safety' %}">safety tips</a>.</p>
+<h2>Buy online</h2>
+<ol class="plain-list">
+  <li>Add items to your cart. Items are grouped by seller.</li>
+  <li>At checkout, choose collection or delivery for each seller. Delivery fees are shown before you pay.</li>
+  <li>Pay with Mobile Money or card on the payment provider's secure page. Items are reserved for a limited time while you pay.</li>
+  <li>Once the payment provider confirms payment, each seller is notified and prepares your order. Track progress in <a href="{% url 'commerce:order_list' %}">My orders</a>.</li>
+  <li>When you receive your items, confirm receipt on the order page. You can then rate the seller.</li>
+</ol>
+<p>If something is wrong with an order, open a request from the order page. See <a href="{% url 'help_page' 'refunds' %}">refunds</a>.</p>
+{% endblock %}

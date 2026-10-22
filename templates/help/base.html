@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}{{ page_title }} | GhanaMarket Help{% endblock %}
+{% block content %}
+<div class="container page-narrow-top help-layout">
+  <nav class="panel help-nav" aria-label="Help topics">
+    <h2>Help topics</h2>
+    {% for slug, page in help_pages.items %}
+      <a href="{% if slug %}{% url 'help_page' slug %}{% else %}{% url 'help' %}{% endif %}"{% if current_help == slug %} aria-current="page"{% endif %}>{% if slug %}{{ page.0 }}{% else %}Overview{% endif %}</a>
+    {% endfor %}
+    <a href="{% url 'contact_support' %}"{% if current_help == "contact" %} aria-current="page"{% endif %}>Contact support</a>
+  </nav>
+  <article class="panel help-article">
+    <h1>{{ page_title }}</h1>
+    {% block help_content %}{% endblock %}
+  </article>
+</div>
+{% endblock %}

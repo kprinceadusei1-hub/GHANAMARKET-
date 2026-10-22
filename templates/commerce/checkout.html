@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% load market %}
+{% block title %}Checkout | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container page-narrow-top">
+  <div class="page-heading"><div><h1>Checkout</h1><p>Choose how to receive your items, then pay securely.</p></div></div>
+  {% if provider.is_test %}<p class="notice notice-warn"><strong>Test mode</strong>Payments are simulated on this server. No real money will move.</p>{% endif %}
+  <form method="post" class="checkout-layout" data-checkout>
+    {% csrf_token %}
+    <div class="checkout-main">
+      {% if form.non_field_errors %}<div class="notice notice-danger">{{ form.non_field_errors }}</div>{% endif %}
+      {% for group in groups %}
+        <section class="panel cart-group">
+          <h2 class="cart-seller">{% include "partials/icon.html" with name="store" %}{{ group.seller.get_full_name|default:group.seller.username }}</h2>
+          <ul class="checkout-items">
+            {% for line in group.items %}<li><span>{{ line.item.quantity }} × {{ line.item.product.title }}</span><strong>{{ line.item.line_total|cedis }}</strong></li>{% endfor %}
+          </ul>
+          <fieldset class="delivery-options">
+            <legend>How do you want to receive these items?</legend>
+            {% for choice in group.delivery_field %}
+              <label class="delivery-option">
+                {{ choice.tag }}
+                <span class="delivery-option-text">{{ choice.choice_label }}</span>
+              </label>
+            {% endfor %}
+            {% for error in group.delivery_field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+          </fieldset>
+        </section>
+      {% endfor %}
+
+      <section class="panel" data-address-section data-address-options="{{ address_option_ids|join:',' }}">
+        <h2 class="section-title">{% include "partials/icon.html" with name="pin" %}Delivery address</h2>
+        <p class="muted">Needed only for delivery. Collection orders use your account phone number so the seller can arrange a meeting point.</p>
+        {% if form.fields.address.queryset %}
+          <div class="saved-addresses">
+            {% for choice in form.address %}
+              <label class="delivery-option">{{ choice.tag }}<span class="delivery-option-text">{{ choice.choice_label }}</span></label>
+            {% endfor %}
+            <label class="delivery-option"><input type="radio" name="address" value=""{% if form.is_bound and not form.data.address %} checked{% endif %} data-new-address-toggle><span class="delivery-option-text">Use a new address</span></label>
+          </div>
+        {% endif %}
+        <div class="form-grid new-address" data-new-address>
+          {% for field in form.new_address_form %}{% include "partials/field.html" %}{% endfor %}
+        </div>
+      </section>
+
+      <section class="panel">
+        {% with field=form.note %}{% include "partials/field.html" %}{% endwith %}
+      </section>
+    </div>
+
+    <aside class="panel checkout-summary">
+      <h2>Order summary</h2>
+      <dl>
+        <div><dt>Items</dt><dd>{{ subtotal|cedis }}</dd></div>
+        <div><dt>Delivery</dt><dd data-delivery-total>Shown on the next step</dd></div>
+      </dl>
+      <p class="summary-note">You will see the exact total, including delivery fees, before you pay. Stock is held for you for a limited time.</p>
+      <button class="button button-gold button-block" type="submit">Continue to payment</button>
+      <a class="button button-text button-block" href="{% url 'commerce:cart' %}">Back to cart</a>
+    </aside>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}<script>
+// Hide the address section when every seller's items are collected, and show the
+// new-address fields only when no saved address is selected.
+(() => {
+  const form = document.querySelector("[data-checkout]");
+  const section = document.querySelector("[data-address-section]");
+  const fields = document.querySelector("[data-new-address]");
+  if (!form || !section || !fields) return;
+  const needsAddress = new Set(section.dataset.addressOptions.split(",").filter(Boolean));
+  const sync = () => {
+    const chosen = [...form.querySelectorAll('input[name^="delivery_"]:checked')];
+    section.hidden = !chosen.some((radio) => needsAddress.has(radio.value));
+    const saved = section.querySelector('input[name="address"]:checked');
+    fields.hidden = Boolean(saved && saved.value);
+  };
+  form.addEventListener("change", sync);
+  sync();
+})();
+</script>{% endblock %}

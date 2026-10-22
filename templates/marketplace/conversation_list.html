@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load market %}
+{% block title %}Messages | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container container-medium page-narrow-top">
+  <div class="page-heading"><div><h1>Messages</h1><p>Your private conversations with buyers and sellers.</p></div></div>
+  {% if conversations %}
+    <div class="panel conversation-list">
+      {% for conversation in conversations %}
+        <a class="conversation-row{% if conversation.unread %} is-unread{% endif %}" href="{% url 'conversation_detail' conversation.pk %}">
+          <span class="conversation-thumb">{% if conversation.product.image %}<img src="{{ conversation.product.image|thumbnail:160 }}" alt="" loading="lazy" decoding="async">{% else %}{% include "partials/icon.html" with name="camera" %}{% endif %}</span>
+          <span class="conversation-body">
+            <span class="conversation-top"><strong>{% if user == conversation.buyer %}{{ conversation.seller.get_full_name|default:conversation.seller.username }}{% else %}{{ conversation.buyer.get_full_name|default:conversation.buyer.username }}{% endif %}</strong><span class="conversation-meta">{% if conversation.unread %}<b class="unread-count" aria-label="{{ conversation.unread }} unread">{{ conversation.unread }}</b>{% endif %}{% if conversation.latest_message_at %}<time datetime="{{ conversation.latest_message_at|date:'c' }}">{{ conversation.latest_message_at|ago }}</time>{% endif %}</span></span>
+            <span class="conversation-product">{{ conversation.product.title }}</span>
+            <span class="conversation-preview">{{ conversation.latest_message_body|default:"No messages yet"|truncatechars:90 }}</span>
+          </span>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state"><span class="empty-state-icon">{% include "partials/icon.html" with name="chat" %}</span><h2>No messages yet</h2><p>When you contact a seller or a buyer contacts you, the conversation will appear here.</p><a class="button button-primary" href="{% url 'product_list' %}">Browse listings</a></div>
+  {% endif %}
+</div>
+{% endblock %}

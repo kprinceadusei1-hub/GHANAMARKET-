@@ -1,0 +1,26 @@
+{% extends "help/base.html" %}
+{% block help_content %}
+<p class="lead">Most deals go smoothly. These habits keep it that way.</p>
+<h2>When you buy from a listing you chat about</h2>
+<ul class="plain-list">
+  <li><strong>Never send Mobile Money or pay a “deposit” before you see the item.</strong> Scammers often ask for a small advance to “hold” an item.</li>
+  <li>Meet in a busy public place in daylight, such as a mall, bank or police station car park. Bring a friend for high-value items.</li>
+  <li>Inspect the item carefully and test electronics. For phones, check the IMEI and that the phone is not locked to an account.</li>
+  <li>For vehicles and property, confirm documents in person and never pay to see a property.</li>
+  <li>Keep your conversation on GhanaMarket. If someone pushes you to move to another app straight away, be careful.</li>
+</ul>
+<h2>When you use online checkout</h2>
+<ul class="plain-list">
+  <li>Only pay on the GhanaMarket checkout page or the payment provider's page it sends you to. Sellers should never ask you to pay them separately for the same order.</li>
+  <li>Your order shows as paid only after the payment provider confirms it to us.</li>
+  <li>If there is a problem, open a request from the order page so there is a record.</li>
+</ul>
+<h2>Warning signs</h2>
+<ul class="plain-list">
+  <li>A price far below market value.</li>
+  <li>Pressure to decide or pay immediately.</li>
+  <li>Requests for your PIN, password or verification codes. GhanaMarket staff will never ask for these.</li>
+</ul>
+<h2>If something goes wrong</h2>
+<p>Report the listing or the user from the listing or conversation page, and <a href="{% url 'contact_support' %}?topic=safety">contact support</a>. If you have lost money, also report it to the police and your Mobile Money provider quickly.</p>
+{% endblock %}

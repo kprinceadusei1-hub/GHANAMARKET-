@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Delivery addresses | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container container-medium page-narrow-top">
+  <div class="page-heading"><div><h1>Delivery addresses</h1><p>Saved addresses make checkout faster. They are shared only with sellers you buy from.</p></div></div>
+  {% if addresses %}
+    <div class="panel conversation-list">
+      {% for address in addresses %}
+        <div class="order-row">
+          <span class="order-row-main"><strong>{{ address.full_name }}{% if address.is_default %} <span class="tag tag-soft">Default</span>{% endif %}</strong><small>{{ address.phone_number }} · {{ address.as_text }}</small></span>
+          <form method="post" action="{% url 'commerce:address_delete' address.pk %}">{% csrf_token %}<button class="button button-text button-text-danger" type="submit">Remove</button></form>
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+  <section class="panel spaced-top">
+    <h2 class="section-title">{% include "partials/icon.html" with name="plus" %}Add an address</h2>
+    <form method="post" class="stack-form form-grid">
+      {% csrf_token %}
+      {% for field in form %}{% include "partials/field.html" %}{% endfor %}
+      <button class="button button-primary" type="submit">Save address</button>
+    </form>
+  </section>
+</div>
+{% endblock %}

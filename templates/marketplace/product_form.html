@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}{{ heading }} | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container container-medium page-narrow-top">
+  <div class="page-heading">
+    <div>
+      <h1>{% if product %}{{ heading }}{% else %}Post a free ad{% endif %}</h1>
+      <p>Clear photos and honest details sell faster. An admin reviews every ad before buyers can see it.</p>
+    </div>
+  </div>
+  <form method="post" enctype="multipart/form-data" class="listing-form" data-photo-limit="8">
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="notice notice-danger">{{ form.non_field_errors }}</div>{% endif %}
+
+    <section class="panel form-step">
+      <h2><span class="step-number">1</span>Photos</h2>
+      <p class="step-hint">Add up to 8 photos. Show the front, back, labels, accessories and any wear. The first photo becomes your cover.</p>
+      <label class="photo-upload-control{% if form.images.errors %} has-error{% endif %}" for="{{ form.images.id_for_label }}">
+        <span class="photo-upload-icon">{% include "partials/icon.html" with name="camera" %}</span>
+        <strong>Add photos</strong>
+        <span>Tap to choose or drag images here · JPG or PNG, up to 5 MB each</span>
+        {{ form.images }}
+      </label>
+      <div class="photo-upload-status" data-photo-status aria-live="polite">No new photos selected</div>
+      <div class="photo-preview-grid" data-photo-preview></div>
+      {% for error in form.images.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+      {% if product.image or product.photos.all %}
+        <div class="existing-photos">
+          <strong>Photos already on this listing</strong>
+          <div class="photo-preview-grid">
+            {% if product.image %}<img src="{{ product.image.url }}" alt="Current main listing photo">{% endif %}
+            {% for photo in product.photos.all %}<img src="{{ photo.image.url }}" alt="Current listing photo">{% endfor %}
+          </div>
+          <small>New photos are added after these. Existing photos are kept.</small>
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="panel form-step">
+      <h2><span class="step-number">2</span>Item details</h2>
+      {% if form.selected_category %}
+        <p class="chosen-category"><span class="side-cat-icon cat-{{ form.selected_category.slug }}">{% include "partials/icon.html" with name=form.selected_category.icon_key %}</span><span>{{ form.selected_category.name }}</span>{% if not product %}<a href="{% url 'product_create' %}">Change</a>{% endif %}</p>
+        {% if form.selected_category.is_restricted and form.selected_category.restriction_note %}<p class="notice notice-warn">{{ form.selected_category.restriction_note }}</p>{% endif %}
+      {% endif %}
+      <div class="form-grid">
+        {% with field=form.category %}{% include "partials/field.html" %}{% endwith %}
+        {% if form.subcategory.field.queryset.exists %}{% with field=form.subcategory %}{% include "partials/field.html" %}{% endwith %}{% else %}{{ form.subcategory }}{% endif %}
+        {% for field in form %}{% if field.name == "title" or field.name == "condition" or field.name == "brand" or field.name == "model" or field.name == "included_items" or field.name == "description" %}{% include "partials/field.html" %}{% endif %}{% endfor %}
+      </div>
+      {% if form.attribute_fields %}
+        <fieldset class="attribute-group">
+          <legend>{{ form.selected_category.name }} details</legend>
+          <div class="form-grid">{% for field in form.attribute_fields %}{% include "partials/field.html" %}{% endfor %}</div>
+        </fieldset>
+      {% endif %}
+    </section>
+
+    <section class="panel form-step">
+      <h2><span class="step-number">3</span>Price, selling &amp; location</h2>
+      <div class="form-grid">
+        {% for field in form %}{% if field.name == "price" or field.name == "price_negotiable" or field.name == "region" or field.name == "city" %}{% include "partials/field.html" %}{% endif %}{% endfor %}
+      </div>
+      <fieldset class="attribute-group selling-methods">
+        <legend>How can buyers buy?</legend>
+        <div class="form-grid">
+          {% with field=form.allows_direct_contact %}{% include "partials/field.html" %}{% endwith %}
+          {% with field=form.allows_checkout %}{% include "partials/field.html" %}{% endwith %}
+          {% with field=form.stock_quantity %}{% include "partials/field.html" %}{% endwith %}
+        </div>
+      </fieldset>
+    </section>
+
+    <div class="form-submit-bar">
+      <p>Your ad stays private until an admin approves it.</p>
+      <button class="button button-gold" type="submit">{% if product %}Submit changes for review{% else %}Submit listing for review{% endif %}</button>
+    </div>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/listing-photos.js' %}" defer></script>
+<script>
+// Changing the category reloads the form so it can ask for that category's details.
+const categorySelect = document.querySelector('select[name="category"]');
+if (categorySelect) {
+  const original = categorySelect.value;
+  categorySelect.addEventListener("change", () => {
+    if (categorySelect.value === original) return;
+    const note = "Switch category? Details you have typed on this page will need to be re-entered.";
+    if (window.confirm(note)) window.location.search = "?category=" + encodeURIComponent(categorySelect.value);
+    else categorySelect.value = original;
+  });
+}
+</script>{% endblock %}

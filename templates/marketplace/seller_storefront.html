@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ seller_profile.get_full_name|default:seller_profile.username }} | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container page-narrow-top">
+  <header class="panel storefront-header">
+    <span class="avatar avatar-xl" aria-hidden="true">{{ seller_profile.first_name|default:seller_profile.username|slice:":1"|upper }}</span>
+    <div>
+      <h1>{{ seller_profile.get_full_name|default:seller_profile.username }}</h1>
+      <p class="storefront-trust">
+        {% if seller_profile.is_verified_seller %}<span class="verified-badge" title="Identity checked by GhanaMarket staff">{% include "partials/icon.html" with name="shield" %}Verified seller</span>{% endif %}
+        {% if seller_rating %}<span class="rating" aria-label="Rated {{ seller_rating.average }} out of 5 from {{ seller_rating.count }} review{{ seller_rating.count|pluralize }}"><span aria-hidden="true">★</span> {{ seller_rating.average }} <small>({{ seller_rating.count }} review{{ seller_rating.count|pluralize }})</small></span>{% endif %}
+      </p>
+      <p class="storefront-meta">
+        <span>{% include "partials/icon.html" with name="pin" %}{% if seller_profile.city %}{{ seller_profile.city|title }}{% if seller_profile.region %}, {{ seller_profile.region }}{% endif %}{% else %}Ghana{% endif %}</span>
+        <span>{% include "partials/icon.html" with name="clock" %}Member since {{ seller_profile.date_joined|date:"M Y" }}</span>
+        <span>{% include "partials/icon.html" with name="list" %}{{ listing_count }} active listing{{ listing_count|pluralize }}</span>
+      </p>
+    </div>
+  </header>
+
+  <section aria-labelledby="seller-listings-heading">
+    <div class="section-heading"><h2 id="seller-listings-heading">Current listings</h2></div>
+    {% if products %}<div class="product-grid">{% for product in products %}{% include "marketplace/_product_card.html" %}{% endfor %}</div>{% else %}<div class="empty-state"><h2>No active listings</h2><p>This seller has no listings available right now.</p></div>{% endif %}
+  </section>
+
+  {% if reviews %}
+  <section class="similar-section" aria-labelledby="reviews-heading">
+    <div class="section-heading"><h2 id="reviews-heading">Reviews from buyers</h2></div>
+    <div class="review-list">
+      {% for review in reviews %}
+        <article class="panel review">
+          <p class="review-stars" aria-label="{{ review.rating }} out of 5">{% for i in "12345" %}<span{% if forloop.counter > review.rating %} class="is-off"{% endif %}>★</span>{% endfor %}</p>
+          {% if review.comment %}<p>{{ review.comment }}</p>{% endif %}
+          <small class="muted">{{ review.buyer.first_name|default:"A buyer" }} · {{ review.created_at|date:"M Y" }} · completed order</small>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endif %}
+
+  {% if user.is_authenticated and user != seller_profile %}
+  <details class="panel report-panel spaced-top">
+    <summary>{% include "partials/icon.html" with name="flag" %}Report this seller</summary>
+    <form method="post" action="{% url 'report_user' seller_profile.pk %}" class="stack-form">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.path }}">
+      {% for field in report_user_form %}{% include "partials/field.html" %}{% endfor %}
+      <button class="button button-danger" type="submit">Send report</button>
+    </form>
+  </details>
+  {% endif %}
+</div>
+{% endblock %}

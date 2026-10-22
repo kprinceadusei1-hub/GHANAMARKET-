@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Delete account | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container container-narrow page-narrow-top">
+  <section class="auth-card">
+    <h1>Delete your account</h1>
+    <p class="form-intro">This cannot be undone. When you delete your account:</p>
+    <ul class="plain-list">
+      <li>Your name, email, phone number, location and saved addresses are removed.</li>
+      <li>Your listings are hidden from buyers, and your cart and saved items are cleared.</li>
+      <li>Records of completed orders and payments are kept without your contact details, because we need them for accounting and to resolve disputes.</li>
+      <li>Messages you sent stay visible to the people you sent them to, under an anonymous name.</li>
+    </ul>
+    <p class="notice notice-warn">Finish or cancel any open orders first.</p>
+    <form method="post" class="stack-form">
+      {% csrf_token %}
+      {% for field in form %}{% include "partials/field.html" %}{% endfor %}
+      <button class="button button-danger button-block" type="submit">Permanently delete my account</button>
+    </form>
+    <p class="form-footnote"><a href="{% url 'account_settings' %}">Keep my account</a></p>
+  </section>
+</div>
+{% endblock %}

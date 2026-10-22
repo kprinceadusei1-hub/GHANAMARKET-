@@ -1,0 +1,55 @@
+from django.contrib.auth import views as auth_views
+from django.urls import path
+
+from . import trust_views, views
+
+urlpatterns = [
+    path("", views.home, name="home"),
+    path("accounts/register/", views.register, name="register"),
+    path("accounts/settings/", views.account_settings, name="account_settings"),
+    path("accounts/start-selling/", views.become_seller, name="become_seller"),
+    path("accounts/login/", views.ThrottledLoginView.as_view(), name="login"),
+    path("accounts/password-reset/", views.ThrottledPasswordResetView.as_view(), name="password_reset"),
+    path(
+        "accounts/password-reset/sent/",
+        auth_views.PasswordResetDoneView.as_view(template_name="registration/password_reset_done.html"),
+        name="password_reset_done",
+    ),
+    path(
+        "accounts/reset/<uidb64>/<token>/",
+        auth_views.PasswordResetConfirmView.as_view(template_name="registration/password_reset_confirm.html"),
+        name="password_reset_confirm",
+    ),
+    path(
+        "accounts/reset/done/",
+        auth_views.PasswordResetCompleteView.as_view(template_name="registration/password_reset_complete.html"),
+        name="password_reset_complete",
+    ),
+    path("accounts/logout/", auth_views.LogoutView.as_view(), name="logout"),
+    path("listings/", views.product_list, name="product_list"),
+    path("categories/", views.category_index, name="category_index"),
+    path("search/suggest/", views.search_suggestions, name="search_suggestions"),
+    path("saved/", views.saved_listings, name="saved_listings"),
+    path("listings/<int:product_id>/favorite/", views.toggle_favorite, name="toggle_favorite"),
+    path("listings/new/", views.product_create, name="product_create"),
+    path("my-listings/", views.seller_listings, name="seller_listings"),
+    path("sellers/<int:pk>/", views.seller_storefront, name="seller_storefront"),
+    path("listings/<int:pk>/", views.product_detail, name="product_detail"),
+    path("listings/<int:pk>/edit/", views.product_update, name="product_update"),
+    path("my-listings/<int:pk>/status/", views.seller_listing_status, name="seller_listing_status"),
+    path("listings/<int:product_id>/report/", views.report_listing, name="report_listing"),
+    path("accounts/verification/", trust_views.seller_verification, name="seller_verification"),
+    path("accounts/delete/", trust_views.delete_account, name="delete_account"),
+    path("staff/verifications/<int:pk>/document/", trust_views.verification_document, name="verification_document"),
+    path("orders/<str:number>/review/", trust_views.review_order, name="review_order"),
+    path("users/<int:user_id>/block/", trust_views.toggle_block, name="toggle_block"),
+    path("users/<int:user_id>/report/", trust_views.report_user, name="report_user"),
+    path("help/", trust_views.help_page, name="help"),
+    path("help/contact/", trust_views.contact_support, name="contact_support"),
+    path("help/<slug:slug>/", trust_views.help_page, name="help_page"),
+    path("notifications/", views.notification_list, name="notification_list"),
+    path("notifications/<int:pk>/", views.notification_open, name="notification_open"),
+    path("messages/", views.conversation_list, name="conversation_list"),
+    path("messages/start/<int:product_id>/", views.conversation_start, name="conversation_start"),
+    path("messages/<int:pk>/", views.conversation_detail, name="conversation_detail"),
+]

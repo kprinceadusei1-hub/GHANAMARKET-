@@ -1,0 +1,14 @@
+{% extends "help/base.html" %}
+{% block help_content %}
+<p class="lead">How cancellations, returns and refunds work for orders paid online through GhanaMarket.</p>
+<h2>Before you pay</h2>
+<p>You can cancel a checkout at any time before paying. Nothing is charged, and reserved items are released.</p>
+<h2>After you pay</h2>
+<ul class="plain-list">
+  <li><strong>If the seller cancels</strong>, you are refunded in full through the payment provider you paid with.</li>
+  <li><strong>If you want to cancel, return an item, get a refund, or dispute an order</strong>, open a request from the order page. The seller and our support team can see it and will respond.</li>
+  <li>Refunds go back to the Mobile Money wallet or card you paid with. How long it takes to arrive depends on the payment provider and your bank or network.</li>
+</ul>
+<h2>Deals arranged by chat</h2>
+<p>When you pay a seller directly, outside online checkout, GhanaMarket does not hold or process the money and cannot reverse the payment. Follow our <a href="{% url 'help_page' 'safety' %}">safety tips</a>, and report any problem so we can act against the account.</p>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "help/base.html" %}
+{% block help_content %}
+<p class="lead">To keep the marketplace legal and safe, some items cannot be listed, and others need extra checks.</p>
+<h2>Not allowed</h2>
+<ul class="plain-list">
+  <li>Illegal drugs, controlled substances and drug paraphernalia.</li>
+  <li>Firearms, ammunition, explosives and weapons.</li>
+  <li>Stolen goods, or items you do not have the right to sell.</li>
+  <li>Counterfeit or replica branded goods.</li>
+  <li>Prescription-only medicines.</li>
+  <li>Human remains or body parts, and protected wildlife or wildlife products.</li>
+  <li>Hacked accounts, personal data, and fake documents or certificates.</li>
+  <li>Adult sexual content or services.</li>
+  <li>Anything that promotes fraud, gambling schemes or pyramid schemes.</li>
+</ul>
+<h2>Restricted</h2>
+<p>Some categories, such as vehicles and property, need extra care. Listings in restricted categories receive closer review, and our team may ask for supporting documents.</p>
+<p>Listings that break these rules are removed, and repeated violations can lead to account suspension. If you think a decision was wrong, use the <a href="{% url 'contact_support' %}?topic=appeal">appeal form</a>.</p>
+{% endblock %}

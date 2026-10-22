@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% load market %}
+{% block title %}Order {{ order.number }} | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container container-medium page-narrow-top">
+  <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="{% url 'commerce:seller_orders' %}">Orders to fulfil</a>{% include "partials/icon.html" with name="chevron" %}<span aria-current="page">{{ order.number }}</span></nav>
+  <div class="page-heading">
+    <div><h1>Order {{ order.number }}</h1><p>Buyer: {{ order.buyer.get_full_name|default:order.buyer.username }} · paid {{ order.paid_at|date:"j M Y, g:i a" }}</p></div>
+    <span class="status status-{{ order.status }} status-lg">{{ order.get_status_display }}</span>
+  </div>
+  {% if status_form %}
+    <section class="panel">
+      <h2 class="section-title">{% include "partials/icon.html" with name="truck" %}Update this order</h2>
+      <form method="post" class="stack-form form-grid">
+        {% csrf_token %}
+        {% for field in status_form %}{% include "partials/field.html" %}{% endfor %}
+        <button class="button button-primary" type="submit">Save and notify buyer</button>
+      </form>
+      <p class="summary-note">Cancelling a paid order refunds the buyer in full through the payment provider and returns the stock to your listing.</p>
+    </section>
+  {% endif %}
+  {% include "commerce/_order_summary.html" with show_contact=True %}
+</div>
+{% endblock %}

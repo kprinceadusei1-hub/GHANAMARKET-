@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load market %}
+{% block title %}Notifications | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container container-medium page-narrow-top">
+  <div class="page-heading">
+    <div><h1>Notifications</h1><p>Order updates, payments and other account activity.</p></div>
+    {% if unread_notifications %}<form method="post">{% csrf_token %}<button class="button button-quiet" type="submit">Mark all as read</button></form>{% endif %}
+  </div>
+  {% if notifications %}
+    <div class="panel conversation-list">
+      {% for notification in notifications %}
+        <a class="conversation-row notification-row{% if not notification.is_read %} is-unread{% endif %}" href="{% url 'notification_open' notification.pk %}">
+          <span class="conversation-body">
+            <span class="conversation-top"><strong>{{ notification.title }}</strong><time datetime="{{ notification.created_at|date:'c' }}">{{ notification.created_at|ago }}</time></span>
+            {% if notification.body %}<span class="conversation-preview">{{ notification.body }}</span>{% endif %}
+          </span>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state"><span class="empty-state-icon">{% include "partials/icon.html" with name="bell" %}</span><h2>No notifications yet</h2><p>Order and payment updates will appear here.</p></div>
+  {% endif %}
+</div>
+{% endblock %}

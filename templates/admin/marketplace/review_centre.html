@@ -1,0 +1,113 @@
+{% extends "admin/base_site.html" %}
+{% load market %}
+{% block nav-breadcrumbs %}{% endblock %}
+{% block content_title %}{% endblock %}
+{% block bodyclass %}{{ block.super }} cc-review-page{% endblock %}
+{% block content %}
+<div class="cc-page">
+  <header class="cc-welcome">
+    <div>
+      <h1>Review Centre</h1>
+      <p>Pick an item on the left, check its details on the right, then approve it or send it back with a note. Every decision is saved in the audit log and the person is notified.</p>
+    </div>
+  </header>
+
+  <nav class="rc-tabs" aria-label="Review queues">
+    {% for t in tabs %}<a href="?tab={{ t.key }}"{% if t.key == tab.key %} aria-current="page"{% endif %}>{{ t.label }}<b class="cc-pill{% if t.count %} is-hot{% endif %}">{{ t.count }}</b></a>{% endfor %}
+  </nav>
+
+  <div class="rc-layout">
+    <section class="cc-card rc-list" aria-label="{{ tab.label }} waiting">
+      {% for row in rows %}
+        <a class="rc-row{% if row.selected %} is-selected{% endif %}" href="?tab={{ tab.key }}&amp;item={{ row.pk }}"{% if row.selected %} aria-current="true"{% endif %}>
+          <span class="rc-thumb">{% if row.image %}<img src="{{ row.image|thumbnail:160 }}" alt="" loading="lazy">{% else %}{% include "partials/icon.html" with name=row.icon %}{% endif %}</span>
+          <span class="rc-row-text"><strong>{{ row.title }}</strong><small>{{ row.meta }}</small><small>Waiting {{ row.when|timesince }}{% if row.flagged %} · <em class="rc-flag">flagged</em>{% endif %}</small></span>
+        </a>
+      {% empty %}
+        <div class="cc-empty">{% include "partials/icon.html" with name="check" %}<strong>Nothing waiting</strong><span>All {{ tab.label|lower }} have been reviewed.</span></div>
+      {% endfor %}
+    </section>
+
+    <aside class="cc-card rc-panel" aria-label="Review details">
+      {% if detail %}
+        <header class="rc-panel-head">
+          <div><h2>{{ detail.title }}</h2><p>{{ detail.subtitle }}</p></div>
+          <a class="rc-link" href="{{ detail.admin_url }}">Full record ↗</a>
+        </header>
+
+        {% if detail.risk_flags %}
+          <div class="rc-warning">{% include "partials/icon.html" with name="alert" %}<div><strong>Check carefully</strong><ul>{% for flag in detail.risk_flags %}<li>{{ flag }}</li>{% endfor %}</ul></div></div>
+        {% endif %}
+        {% if detail.seller_blocked %}
+          <div class="rc-warning">{% include "partials/icon.html" with name="alert" %}<div><strong>This seller is not approved yet.</strong> Approve the seller request first, then this listing.</div></div>
+        {% endif %}
+
+        {% if detail.photos %}
+          <div class="rc-photos">{% for photo in detail.photos %}<a href="{{ photo.url }}" target="_blank" rel="noopener"><img src="{{ photo|thumbnail:480 }}" alt="Listing photo {{ forloop.counter }}" loading="lazy"></a>{% endfor %}</div>
+        {% endif %}
+        {% if detail.document_url %}
+          <a class="cc-btn cc-btn-outline rc-doc" href="{{ detail.document_url }}" target="_blank" rel="noopener">{% include "partials/icon.html" with name="audit" %}Open the uploaded document</a>
+        {% endif %}
+
+        <dl class="rc-facts">{% for label, value in detail.facts %}<div><dt>{{ label }}</dt><dd>{% if value.year %}{{ value|date:"j M Y, H:i" }}{% else %}{{ value }}{% endif %}</dd></div>{% endfor %}</dl>
+        {% if detail.description %}<div class="rc-description"><h3>Description</h3><p>{{ detail.description|linebreaksbr }}</p></div>{% endif %}
+
+        {% if tab.can_decide %}
+          <form method="post" class="rc-decide" data-review-form>
+            {% csrf_token %}
+            <input type="hidden" name="kind" value="{{ tab.key }}">
+            <input type="hidden" name="pk" value="{{ selected.pk }}">
+            <fieldset class="rc-checks">
+              <legend>Before approving, confirm you checked:</legend>
+              {% for check in detail.checks %}<label><input type="checkbox" data-review-check> {{ check }}</label>{% endfor %}
+            </fieldset>
+            <label class="rc-note"><span>Note to the person <small>(required if you do not approve)</small></span>
+              <textarea name="note" rows="2" maxlength="300" placeholder="e.g. Please add clear photos of the actual item"></textarea>
+            </label>
+            <div class="rc-actions">
+              <button type="submit" name="decision" value="reject" class="rc-btn rc-btn-reject" data-review-reject>{{ detail.reject_label }}</button>
+              <button type="submit" name="decision" value="approve" class="rc-btn rc-btn-approve" data-review-approve disabled>{% include "partials/icon.html" with name="check" %}Approve</button>
+            </div>
+            <p class="rc-hint" data-review-hint>Tick all {{ detail.checks|length }} checks to enable Approve.</p>
+          </form>
+        {% else %}
+          <p class="cc-notice">{% include "partials/icon.html" with name="shield" %}<span>You can view this queue but your role cannot approve or reject. Ask a senior admin for the “change” permission.</span></p>
+        {% endif %}
+      {% else %}
+        <div class="cc-empty">{% include "partials/icon.html" with name="check" %}<strong>Nothing to review</strong><span>When something is waiting it will appear here.</span></div>
+      {% endif %}
+    </aside>
+  </div>
+</div>
+{% endblock %}
+{% block footer %}{{ block.super }}
+<script>
+(() => {
+  const form = document.querySelector("[data-review-form]");
+  if (!form) return;
+  const checks = [...form.querySelectorAll("[data-review-check]")];
+  const approve = form.querySelector("[data-review-approve]");
+  const hint = form.querySelector("[data-review-hint]");
+  const note = form.querySelector("textarea[name=note]");
+  const sync = () => {
+    const done = checks.every((box) => box.checked);
+    approve.disabled = !done;
+    hint.hidden = done;
+  };
+  checks.forEach((box) => box.addEventListener("change", sync));
+  sync();
+  form.querySelector("[data-review-reject]").addEventListener("click", (event) => {
+    if (!note.value.trim()) {
+      event.preventDefault();
+      note.focus();
+      note.setAttribute("aria-invalid", "true");
+      hint.hidden = false;
+      hint.textContent = "Write a short note so the person knows what to fix.";
+    }
+  });
+  approve.addEventListener("click", (event) => {
+    if (!window.confirm("Approve this after your review?")) event.preventDefault();
+  });
+})();
+</script>
+{% endblock %}

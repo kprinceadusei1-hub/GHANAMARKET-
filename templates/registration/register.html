@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Create an account | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container auth-shell">
+  {% include "partials/auth_aside.html" %}
+  <section class="auth-card">
+    <h1>Create your account</h1>
+    <p class="form-intro">Choose <strong>buyer</strong> to shop, or <strong>seller</strong> to post ads. You can start selling later from any account.</p>
+    {% if form.non_field_errors %}<div class="notice notice-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <form method="post" class="stack-form form-grid">
+      {% csrf_token %}
+      {% for field in form %}{% include "partials/field.html" %}{% endfor %}
+      <button class="button button-primary button-block" type="submit">Create account</button>
+    </form>
+    <p class="form-footnote">Already registered? <a href="{% url 'login' %}">Sign in</a></p>
+  </section>
+</div>
+{% endblock %}

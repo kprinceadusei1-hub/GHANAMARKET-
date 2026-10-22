@@ -1,0 +1,13 @@
+{% extends "help/base.html" %}
+{% block help_content %}
+<p class="lead">The basic rules for using GhanaMarket.</p>
+<ol class="plain-list">
+  <li>Give accurate information about yourself and the items you list.</li>
+  <li>Only list items you own or are allowed to sell, and never list <a href="{% url 'help_page' 'prohibited-items' %}">prohibited items</a>.</li>
+  <li>Use honest photos and descriptions, including any faults.</li>
+  <li>Treat other users with respect. Harassment, threats and scams lead to removal.</li>
+  <li>For orders paid online, sellers must fulfil the order as described or cancel it so the buyer is refunded.</li>
+  <li>For deals arranged by chat, the buyer and seller agree payment and handover directly. GhanaMarket is not a party to those deals and does not hold the money.</li>
+  <li>We review listings and may remove content or suspend accounts that break these rules. You can <a href="{% url 'contact_support' %}?topic=appeal">appeal</a> any decision.</li>
+</ol>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "help/base.html" %}
+{% block help_content %}
+<p class="lead">Tell us what you need. We reply by email. You do not need to be signed in, so you can use this form to appeal an account suspension.</p>
+<form method="post" class="stack-form form-grid">
+  {% csrf_token %}
+  {% for field in form %}{% include "partials/field.html" %}{% endfor %}
+  <button class="button button-primary" type="submit">Send message</button>
+</form>
+<p class="muted spaced-top">Never include passwords, PINs or full card numbers in your message.</p>
+{% endblock %}

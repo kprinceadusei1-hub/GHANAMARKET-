@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}All categories | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container page-narrow-top">
+  <div class="page-heading"><div><h1>All categories</h1><p>Find what you need across every part of the marketplace.</p></div></div>
+  <div class="category-directory">
+    {% for category, count in category_tree %}
+      <section class="panel category-card">
+        <a class="category-card-head" href="{% url 'product_list' %}?category={{ category.slug|urlencode }}">
+          <span class="side-cat-icon cat-{{ category.slug }}">{% include "partials/icon.html" with name=category.icon_key %}</span>
+          <span><strong>{{ category.name }}</strong><small>{{ count }} ad{{ count|pluralize }}</small></span>
+        </a>
+        {% if category.children.all %}
+          <ul>
+            {% for sub in category.children.all %}<li><a href="{% url 'product_list' %}?category={{ category.slug|urlencode }}&amp;sub={{ sub.slug|urlencode }}">{{ sub.name }}</a></li>{% endfor %}
+          </ul>
+        {% endif %}
+      </section>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

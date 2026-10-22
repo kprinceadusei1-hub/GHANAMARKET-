@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Seller verification | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container container-narrow page-narrow-top">
+  <section class="auth-card">
+    <h1>Get verified</h1>
+    <p class="form-intro">Verified sellers show a badge on their listings and storefront. A GhanaMarket team member checks your Ghana Card or business registration before the badge appears. We never show your document or number to buyers.</p>
+
+    {% if user.is_verified_seller %}
+      <p class="notice"><strong>{% include "partials/icon.html" with name="shield" %} You are a verified seller</strong>Verified on {{ user.verified_at|date:"j F Y" }}.</p>
+    {% elif latest and latest.status == "pending" %}
+      <p class="notice notice-info"><strong>Under review</strong>Submitted {{ latest.created_at|date:"j F Y" }}. We will notify you when it has been checked.</p>
+    {% elif latest and latest.status == "rejected" %}
+      <p class="notice notice-danger"><strong>We could not verify your last submission</strong>{{ latest.reviewer_note|default:"Please check the details and upload a clear photo of the document." }}</p>
+    {% endif %}
+
+    {% if can_submit %}
+      <form method="post" enctype="multipart/form-data" class="stack-form">
+        {% csrf_token %}
+        {% if form.non_field_errors %}<div class="notice notice-danger">{{ form.non_field_errors }}</div>{% endif %}
+        {% for field in form %}{% include "partials/field.html" %}{% endfor %}
+        <button class="button button-primary button-block" type="submit">Submit for verification</button>
+      </form>
+      <p class="form-footnote">How we use this: staff compare the name and number with the document, then record approval. Documents are stored privately. See our <a href="{% url 'help_page' 'privacy' %}">privacy page</a>.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

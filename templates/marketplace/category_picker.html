@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Post a free ad | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container container-medium page-narrow-top">
+  <div class="page-heading"><div><h1>What are you selling?</h1><p>Choose a category so we can ask for the right details. It is free to post during launch.</p></div></div>
+  <div class="picker-list">
+    {% for category in category_tree %}
+      <details class="panel picker-item"{% if category.is_restricted %} data-restricted{% endif %}>
+        <summary>
+          <span class="side-cat-icon cat-{{ category.slug }}">{% include "partials/icon.html" with name=category.icon_key %}</span>
+          <span class="picker-label">{{ category.name }}{% if category.description %}<small>{{ category.description }}</small>{% endif %}</span>
+          {% include "partials/icon.html" with name="chevron-down" class="summary-chevron" %}
+        </summary>
+        {% if category.is_restricted and category.restriction_note %}<p class="notice notice-warn">{{ category.restriction_note }}</p>{% endif %}
+        <div class="picker-subs">
+          {% for sub in category.children.all %}<a class="chip chip-outline" href="?category={{ category.slug|urlencode }}&amp;sub={{ sub.slug|urlencode }}">{{ sub.name }}</a>{% endfor %}
+          <a class="chip" href="?category={{ category.slug|urlencode }}">{% if category.children.all %}Something else in {{ category.name }}{% else %}Continue with {{ category.name }}{% endif %}</a>
+        </div>
+      </details>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

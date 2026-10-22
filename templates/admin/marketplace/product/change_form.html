@@ -1,0 +1,38 @@
+{% extends "admin/change_form.html" %}
+{% load static %}
+{% block content %}
+  {% if original %}
+    <div class="marketplace-review-banner">
+      <div>
+        <strong>Review this listing before it goes live</strong>
+        <p>Check the seller, item description, condition, price, location, and every uploaded photo. Only approve listings you have reviewed.</p>
+      </div>
+      <a href="{% url 'admin:marketplace_product_changelist' %}?status__exact=pending">Back to review queue</a>
+    </div>
+  {% endif %}
+  {{ block.super }}
+{% endblock %}
+{% block submit_buttons_bottom %}
+  {{ block.super }}
+  {% if original and original.status == "pending" and not original.is_demo %}
+    <div class="marketplace-review-actions">
+      <p>Save your review note before requesting changes. Approving publishes this listing to buyers.</p>
+      <button type="submit" name="_request_changes" value="1" class="marketplace-request-changes">Return to seller with changes requested</button>
+      <button type="submit" name="_approve_listing" value="1" class="marketplace-approve-listing" onclick="return confirm('Publish this listing after your review?')">Approve and publish listing</button>
+    </div>
+  {% endif %}
+  {% if original and original.status == "published" and not original.is_demo %}
+    <div class="marketplace-review-actions marketplace-remove-actions">
+      <p>Remove this listing from public view if it is unsafe, misleading, or no longer appropriate.</p>
+      <button type="submit" name="_remove_listing" value="1" class="marketplace-remove-listing" onclick="return confirm('Remove this listing from public view?')">Remove from public marketplace</button>
+    </div>
+  {% endif %}
+  {% if original and original.status == "draft" and not original.is_demo %}
+    {% if original.moderation_note == "This listing was removed by an admin." or original.moderation_note == "This listing was removed after a user report." %}
+      <div class="marketplace-review-actions">
+        <p>This listing was removed by moderation. Inspect the latest details before restoring it.</p>
+        <button type="submit" name="_restore_listing" value="1" class="marketplace-approve-listing" onclick="return confirm('Restore this listing to public view?')">Restore listing</button>
+      </div>
+    {% endif %}
+  {% endif %}
+{% endblock %}

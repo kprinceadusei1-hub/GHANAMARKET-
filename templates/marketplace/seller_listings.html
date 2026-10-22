@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load market %}
+{% block title %}My shop | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container page-narrow-top seller-dashboard">
+  <div class="page-heading">
+    <div>
+      <h1>Welcome{% if user.first_name %}, {{ user.first_name }}{% endif %}</h1>
+      <p>Manage your ads, track approvals, and keep your shop up to date.</p>
+    </div>
+    <div class="page-heading-actions">
+      <a class="button button-quiet" href="{% url 'commerce:seller_orders' %}">{% include "partials/icon.html" with name="truck" %}Orders{% if orders_to_fulfil %} <span class="tag tag-buy">{{ orders_to_fulfil }} to fulfil</span>{% endif %}</a>
+      <a class="button button-quiet" href="{% url 'seller_storefront' user.pk %}">{% include "partials/icon.html" with name="store" %}View storefront</a>
+      <a class="button button-gold" href="{% url 'product_create' %}">{% include "partials/icon.html" with name="plus" %}Post an ad</a>
+    </div>
+  </div>
+
+  {% if user.seller_status == "pending" %}
+  <div class="status-banner">{% include "partials/icon.html" with name="clock" %}<span><strong>Your seller account is waiting for approval</strong><small>Our team reviews every new seller, usually within one working day. You will get a notification when you can start posting ads.</small></span></div>
+  {% elif user.seller_status == "rejected" %}
+  <div class="status-banner status-banner-danger">{% include "partials/icon.html" with name="alert" %}<span><strong>Your seller request was not approved</strong><small>{{ user.seller_review_note|default:"Please check your details." }}</small></span><a class="button button-primary" href="{% url 'become_seller' %}">Update and apply again</a></div>
+  {% endif %}
+  {% if user.can_sell and not user.is_verified_seller %}
+  <a class="panel verify-cta" href="{% url 'seller_verification' %}">{% include "partials/icon.html" with name="shield" %}<span><strong>Get the Verified seller badge</strong><small>Buyers trust verified sellers more. Submit your Ghana Card or business registration.</small></span>{% include "partials/icon.html" with name="chevron" %}</a>
+  {% endif %}
+  <div class="stat-grid" aria-label="Listing summary">
+    <a class="stat-card" href="{% url 'seller_listings' %}"><span>Total listings</span><strong>{{ counts.total }}</strong></a>
+    <a class="stat-card stat-live" href="?status=published"><span>Live in marketplace</span><strong>{{ counts.live }}</strong></a>
+    <a class="stat-card stat-pending" href="?status=pending"><span>Awaiting review</span><strong>{{ counts.pending }}</strong></a>
+    <a class="stat-card stat-action" href="?status=rejected"><span>Needs your attention</span><strong>{{ counts.needs_changes }}</strong></a>
+  </div>
+
+  <section class="panel">
+    <div class="section-heading">
+      <div><h2>Your listings</h2><p class="muted">Edits to live listings are reviewed again before they appear publicly.</p></div>
+      {% if counts.sold %}<span class="tag">{{ counts.sold }} sold</span>{% endif %}
+    </div>
+
+    <form class="dashboard-filters" method="get">
+      <label class="field"><span>Search your listings</span><input type="search" name="q" value="{{ query }}" placeholder="Search by item or location"></label>
+      <label class="field"><span>Listing status</span>
+        <select name="status"><option value="">All statuses</option>{% for value, label in status_options %}<option value="{{ value }}"{% if selected_status == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select>
+      </label>
+      <button type="submit" class="button button-primary">Filter</button>
+      {% if query or selected_status %}<a class="button button-quiet" href="{% url 'seller_listings' %}">Clear</a>{% endif %}
+    </form>
+
+    {% if products %}
+      <div class="dashboard-list">
+        {% for product in products %}
+          <article class="dashboard-item">
+            <a class="dashboard-thumb" href="{% url 'product_detail' product.pk %}" aria-label="View {{ product.title }}">
+              {% if product.image %}<img src="{{ product.image|thumbnail:160 }}" alt="" loading="lazy" decoding="async">{% else %}{% include "partials/icon.html" with name="camera" %}{% endif %}
+            </a>
+            <div class="dashboard-item-main">
+              <div class="dashboard-item-title">
+                <h3><a href="{% url 'product_detail' product.pk %}">{{ product.title }}</a></h3>
+                {% if product.status == "pending" %}<span class="status status-pending">Awaiting review</span>
+                {% elif product.status == "published" %}<span class="status status-live">Live</span>
+                {% elif product.status == "rejected" %}<span class="status status-rejected">Needs changes</span>
+                {% elif product.status == "sold" %}<span class="status">Sold</span>
+                {% else %}<span class="status">{{ product.get_status_display }}</span>{% endif %}
+              </div>
+              <p class="dashboard-item-meta"><strong>{{ product.price|cedis }}</strong>{% if product.price_negotiable %}<span>Negotiable</span>{% endif %}<span>{{ product.category_label }}</span><span>{{ product.city }}{% if product.region %}, {{ product.region }}{% endif %}</span><span>Updated {{ product.updated_at|ago }}</span></p>
+              {% if product.status == "rejected" and product.moderation_note %}<p class="notice notice-danger"><strong>Admin note:</strong> {{ product.moderation_note }}</p>
+              {% elif product.status == "pending" %}<p class="muted">This listing is private while it is reviewed.</p>{% endif %}
+            </div>
+            <div class="dashboard-actions">
+              <a class="button button-quiet" href="{% url 'product_update' product.pk %}">Edit listing</a>
+              {% if product.status == "published" or product.status == "pending" or product.status == "rejected" %}
+                <form method="post" action="{% url 'seller_listing_status' product.pk %}">{% csrf_token %}<input type="hidden" name="action" value="deactivate"><button type="submit" class="button button-text">Deactivate</button></form>
+              {% elif product.status == "draft" %}
+                <form method="post" action="{% url 'seller_listing_status' product.pk %}">{% csrf_token %}<input type="hidden" name="action" value="reactivate"><button type="submit" class="button button-text">Submit for review</button></form>
+              {% endif %}
+              <form method="post" action="{% url 'seller_listing_status' product.pk %}" data-confirm="Permanently delete “{{ product.title }}”? This cannot be undone.">{% csrf_token %}<input type="hidden" name="action" value="delete"><button type="submit" class="button button-text button-text-danger">Delete</button></form>
+            </div>
+          </article>
+        {% endfor %}
+      </div>
+    {% elif counts.total %}
+      <div class="empty-state"><h2>No matching listings</h2><p>Try another search or status filter.</p><a class="button button-quiet" href="{% url 'seller_listings' %}">Show all listings</a></div>
+    {% else %}
+      <div class="empty-state">
+        <span class="empty-state-icon">{% include "partials/icon.html" with name="plus" %}</span>
+        <h2>Your shop starts with your first ad</h2>
+        <p>Add a clear title, honest details, and photos showing every side of your item. Listing is free during launch.</p>
+        <a class="button button-gold" href="{% url 'product_create' %}">Post your first ad</a>
+      </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+{% block scripts %}<script>
+document.querySelectorAll("form[data-confirm]").forEach((form) => {
+  form.addEventListener("submit", (event) => {
+    if (!window.confirm(form.dataset.confirm)) event.preventDefault();
+  });
+});
+</script>{% endblock %}

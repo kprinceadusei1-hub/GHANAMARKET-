@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% load market %}
+{% block title %}Conversation | GhanaMarket{% endblock %}
+{% block body_class %}page-chat{% endblock %}
+{% block content %}
+<div class="container container-medium page-narrow-top">
+  <div class="panel chat-panel">
+    <header class="chat-header">
+      <a class="icon-button" href="{% url 'conversation_list' %}" aria-label="Back to messages">{% include "partials/icon.html" with name="back" %}</a>
+      <a class="chat-product" href="{% url 'product_detail' conversation.product.pk %}">
+        <span class="conversation-thumb">{% if conversation.product.image %}<img src="{{ conversation.product.image|thumbnail:160 }}" alt="">{% else %}{% include "partials/icon.html" with name="camera" %}{% endif %}</span>
+        <span><strong>{% if user == conversation.buyer %}{{ conversation.seller.get_full_name|default:conversation.seller.username }}{% else %}{{ conversation.buyer.get_full_name|default:conversation.buyer.username }}{% endif %}</strong><small>{{ conversation.product.title }} · {{ conversation.product.price|cedis }}</small></span>
+      </a>
+      <details class="chat-menu">
+        <summary class="icon-button" aria-label="More actions">⋮</summary>
+        <div class="account-menu-panel">
+          <form method="post" action="{% url 'toggle_block' other_user.pk %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button type="submit">{% include "partials/icon.html" with name="close" %}{% if i_blocked %}Unblock{% else %}Block{% endif %} {{ other_user.first_name|default:other_user.username }}</button></form>
+          <a href="#report-user">{% include "partials/icon.html" with name="flag" %}Report this person</a>
+        </div>
+      </details>
+    </header>
+    <div class="message-thread" aria-label="Conversation messages">
+      {% for message in thread_messages %}
+        {% ifchanged message.created_at.date %}<p class="chat-day">{{ message.created_at|date:"l, j F" }}</p>{% endifchanged %}
+        <article class="chat-message{% if message.sender_id == user.id %} own-message{% endif %}">
+          <p>{{ message.body|linebreaksbr }}</p>
+          <time datetime="{{ message.created_at|date:'c' }}">{{ message.created_at|date:"g:i a" }}</time>
+        </article>
+      {% empty %}
+        <p class="chat-day">Start the conversation by sending a message.</p>
+      {% endfor %}
+    </div>
+    {% if is_blocked %}
+    <p class="chat-blocked">{% if i_blocked %}You blocked this person. Unblock them from the ⋮ menu to message again.{% else %}You can no longer message this person.{% endif %}</p>
+    {% else %}
+    <form class="reply-form" method="post">
+      {% csrf_token %}
+      {% for field in form %}
+        <label class="visually-hidden" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+      {% endfor %}
+      <button class="button button-primary" type="submit" aria-label="Send message">{% include "partials/icon.html" with name="send" %}<span>Send</span></button>
+    </form>
+    {% endif %}
+  </div>
+  <details class="panel report-panel spaced-top" id="report-user">
+    <summary>{% include "partials/icon.html" with name="flag" %}Report {{ other_user.first_name|default:other_user.username }}</summary>
+    <form method="post" action="{% url 'report_user' other_user.pk %}" class="stack-form">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.path }}">
+      {% for field in report_user_form %}{% include "partials/field.html" %}{% endfor %}
+      <button class="button button-danger" type="submit">Send report</button>
+    </form>
+  </details>
+  <p class="chat-safety">{% include "partials/icon.html" with name="shield" %}Keep chats on GhanaMarket. Never send Mobile Money before you see the item.</p>
+</div>
+{% endblock %}
+{% block scripts %}<script>
+const thread = document.querySelector(".message-thread");
+if (thread) thread.scrollTop = thread.scrollHeight;
+</script>{% endblock %}

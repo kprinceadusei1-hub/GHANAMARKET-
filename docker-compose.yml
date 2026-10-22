@@ -1,0 +1,15 @@
+# Optional local PostgreSQL service for later setup.
+# Before using, set a strong local password and move credentials to an ignored .env file.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: marketplace
+      POSTGRES_USER: marketplace
+      POSTGRES_PASSWORD: change-this-local-password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+volumes:
+  postgres_data:

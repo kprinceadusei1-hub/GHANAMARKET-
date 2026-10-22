@@ -1,0 +1,18 @@
+{% extends "help/base.html" %}
+{% block help_content %}
+<p class="lead">Answers to common questions about buying and selling on GhanaMarket.</p>
+<div class="help-cards">
+  <a class="help-card" href="{% url 'help_page' 'buying' %}">{% include "partials/icon.html" with name="cart" %}<strong>Buying</strong><span>Chatting with sellers, online checkout, delivery and collection.</span></a>
+  <a class="help-card" href="{% url 'help_page' 'selling' %}">{% include "partials/icon.html" with name="store" %}<strong>Selling</strong><span>Posting ads, review times, orders and verification.</span></a>
+  <a class="help-card" href="{% url 'help_page' 'safety' %}">{% include "partials/icon.html" with name="shield" %}<strong>Staying safe</strong><span>How to avoid scams and what to do if something goes wrong.</span></a>
+  <a class="help-card" href="{% url 'help_page' 'refunds' %}">{% include "partials/icon.html" with name="wallet" %}<strong>Refunds</strong><span>Cancellations, returns and how refunds are paid.</span></a>
+  <a class="help-card" href="{% url 'help_page' 'prohibited-items' %}">{% include "partials/icon.html" with name="flag" %}<strong>Prohibited items</strong><span>What cannot be sold, and what needs extra checks.</span></a>
+  <a class="help-card" href="{% url 'contact_support' %}">{% include "partials/icon.html" with name="chat" %}<strong>Contact support</strong><span>Account problems, appeals, order issues and privacy requests.</span></a>
+</div>
+<h2>Quick answers</h2>
+<details class="faq"><summary>Is it free to post an ad?</summary><p>Yes. Posting listings is free during the launch period. See <a href="{% url 'help_page' 'fees' %}">fees</a>.</p></details>
+<details class="faq"><summary>Why is my ad not visible yet?</summary><p>Every new listing, and every edit, is reviewed by our team before buyers can see it. You can follow the status in <a href="{% url 'seller_listings' %}">My shop</a>.</p></details>
+<details class="faq"><summary>What does “Buy online” mean?</summary><p>The seller accepts payment through GhanaMarket with Mobile Money or card. Your order is only marked as paid after the payment provider confirms the payment to our server.</p></details>
+<details class="faq"><summary>What does “Verified seller” mean?</summary><p>A GhanaMarket team member has checked the seller's Ghana Card or business registration. It confirms identity, not the quality of every item, so still inspect what you buy.</p></details>
+<details class="faq"><summary>My account was suspended. What can I do?</summary><p>Use the <a href="{% url 'contact_support' %}?topic=appeal">appeal form</a>. You do not need to be signed in.</p></details>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "admin/base_site.html" %}
+{% block nav-breadcrumbs %}{% endblock %}
+{% block content_title %}{% endblock %}
+{% block content %}
+<div class="cc-page">
+  <header class="cc-welcome">
+    <div>
+      <h1>{% if query %}Results for “{{ query }}”{% else %}Search{% endif %}</h1>
+      <p>{% if query|length < 2 %}Type at least two characters: a name, username, listing title, ad ID such as #14, or order number.{% else %}{{ result_total }} result{{ result_total|pluralize }}. Showing up to 8 per group; open a list for full search, filters and sorting.{% endif %}</p>
+    </div>
+  </header>
+  {% if query|length >= 2 %}
+    <div class="cc-grid cc-grid-search">
+      {% for label, items in groups %}
+        <section class="cc-card cc-panel">
+          <div class="cc-panel-head"><h2>{{ label }}</h2><span class="cc-pill">{{ items|length }}</span></div>
+          {% if items %}
+            <ul class="cc-results">{% for item in items %}<li><a href="{{ item.url }}"><strong>{{ item.title }}</strong><span>{{ item.meta }}</span></a></li>{% endfor %}</ul>
+          {% else %}
+            <div class="cc-empty"><strong>No matches</strong></div>
+          {% endif %}
+        </section>
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends "help/base.html" %}
+{% block help_content %}
+<p class="lead">Post free ads, chat with buyers, and optionally accept online payment.</p>
+<h2>Posting an ad</h2>
+<ul class="plain-list">
+  <li>Choose the most specific category. It unlocks the right details, such as mileage for cars or bedrooms for property.</li>
+  <li>Upload up to 8 of your own clear photos, each up to 5 MB.</li>
+  <li>Every new ad and every edit is reviewed before buyers can see it. If changes are needed, you will see a note in <a href="{% url 'seller_listings' %}">My shop</a>.</li>
+</ul>
+<h2>Selling online</h2>
+<p>Turn on “Sell online with checkout” and set the units available. Buyers pay through GhanaMarket and you are notified only after payment is confirmed. Update each order as you prepare, ship or hand it over. Online checkout is not available in every category, for example property, jobs and services.</p>
+<p>If you cancel a paid order, the buyer is refunded in full through the payment provider and the units return to your listing.</p>
+<h2>Getting verified</h2>
+<p>Submit your Ghana Card or business registration on the <a href="{% url 'seller_verification' %}">verification page</a>. A team member checks it before the “Verified seller” badge appears.</p>
+<h2>Ratings</h2>
+<p>Buyers can rate you once for each completed online order. Ratings appear on your storefront once you have at least one.</p>
+{% endblock %}

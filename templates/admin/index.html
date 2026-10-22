@@ -1,0 +1,195 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static market %}
+{% block bodyclass %}{{ block.super }} dashboard cc-dashboard{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+{% block content_title %}{% endblock %}
+{% block coltype %}colM{% endblock %}
+{% block content %}
+<div class="cc-page">
+  <header class="cc-welcome">
+    <div>
+      <h1>Welcome back, {{ user.first_name|default:user.username }}</h1>
+      <p>Here's what is happening on GhanaMarket. All figures are live from the database; preview listings are excluded. <span class="cc-live" data-pulse-status aria-live="polite">Live counts update every minute.</span></p>
+    </div>
+    <div class="cc-welcome-tools">
+      <span class="cc-date">{% include "partials/icon.html" with name="calendar" %}<span>{% now "D, j M Y" %}<small>{% now "g:i A" %}</small></span></span>
+      <form method="get" class="cc-period">
+        <label class="visually-hidden" for="cc-period">Reporting period</label>
+        <select id="cc-period" name="period" data-autosubmit>
+          {% for value, label in cc_periods %}<option value="{{ value }}"{% if value == cc_period %} selected{% endif %}>{{ label }}</option>{% endfor %}
+        </select>
+        <noscript><button type="submit">Apply</button></noscript>
+      </form>
+      {% if cc_quick_actions %}
+      <details class="cc-menu">
+        <summary class="cc-button">{% include "partials/icon.html" with name="filter" %}Quick actions{% include "partials/icon.html" with name="chevron-down" %}</summary>
+        <div class="cc-menu-panel">
+          {% for action in cc_quick_actions %}<a href="{{ action.url }}">{% include "partials/icon.html" with name=action.icon %}{{ action.label }}</a>{% endfor %}
+          {% if perms.marketplace.add_category %}<a href="{% url 'admin:marketplace_category_add' %}">{% include "partials/icon.html" with name="plus" %}Add a category</a>{% endif %}
+          {% if perms.commerce.add_deliveryoption %}<a href="{% url 'admin:commerce_deliveryoption_add' %}">{% include "partials/icon.html" with name="truck" %}Add a delivery option</a>{% endif %}
+        </div>
+      </details>
+      {% endif %}
+    </div>
+  </header>
+
+  {% if cc_demo_count %}
+    <div class="cc-notice cc-preview-notice">
+      {% include "partials/icon.html" with name="alert" %}
+      <span><strong>{{ cc_demo_count }} preview listing{{ cc_demo_count|pluralize }} {{ cc_demo_count|pluralize:"is,are" }} showing on the public site</strong> next to real ads. Buyers see them labelled “Preview example” and cannot buy or message them. They are not counted in the figures below.</span>
+      {% if user.is_superuser %}
+        <form method="post" action="{% url 'marketplace_delete_previews' %}" data-confirm="Permanently remove all {{ cc_demo_count }} preview listings and their photos? Real ads are not affected. This cannot be undone.">
+          {% csrf_token %}<button type="submit" class="cc-btn cc-btn-danger">Remove all previews</button>
+        </form>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if cc_kpis %}
+  <section class="cc-kpis" aria-label="Key figures">
+    {% for kpi in cc_kpis %}
+      <a class="cc-card cc-kpi" href="{{ kpi.url }}">
+        <span class="cc-kpi-icon">{% include "partials/icon.html" with name=kpi.icon %}</span>
+        <span class="cc-kpi-body">
+          <span class="cc-kpi-label">{{ kpi.label }}</span>
+          <strong class="cc-kpi-value">{% if kpi.is_money %}GH₵ {{ kpi.value|floatformat:"0g" }}{% else %}{{ kpi.value }}{% endif %}</strong>
+          <span class="cc-kpi-foot">
+            {% if kpi.change is not None %}<span class="cc-change {% if kpi.change >= 0 %}is-up{% else %}is-down{% endif %}">{% if kpi.change >= 0 %}▲{% else %}▼{% endif %} {{ kpi.change|stringformat:"d"|cut:"-" }}%</span>{% endif %}
+            <span>{{ kpi.detail }}{% if kpi.change is not None %} · vs previous {{ cc_period }} days{% elif not kpi.is_money %} · last {{ cc_period }} days{% endif %}</span>
+          </span>
+        </span>
+      </a>
+    {% endfor %}
+  </section>
+  {% endif %}
+
+  <div class="cc-grid cc-grid-charts">
+    {% if cc_can_sales %}
+    <section class="cc-card cc-panel" aria-labelledby="cc-sales-title">
+      <div class="cc-panel-head">
+        <h2 id="cc-sales-title">Sales &amp; orders overview</h2>
+        {% if cc_sales %}<span class="cc-legend"><i class="dot-dark"></i>Paid orders <i class="dot-light"></i>Paid value (GH₵)</span>{% endif %}
+      </div>
+      {% if cc_sales %}
+        <svg class="cc-chart" viewBox="0 0 {{ cc_sales.width }} {{ cc_sales.height }}" role="img" aria-label="{{ cc_sales.total_orders }} paid orders worth GH₵ {{ cc_sales.total_value|floatformat:'2g' }} in the last {{ cc_period }} days">
+          <defs><linearGradient id="cc-area" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#13804a" stop-opacity=".22"/><stop offset="1" stop-color="#13804a" stop-opacity="0"/></linearGradient></defs>
+          {% for line in cc_sales.grid %}
+            <line x1="{{ cc_sales.plot_left }}" x2="{{ cc_sales.plot_right }}" y1="{{ line.y }}" y2="{{ line.y }}" class="cc-gridline"/>
+            <text x="{{ cc_sales.plot_left|add:'-8' }}" y="{{ line.y }}" class="cc-axis" text-anchor="end" dominant-baseline="middle">{{ line.orders }}</text>
+            <text x="{{ cc_sales.plot_right|add:'8' }}" y="{{ line.y }}" class="cc-axis" dominant-baseline="middle">{{ line.value|floatformat:"0g" }}</text>
+          {% endfor %}
+          <polygon points="{{ cc_sales.orders_area }}" fill="url(#cc-area)"/>
+          <polyline points="{{ cc_sales.value_line }}" class="cc-line-light"/>
+          <polyline points="{{ cc_sales.orders_line }}" class="cc-line-dark"/>
+          {% for point in cc_sales.points %}<circle cx="{{ point.x }}" cy="{{ point.y }}" r="3.5" class="cc-point"><title>{{ point.title }}</title></circle>{% endfor %}
+          {% for label in cc_sales.x_labels %}<text x="{{ label.x }}" y="{{ cc_sales.label_y }}" class="cc-axis" text-anchor="middle">{{ label.label }}</text>{% endfor %}
+        </svg>
+        <p class="cc-chart-total">{{ cc_sales.total_orders }} paid order{{ cc_sales.total_orders|pluralize }} · GH₵ {{ cc_sales.total_value|floatformat:"2g" }} in the last {{ cc_period }} days</p>
+      {% else %}
+        <div class="cc-empty">{% include "partials/icon.html" with name="chart" %}<strong>No paid orders in the last {{ cc_period }} days</strong><span>Only payments verified with the payment provider are counted. The trend appears here once buyers check out.</span></div>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    {% if cc_can_categories %}
+    <section class="cc-card cc-panel" aria-labelledby="cc-cat-title">
+      <div class="cc-panel-head"><h2 id="cc-cat-title">Live listings by category</h2></div>
+      {% if cc_categories %}
+        <div class="cc-donut-wrap">
+          <svg class="cc-donut" viewBox="0 0 42 42" role="img" aria-label="{{ cc_categories.total }} live listings by category">
+            <circle cx="21" cy="21" r="15.915" fill="none" stroke="#eef1f4" stroke-width="6"/>
+            {% for seg in cc_categories.segments %}<circle cx="21" cy="21" r="15.915" fill="none" stroke="{{ seg.color }}" stroke-width="6" stroke-dasharray="{{ seg.dash }}" stroke-dashoffset="{{ seg.offset }}"><title>{{ seg.label }}: {{ seg.count }}</title></circle>{% endfor %}
+            <text x="21" y="20.5" text-anchor="middle" class="cc-donut-total">{{ cc_categories.total }}</text>
+            <text x="21" y="25.5" text-anchor="middle" class="cc-donut-label">live listings</text>
+          </svg>
+          <ul class="cc-donut-legend">{% for seg in cc_categories.segments %}<li><i style="background:{{ seg.color }}"></i><span>{{ seg.label }}</span><strong>{{ seg.count }}</strong></li>{% endfor %}</ul>
+        </div>
+      {% else %}
+        <div class="cc-empty">{% include "partials/icon.html" with name="grid" %}<strong>No live listings yet</strong><span>{{ cc_category_count }} categories are ready. Approve listings in the review queue to see the mix here.</span></div>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    {% if cc_quick_stats %}
+    <section class="cc-card cc-panel" aria-labelledby="cc-stats-title">
+      <div class="cc-panel-head"><h2 id="cc-stats-title">Quick stats</h2></div>
+      <ul class="cc-stats">
+        {% for stat in cc_quick_stats %}<li><a href="{{ stat.url }}"><span class="cc-stat-icon cc-stat-{{ stat.key }}">{% include "partials/icon.html" with name=stat.icon %}</span><span>{{ stat.label }}</span><strong data-pulse-queue="{{ stat.key }}">{{ stat.count }}</strong></a></li>{% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  </div>
+
+  <div class="cc-grid cc-grid-lists">
+    {% if cc_recent_orders is not None %}
+    <section class="cc-card cc-panel" aria-labelledby="cc-orders-title">
+      <div class="cc-panel-head"><h2 id="cc-orders-title">Recent orders</h2><a href="{% url 'admin:commerce_order_changelist' %}">View all →</a></div>
+      {% if cc_recent_orders %}
+        <div class="cc-table-wrap">
+          <table class="cc-table">
+            <thead><tr><th scope="col">Order</th><th scope="col">Customer</th><th scope="col">Amount</th><th scope="col">Status</th><th scope="col">Date</th></tr></thead>
+            <tbody>{% for order in cc_recent_orders %}<tr><td><a href="{{ order.url }}">{{ order.number }}</a></td><td>{{ order.customer }}</td><td>{{ order.total|cedis }}</td><td><span class="cc-status cc-status-{{ order.status }}">{{ order.status_label }}</span></td><td>{{ order.created_at|date:"j M, H:i" }}</td></tr>{% endfor %}</tbody>
+          </table>
+        </div>
+      {% else %}
+        <div class="cc-empty">{% include "partials/icon.html" with name="cart" %}<strong>No orders yet</strong><span>Orders appear here when buyers check out listings marked “Buy online”.</span></div>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    {% if cc_can_approve %}
+    <section class="cc-card cc-panel" aria-labelledby="cc-approvals-title">
+      <div class="cc-panel-head"><h2 id="cc-approvals-title">Pending approvals</h2><a href="{% url 'marketplace_review_centre' %}">Open Review Centre →</a></div>
+      {% if cc_approvals %}
+        <ul class="cc-approvals">
+          {% for item in cc_approvals %}
+            <li>
+              <span class="cc-approval-thumb">{% if item.image %}<img src="{{ item.image|thumbnail:160 }}" alt="" loading="lazy">{% elif item.kind == "verification" %}{% include "partials/icon.html" with name="user-check" %}{% elif item.kind == "seller" %}{% include "partials/icon.html" with name="user-plus" %}{% else %}{% include "partials/icon.html" with name="listings" %}{% endif %}</span>
+              <span class="cc-approval-text"><strong>{{ item.title }}</strong><span>{{ item.subtitle }}</span><small>{{ item.meta }} · {{ item.created_at|date:"j M H:i" }}</small></span>
+              <a class="cc-btn {% if item.action == 'Verify' %}cc-btn-solid{% else %}cc-btn-outline{% endif %}" href="{{ item.url }}">{{ item.action }}</a>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <div class="cc-empty">{% include "partials/icon.html" with name="check" %}<strong>All caught up</strong><span>No listings or seller verifications are waiting for a decision.</span></div>
+      {% endif %}
+    </section>
+    {% endif %}
+
+    <section class="cc-card cc-panel" aria-labelledby="cc-activity-title">
+      <div class="cc-panel-head"><h2 id="cc-activity-title">Recent activity</h2>{% if perms.admin.view_logentry %}<a href="{% url 'admin:admin_logentry_changelist' %}">Audit log →</a>{% endif %}</div>
+      {% if cc_activity %}
+        <ul class="cc-activity">
+          {% for event in cc_activity %}<li><span class="cc-activity-icon cc-act-{{ event.icon }}">{% include "partials/icon.html" with name=event.icon %}</span><a href="{{ event.url }}"><strong>{{ event.title }}</strong><span>{{ event.detail }}</span></a><time datetime="{{ event.when|date:'c' }}">{{ event.when|ago }}</time></li>{% endfor %}
+        </ul>
+      {% else %}
+        <div class="cc-empty">{% include "partials/icon.html" with name="clock" %}<strong>No activity yet</strong><span>New users, listings, payments and staff actions will appear here.</span></div>
+      {% endif %}
+    </section>
+  </div>
+
+  <div class="cc-grid cc-grid-footer">
+    <section class="cc-card cc-grow">
+      <span class="cc-grow-icon">{% include "partials/icon.html" with name="chart" %}</span>
+      <div><h2>Grow your marketplace</h2><p>See 7, 30 and 90-day trends for listings, sign-ups, reports and verified sales.</p>
+      <a class="cc-btn cc-btn-solid" href="{% url 'marketplace_admin_analytics' %}">Go to analytics</a></div>
+    </section>
+    <nav class="cc-actions" aria-label="Quick actions">
+      {% for action in cc_quick_actions %}<a class="cc-card" href="{{ action.url }}">{% include "partials/icon.html" with name=action.icon %}<span>{{ action.label }}</span></a>{% endfor %}
+    </nav>
+  </div>
+
+  <details class="cc-card cc-all-tools">
+    <summary>All admin tools (Marketplace workspace)</summary>
+    {% include "admin/app_list.html" with app_list=app_list show_changelinks=True %}
+  </details>
+</div>
+{% endblock %}
+{% block sidebar %}{% endblock %}
+{% block footer %}{{ block.super }}
+<script>
+document.querySelectorAll("form[data-confirm]").forEach((form) => {
+  form.addEventListener("submit", (event) => { if (!window.confirm(form.dataset.confirm)) event.preventDefault(); });
+});
+</script>
+{% endblock %}

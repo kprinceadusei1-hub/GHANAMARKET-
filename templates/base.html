@@ -1,0 +1,164 @@
+{% load static %}<!doctype html>
+<html lang="en-GH">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}GhanaMarket{% endblock %}</title>
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="{% block meta_description %}Buy and sell phones, cars, property, fashion and more across all 16 regions of Ghana. Free listings, private chat with sellers.{% endblock %}">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'css/site.css' %}">
+  <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+  <script>document.documentElement.classList.add("js")</script>
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
+  <header class="site-header">
+    <div class="header-main">
+      <div class="container header-row">
+        <a class="brand" href="{% url 'home' %}" aria-label="GhanaMarket home">
+          <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 42" fill="none"><path d="M8 12h24l2.4 25.5a2 2 0 0 1-2 2.2H7.6a2 2 0 0 1-2-2.2L8 12Z" fill="currentColor"/><path d="M14 15V9.5a6 6 0 0 1 12 0V15" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="m20 19.5 1.9 4.6h4.9l-4 3 1.5 4.7-4.3-2.9-4.3 2.9 1.5-4.7-4-3h4.9z" fill="#fff"/></svg></span>
+          <span class="brand-text"><span class="brand-name">GhanaMarket</span><small>Buy · Sell · Connect</small></span>
+        </a>
+
+        <form class="header-search" action="{% url 'product_list' %}" method="get" role="search" data-search-suggest="{% url 'search_suggestions' %}">
+          <span class="header-search-icon">{% include "partials/icon.html" with name="search" %}</span>
+          <label class="visually-hidden" for="header-search-input">Search listings</label>
+          <input id="header-search-input" type="search" name="q" value="{{ query|default:header_query|default:'' }}" placeholder="Search for products, brands, categories…" autocomplete="off" enterkeyhint="search">
+          <label class="header-location">
+            {% include "partials/icon.html" with name="pin" %}
+            <span class="visually-hidden">Choose your region</span>
+            <select name="region" aria-label="Choose a Ghana region">
+              <option value="">All Ghana</option>
+              {% for value, label in ghana_regions %}<option value="{{ value }}"{% if selected_region == value or header_region == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
+            </select>
+          </label>
+          <button type="submit" aria-label="Search">{% include "partials/icon.html" with name="search" %}</button>
+        </form>
+
+        <nav class="header-actions" aria-label="Account and shopping">
+          {% if user.is_authenticated %}
+            <a class="header-action hide-sm" href="{% url 'conversation_list' %}" aria-label="Messages{% if unread_messages %}, {{ unread_messages }} unread{% endif %}">{% include "partials/icon.html" with name="chat" %}{% if unread_messages %}<b class="badge">{{ unread_messages }}</b>{% endif %}<span>Messages</span></a>
+            <a class="header-action hide-sm" href="{% url 'saved_listings' %}">{% include "partials/icon.html" with name="heart" %}<span>Saved</span></a>
+          {% else %}
+            <a class="header-action hide-sm" href="{% url 'login' %}?next={% url 'saved_listings' %}" aria-label="Log in to view favourites">{% include "partials/icon.html" with name="heart" %}<span>Saved</span></a>
+          {% endif %}
+          <a class="header-action" href="{% url 'commerce:cart' %}" aria-label="Cart{% if cart_count %}, {{ cart_count }} item{{ cart_count|pluralize }}{% endif %}">{% include "partials/icon.html" with name="cart" %}{% if cart_count %}<b class="badge">{{ cart_count }}</b>{% endif %}<span>Cart</span></a>
+          {% if user.is_authenticated %}
+            <details class="account-menu">
+              <summary class="account-trigger">{% include "partials/icon.html" with name="user" %}{% if unread_notifications %}<b class="badge" aria-label="{{ unread_notifications }} unread notifications">{{ unread_notifications }}</b>{% endif %}<span class="account-label">My Account</span>{% include "partials/icon.html" with name="chevron-down" class="account-caret" %}</summary>
+              <div class="account-menu-panel">
+                <p class="account-menu-name">{{ user.get_full_name|default:user.username }}<small>{{ user.email }}</small></p>
+                <a href="{% url 'notification_list' %}">{% include "partials/icon.html" with name="bell" %}Notifications{% if unread_notifications %}<b class="menu-count">{{ unread_notifications }}</b>{% endif %}</a>
+                <a href="{% url 'conversation_list' %}">{% include "partials/icon.html" with name="chat" %}Messages{% if unread_messages %}<b class="menu-count">{{ unread_messages }}</b>{% endif %}</a>
+                <a href="{% url 'commerce:order_list' %}">{% include "partials/icon.html" with name="package" %}My orders</a>
+                <a href="{% url 'saved_listings' %}">{% include "partials/icon.html" with name="heart" %}Saved listings</a>
+                {% if user.role == "seller" %}
+                  <a href="{% url 'seller_listings' %}">{% include "partials/icon.html" with name="list" %}My shop</a>
+                  <a href="{% url 'commerce:seller_orders' %}">{% include "partials/icon.html" with name="truck" %}Orders to fulfil</a>
+                  <a href="{% url 'seller_storefront' user.pk %}">{% include "partials/icon.html" with name="store" %}Public storefront</a>
+                {% endif %}
+                <a href="{% url 'commerce:addresses' %}">{% include "partials/icon.html" with name="pin" %}Delivery addresses</a>
+                <a href="{% url 'account_settings' %}">{% include "partials/icon.html" with name="settings" %}Account settings</a>
+                <form action="{% url 'logout' %}" method="post">{% csrf_token %}<button type="submit">{% include "partials/icon.html" with name="logout" %}Log out</button></form>
+              </div>
+            </details>
+          {% else %}
+            <a class="account-trigger" href="{% url 'login' %}">{% include "partials/icon.html" with name="user" %}<span class="account-label">Sign in</span></a>
+          {% endif %}
+          <a class="sell-button" href="{{ sell_url }}">{% include "partials/icon.html" with name="plus" %}<span>Sell</span></a>
+        </nav>
+      </div>
+    </div>
+
+    <div class="header-sub">
+      <div class="container header-sub-row">
+        <details class="category-menu">
+          <summary>{% include "partials/icon.html" with name="list" %}<span>All Categories</span>{% include "partials/icon.html" with name="chevron-down" class="account-caret" %}</summary>
+          <div class="category-menu-panel">
+            {% for value, label in nav_categories %}<a href="{% url 'product_list' %}?category={{ value|urlencode }}"><span class="cat-badge cat-{{ value }}">{% include "partials/icon.html" with name=value %}</span>{{ label }}</a>{% endfor %}
+            <a class="category-menu-all" href="{% url 'category_index' %}">View all categories {% include "partials/icon.html" with name="chevron" %}</a>
+          </div>
+        </details>
+        {% with url_name=request.resolver_match.url_name %}
+        <nav class="primary-links" aria-label="Main navigation">
+          <a href="{% url 'home' %}"{% if url_name == 'home' %} aria-current="page"{% endif %}>Home</a>
+          <a href="{% url 'product_list' %}?sort=newest"{% if url_name == 'product_list' and request.GET.sort == 'newest' and not request.GET.checkout and not request.GET.verified %} aria-current="page"{% endif %}>New Arrivals</a>
+          <a href="{% url 'product_list' %}?checkout=1"{% if request.GET.checkout %} aria-current="page"{% endif %}>Buy Online</a>
+          <a href="{% url 'product_list' %}?verified=1"{% if request.GET.verified %} aria-current="page"{% endif %}>Verified Sellers</a>
+          <a href="{% url 'help' %}"{% if url_name == 'help' or url_name == 'help_page' or url_name == 'contact_support' %} aria-current="page"{% endif %}>Help &amp; Support</a>
+        </nav>
+        {% endwith %}
+        <p class="header-note">{% include "partials/icon.html" with name="shield" %}Free to post · Every ad reviewed<span class="gh-flag" aria-label="Ghana"><i></i><i></i><i></i></span></p>
+      </div>
+    </div>
+  </header>
+
+  {% if messages %}
+    <div class="toasts" aria-live="polite">
+      {% for message in messages %}<p class="toast {{ message.tags }}" role="status">{{ message }}<button type="button" class="toast-close" aria-label="Dismiss">×</button></p>{% endfor %}
+    </div>
+  {% endif %}
+
+  <main id="main-content" tabindex="-1">{% block content %}{% endblock %}</main>
+
+  <nav class="mobile-dock" aria-label="Quick navigation">
+    {% with url_name=request.resolver_match.url_name %}
+    <a href="{% url 'home' %}"{% if url_name == 'home' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="home" %}<span>Home</span></a>
+    <a href="{% url 'product_list' %}"{% if url_name == 'product_list' or url_name == 'product_detail' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="search" %}<span>Browse</span></a>
+    <a class="mobile-dock-sell" href="{{ sell_url }}"><span class="mobile-dock-plus">{% include "partials/icon.html" with name="plus" %}</span><span>Sell</span></a>
+    {% if user.is_authenticated %}
+      <a href="{% url 'conversation_list' %}"{% if url_name == 'conversation_list' or url_name == 'conversation_detail' %} aria-current="page"{% endif %}><span class="dock-icon">{% include "partials/icon.html" with name="chat" %}{% if unread_messages %}<b class="badge">{{ unread_messages }}</b>{% endif %}</span><span>Messages</span></a>
+      <a href="{% if user.role == 'seller' %}{% url 'seller_listings' %}{% else %}{% url 'account_settings' %}{% endif %}"{% if url_name == 'seller_listings' or url_name == 'account_settings' or url_name == 'saved_listings' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="user" %}<span>Account</span></a>
+    {% else %}
+      <a href="{% url 'login' %}">{% include "partials/icon.html" with name="heart" %}<span>Saved</span></a>
+      <a href="{% url 'login' %}"{% if url_name == 'login' or url_name == 'register' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="user" %}<span>Sign in</span></a>
+    {% endif %}
+    {% endwith %}
+  </nav>
+
+  <footer class="site-footer">
+    <div class="footer-flag" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="footer-inner">
+      <div class="footer-brand">
+        <a class="brand" href="{% url 'home' %}"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 42" fill="none"><path d="M8 12h24l2.4 25.5a2 2 0 0 1-2 2.2H7.6a2 2 0 0 1-2-2.2L8 12Z" fill="currentColor"/><path d="M14 15V9.5a6 6 0 0 1 12 0V15" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="m20 19.5 1.9 4.6h4.9l-4 3 1.5 4.7-4.3-2.9-4.3 2.9 1.5-4.7-4-3h4.9z" fill="#fff"/></svg></span><span class="brand-text"><span class="brand-name">GhanaMarket</span><small>Buy · Sell · Connect</small></span></a>
+        <p>Buy and sell locally across all 16 regions of Ghana. Free listings during launch, prices in Ghana cedis.</p>
+      </div>
+      <div>
+        <h2>Buy</h2>
+        <a href="{% url 'product_list' %}">All listings</a>
+        <a href="{% url 'product_list' %}?category=phones-tech">Phones &amp; Tech</a>
+        <a href="{% url 'product_list' %}?category=vehicles">Cars &amp; Vehicles</a>
+        <a href="{% url 'product_list' %}?category=property">Property</a>
+      </div>
+      <div>
+        <h2>Sell</h2>
+        <a href="{{ sell_url }}">Post a free ad</a>
+        {% if user.is_authenticated and user.role == "seller" %}<a href="{% url 'seller_listings' %}">My shop</a>{% endif %}
+        <a href="{% url 'register' %}">Create an account</a>
+      </div>
+      <div>
+        <h2>Help</h2>
+        <a href="{% url 'help' %}">Help centre</a>
+        <a href="{% url 'help_page' 'safety' %}">Staying safe</a>
+        <a href="{% url 'help_page' 'refunds' %}">Refunds</a>
+        <a href="{% url 'contact_support' %}">Contact support</a>
+      </div>
+      <div>
+        <h2>Policies</h2>
+        <a href="{% url 'help_page' 'terms' %}">Terms of use</a>
+        <a href="{% url 'help_page' 'privacy' %}">Privacy</a>
+        <a href="{% url 'help_page' 'prohibited-items' %}">Prohibited items</a>
+        <a href="{% url 'help_page' 'fees' %}">Fees</a>
+      </div>
+    </div>
+    <p class="footer-legal">© GhanaMarket · Made in Ghana · <a href="/static/marketplace/demo/photo-credits.html">Photo credits</a></p>
+  </footer>
+  <script src="{% static 'js/search-suggest.js' %}" defer></script>
+  <script src="{% static 'js/site.js' %}" defer></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}Saved listings | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container page-narrow-top">
+  <div class="page-heading"><div><h1>Saved listings</h1><p>Items you want to come back to, all in one place.</p></div></div>
+  {% if products %}<div class="product-grid">{% for product in products %}{% include "marketplace/_product_card.html" %}{% endfor %}</div>
+  {% else %}<div class="empty-state"><span class="empty-state-icon">{% include "partials/icon.html" with name="heart" %}</span><h2>No saved listings yet</h2><p>Tap the heart on any ad and it will be waiting here.</p><a class="button button-primary" href="{% url 'product_list' %}">Explore listings</a></div>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% load static %}
+{% load market %}
+{% block title %}{{ product.title }} – {{ product.price|cedis }} | GhanaMarket{% endblock %}
+{% block meta_description %}{{ product.title }} for {{ product.price|cedis }} in {{ product.city }}{% if product.region %}, {{ product.region }}{% endif %}. {{ product.description|truncatechars:120 }}{% endblock %}
+{% block body_class %}page-detail{% endblock %}
+{% block content %}
+<div class="container detail-page">
+  <nav class="breadcrumbs" aria-label="Breadcrumb">
+    <a href="{% url 'home' %}">Home</a>{% include "partials/icon.html" with name="chevron" %}
+    <a href="{% url 'product_list' %}?category={{ product.category_id|urlencode }}">{{ product.category.name }}</a>{% include "partials/icon.html" with name="chevron" %}
+    {% if product.subcategory %}<a href="{% url 'product_list' %}?category={{ product.category_id|urlencode }}&amp;sub={{ product.subcategory.slug|urlencode }}">{{ product.subcategory.name }}</a>{% include "partials/icon.html" with name="chevron" %}{% endif %}
+    <span aria-current="page">{{ product.title|truncatechars:40 }}</span>
+  </nav>
+
+  <div class="detail-layout">
+    <div class="detail-gallery panel" data-product-gallery tabindex="-1">
+      <div class="detail-image">
+        {% if gallery_photos %}
+          <img data-gallery-main src="{{ gallery_photos.0.url }}" alt="{{ gallery_photos.0.alt }}">
+          {% if gallery_photos|length > 1 %}
+            <button class="gallery-arrow gallery-previous" type="button" data-gallery-previous aria-label="Show previous photo">{% include "partials/icon.html" with name="back" %}</button>
+            <button class="gallery-arrow gallery-next" type="button" data-gallery-next aria-label="Show next photo">{% include "partials/icon.html" with name="chevron" %}</button>
+            <span class="gallery-count" data-gallery-count aria-live="polite">1 / {{ gallery_photos|length }}</span>
+          {% endif %}
+        {% else %}
+          <div class="product-placeholder">{% include "partials/icon.html" with name="camera" %}</div>
+        {% endif %}
+      </div>
+      {% if gallery_photos|length > 1 %}
+        <div class="photo-thumbnails" aria-label="More photos of {{ product.title }}">
+          {% for photo in gallery_photos %}
+            <button type="button" class="photo-thumbnail{% if forloop.first %} is-active{% endif %}" data-gallery-thumbnail data-index="{{ forloop.counter0 }}" aria-label="Show photo {{ forloop.counter }}" aria-current="{% if forloop.first %}true{% else %}false{% endif %}"><img src="{{ photo.url }}" alt="{{ photo.alt }}" loading="lazy"></button>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+
+    <div class="detail-summary">
+      {% if product.is_demo %}<div class="notice notice-info"><strong>Preview listing</strong><p>This is sample content to demonstrate the marketplace. It is not a real product or offer, and its photograph is representative only. <a href="/static/marketplace/demo/photo-credits.html">View photo credits</a>.</p></div>{% endif %}
+      {% if user == product.seller and product.status == "pending" %}<div class="notice notice-warn"><strong>Awaiting admin approval</strong><p>Your listing is private until an admin approves it. You can still edit it.</p></div>{% endif %}
+      {% if user == product.seller and product.status == "rejected" %}<div class="notice notice-danger"><strong>Changes needed</strong><p>{{ product.moderation_note|default:"Please update the listing details and submit it again for review." }}</p></div>{% endif %}
+
+      <section class="panel price-card">
+        <p class="detail-price">{{ product.price|cedis }}</p>
+        {% if product.price_negotiable %}<p class="tag tag-soft">Price is negotiable</p>{% endif %}
+        <h1>{{ product.title }}</h1>
+        <p class="detail-meta">
+          <span>{% include "partials/icon.html" with name="pin" %}{{ product.city }}{% if product.region %}, {{ product.region }}{% endif %}</span>
+          <span>{% include "partials/icon.html" with name="clock" %}Posted <time datetime="{{ product.created_at|date:'c' }}">{{ product.created_at|ago }}</time></span>
+        </p>
+        <ul class="buy-methods" aria-label="Ways to buy">
+          {% if product.can_checkout %}<li>{% include "partials/icon.html" with name="wallet" %}Buy online · Mobile Money or card · {{ product.stock_quantity }} in stock</li>{% endif %}
+          {% if product.allows_direct_contact %}<li>{% include "partials/icon.html" with name="chat" %}Chat with the seller to ask questions or negotiate</li>{% endif %}
+        </ul>
+        {% if can_buy %}
+          <form class="buy-form" method="post" action="{% if user.is_authenticated %}{% url 'commerce:cart_add' product.pk %}{% else %}{% url 'login' %}?next={% url 'product_detail' product.pk %}{% endif %}">
+            {% csrf_token %}
+            {% if user.is_authenticated %}
+              <label class="quantity-field"><span>Qty</span>
+                <select name="quantity">{% for n in stock_choices %}<option value="{{ n }}">{{ n }}</option>{% endfor %}</select>
+              </label>
+              <button class="button button-gold" type="submit" name="next" value="checkout">Buy now</button>
+              <button class="button button-outline" type="submit" name="next" value="cart">{% include "partials/icon.html" with name="cart" %}Add to cart</button>
+            {% else %}
+              <a class="button button-gold button-block" href="{% url 'login' %}?next={% url 'product_detail' product.pk %}">Sign in to buy</a>
+            {% endif %}
+          </form>
+        {% endif %}
+        <div class="detail-actions">
+          {% if user == product.seller %}
+            <a class="button button-primary" href="{% url 'product_update' product.pk %}">Edit listing</a>
+            <a class="button button-quiet" href="{% url 'seller_listings' %}">My shop</a>
+          {% elif can_chat %}
+            <a class="button button-primary" href="#contact">{% include "partials/icon.html" with name="chat" %}Chat with seller</a>
+          {% elif not user.is_authenticated and product.allows_direct_contact and product.status == "published" and not product.is_demo %}
+            <a class="button button-primary" href="{% url 'login' %}?next={% url 'product_detail' product.pk %}">{% include "partials/icon.html" with name="chat" %}Chat with seller</a>
+          {% endif %}
+          {% if user.is_authenticated %}
+            <form method="post" action="{% url 'toggle_favorite' product.pk %}">{% csrf_token %}<button class="button button-outline{% if is_favorite %} is-saved{% endif %}" type="submit" aria-pressed="{% if is_favorite %}true{% else %}false{% endif %}">{% include "partials/icon.html" with name="heart" %}{% if is_favorite %}Saved{% else %}Save{% endif %}</button></form>
+          {% else %}
+            <a class="button button-outline" href="{% url 'login' %}?next={% url 'product_detail' product.pk %}">{% include "partials/icon.html" with name="heart" %}Save</a>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="panel seller-card" aria-label="Seller">
+        <div class="seller-card-head">
+          <span class="avatar avatar-lg" aria-hidden="true">{{ product.seller.first_name|default:product.seller.username|slice:":1"|upper }}</span>
+          <div>
+            <strong>{{ product.seller.get_full_name|default:product.seller.username }}</strong>
+            {% if product.seller.is_verified_seller %}<span class="verified-badge" title="Identity checked by GhanaMarket staff">{% include "partials/icon.html" with name="shield" %}Verified seller</span>{% endif %}
+            {% if seller_rating %}<span class="rating" aria-label="Rated {{ seller_rating.average }} out of 5 from {{ seller_rating.count }} review{{ seller_rating.count|pluralize }}"><span aria-hidden="true">★</span> {{ seller_rating.average }} <small>({{ seller_rating.count }} review{{ seller_rating.count|pluralize }})</small></span>{% endif %}
+            <small>Member since {{ product.seller.date_joined|date:"M Y" }}{% if seller_active_count %} · {{ seller_active_count }} active ad{{ seller_active_count|pluralize }}{% endif %}</small>
+            {% if product.seller.city %}<small>{{ product.seller.city|title }}{% if product.seller.region %}, {{ product.seller.region }}{% endif %}</small>{% endif %}
+          </div>
+        </div>
+        {% if user == product.seller and product.seller.phone_number %}<p class="seller-own-contact">Your contact: {{ product.seller.phone_number }}</p>{% endif %}
+        {% if product.seller.role == "seller" %}<a class="button button-quiet button-block" href="{% url 'seller_storefront' product.seller.pk %}">{% include "partials/icon.html" with name="store" %}View seller storefront</a>{% endif %}
+      </section>
+
+      {% if can_chat %}
+        <section class="panel contact-card" id="contact" aria-labelledby="contact-heading">
+          <h2 id="contact-heading">Message the seller</h2>
+          <div class="quick-replies" data-quick-replies>
+            <button type="button">Is this still available?</button>
+            <button type="button">Is the price negotiable?</button>
+            <button type="button">Where can we meet?</button>
+          </div>
+          <form method="post" action="{% url 'conversation_start' product.pk %}">
+            {% csrf_token %}
+            {% for field in message_form %}
+              <div class="field"><label class="visually-hidden" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}</div>
+            {% endfor %}
+            <button class="button button-primary button-block" type="submit">{% include "partials/icon.html" with name="send" %}Message seller</button>
+          </form>
+        </section>
+      {% endif %}
+
+      <section class="panel safety-card" aria-labelledby="safety-heading">
+        <h2 id="safety-heading">{% include "partials/icon.html" with name="shield" %}Safety tips</h2>
+        <ul>
+          <li>Never pay or send Mobile Money before you see the item.</li>
+          <li>Meet in a busy public place, like a mall or station.</li>
+          <li>Check the item carefully and make sure it works.</li>
+          <li>Only pay when you are satisfied.</li>
+        </ul>
+      </section>
+    </div>
+
+    <div class="detail-info">
+      <section class="panel" aria-label="Item details">
+        <h2>Item details</h2>
+        <dl class="spec-grid">
+          <div><dt>Category</dt><dd>{{ product.category_label }}</dd></div>
+          <div><dt>Condition</dt><dd>{{ product.get_condition_display }}</dd></div>
+          {% if product.brand %}<div><dt>Brand</dt><dd>{{ product.brand }}</dd></div>{% endif %}
+          {% if product.model %}<div><dt>Model</dt><dd>{{ product.model }}</dd></div>{% endif %}
+          {% for label, value in attribute_items %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}
+          {% if product.included_items %}<div><dt>Included</dt><dd>{{ product.included_items }}</dd></div>{% endif %}
+          <div><dt>Location</dt><dd>{{ product.city }}{% if product.region %}, {{ product.region }}{% endif %}, Ghana</dd></div>
+          <div><dt>Ad ID</dt><dd>#{{ product.pk }}</dd></div>
+        </dl>
+        <h2>Description</h2>
+        <p class="description">{{ product.description|linebreaksbr }}</p>
+      </section>
+
+      {% if user.is_authenticated and user != product.seller and product.status == "published" and not product.is_demo %}
+        <details class="panel report-panel">
+          <summary>{% include "partials/icon.html" with name="flag" %}Report this listing</summary>
+          <p>If something looks misleading or unsafe, tell our admin team. Reports are private.</p>
+          <form method="post" action="{% url 'report_listing' product.pk %}" class="stack-form">
+            {% csrf_token %}
+            {% for field in report_form %}
+              <div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}</div>
+            {% endfor %}
+            <button class="button button-danger" type="submit">Send report</button>
+          </form>
+        </details>
+      {% elif not user.is_authenticated and product.status == "published" and not product.is_demo %}
+        <p class="report-signin">{% include "partials/icon.html" with name="flag" %}<a href="{% url 'login' %}?next={% url 'product_detail' product.pk %}">Log in</a> to report a concern.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if similar_products %}
+    <section class="similar-section" aria-labelledby="similar-heading">
+      <div class="section-heading"><h2 id="similar-heading">Similar ads</h2><a href="{% url 'product_list' %}?category={{ product.category_id|urlencode }}">See all {% include "partials/icon.html" with name="chevron" %}</a></div>
+      <div class="product-grid">{% for product in similar_products %}{% include "marketplace/_product_card.html" %}{% endfor %}</div>
+    </section>
+  {% endif %}
+
+  {% if recently_viewed %}
+    <section class="similar-section" aria-labelledby="recent-heading">
+      <div class="section-heading"><h2 id="recent-heading">Recently viewed</h2></div>
+      <div class="product-grid product-grid-compact">{% for product in recently_viewed %}{% include "marketplace/_product_card.html" %}{% endfor %}</div>
+    </section>
+  {% endif %}
+</div>
+
+{% if user != product.seller %}
+<div class="detail-action-bar">
+  <p><strong>{{ product.price|cedis }}</strong>{% if product.price_negotiable %}<small>Negotiable</small>{% endif %}</p>
+  {% if can_buy and user.is_authenticated %}<form method="post" action="{% url 'commerce:cart_add' product.pk %}">{% csrf_token %}<input type="hidden" name="quantity" value="1"><button class="button button-gold" type="submit" name="next" value="checkout">Buy now</button></form>{% endif %}
+  {% if can_chat %}<a class="button button-primary" href="#contact">{% include "partials/icon.html" with name="chat" %}Chat</a>
+  {% elif not user.is_authenticated and product.allows_direct_contact and product.status == "published" and not product.is_demo %}<a class="button button-primary" href="{% url 'login' %}?next={% url 'product_detail' product.pk %}">{% include "partials/icon.html" with name="chat" %}Chat</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/product-gallery.js' %}" defer></script>
+<script>
+document.querySelectorAll("[data-quick-replies] button").forEach((button) => {
+  button.addEventListener("click", () => {
+    const box = button.closest(".contact-card").querySelector("textarea");
+    box.value = button.textContent;
+    box.focus();
+  });
+});
+</script>{% endblock %}

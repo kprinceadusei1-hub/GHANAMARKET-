@@ -1,0 +1,43 @@
+{% load market %}
+<section class="panel">
+  <h2 class="section-title">{% include "partials/icon.html" with name="package" %}Items</h2>
+  <ul class="checkout-items">
+    {% for item in order.items.all %}<li><span>{{ item.quantity }} × {% if item.product_id %}<a href="{% url 'product_detail' item.product_id %}">{{ item.title }}</a>{% else %}{{ item.title }}{% endif %} <small class="muted">@ {{ item.unit_price|cedis }}</small></span><strong>{{ item.line_total|cedis }}</strong></li>{% endfor %}
+    <li><span>Subtotal</span><strong>{{ order.subtotal|cedis }}</strong></li>
+    <li><span>{{ order.delivery_method }}</span><strong>{% if order.delivery_fee %}{{ order.delivery_fee|cedis }}{% else %}Free{% endif %}</strong></li>
+    <li class="checkout-items-total"><span>Total</span><strong>{{ order.total|cedis }}</strong></li>
+  </ul>
+</section>
+
+<section class="panel">
+  <h2 class="section-title">{% include "partials/icon.html" with name="truck" %}Delivery</h2>
+  <dl class="spec-grid">
+    <div><dt>Method</dt><dd>{{ order.delivery_method }}</dd></div>
+    <div><dt>Recipient</dt><dd>{{ order.recipient_name|default:"—" }}</dd></div>
+    {% if show_contact %}<div><dt>Phone</dt><dd>{{ order.recipient_phone|default:"—" }}</dd></div>{% endif %}
+    {% if order.delivery_address %}<div><dt>Address</dt><dd>{{ order.delivery_address }}</dd></div>{% endif %}
+    {% if order.tracking_reference %}<div><dt>Tracking</dt><dd>{{ order.tracking_reference }}</dd></div>{% endif %}
+    {% if order.buyer_note %}<div><dt>Buyer note</dt><dd>{{ order.buyer_note }}</dd></div>{% endif %}
+  </dl>
+</section>
+
+{% if order.refunds.all %}
+<section class="panel">
+  <h2 class="section-title">{% include "partials/icon.html" with name="wallet" %}Refunds</h2>
+  <ul class="checkout-items">{% for refund in order.refunds.all %}<li><span>{{ refund.created_at|date:"j M Y" }} · {{ refund.get_status_display }}</span><strong>{{ refund.amount|cedis }}</strong></li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+{% if order.issues.all %}
+<section class="panel">
+  <h2 class="section-title">{% include "partials/icon.html" with name="flag" %}Requests</h2>
+  <ul class="timeline">{% for issue in order.issues.all %}<li><strong>{{ issue.get_kind_display }} · {{ issue.get_status_display }}</strong><span>{{ issue.reason }}{% if issue.resolution_note %} — {{ issue.resolution_note }}{% endif %}</span><time>{{ issue.created_at|date:"j M, g:i a" }}</time></li>{% endfor %}</ul>
+</section>
+{% endif %}
+
+<section class="panel">
+  <h2 class="section-title">{% include "partials/icon.html" with name="clock" %}History</h2>
+  <ul class="timeline">
+    {% for event in order.events.all %}<li><strong>{% if event.to_status %}{% for value, label in status_labels %}{% if value == event.to_status %}{{ label }}{% endif %}{% endfor %}{% endif %}</strong><span>{{ event.note }}</span><time>{{ event.created_at|date:"j M, g:i a" }}</time></li>{% endfor %}
+  </ul>
+</section>

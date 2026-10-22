@@ -1,0 +1,81 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+{% block extrastyle %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/admin-review.css' %}">{% endblock %}
+{% block content %}
+<div class="gm-analytics-page">
+  <header class="gm-analytics-header">
+    <div><p class="gm-admin-eyebrow">GHANAMARKET / REPORTING</p><h1>Marketplace analytics</h1><p>Operational trends from recorded marketplace activity. Preview listings are excluded.</p></div>
+    <form class="gm-period-form" method="get">
+      <label for="analytics-period">Date range</label>
+      <select id="analytics-period" name="period">{% for days, label in period_options %}<option value="{{ days }}"{% if period == days %} selected{% endif %}>Last {{ label }}</option>{% endfor %}</select>
+      <button type="submit">Apply</button>
+    </form>
+  </header>
+
+  <p class="gm-analytics-range">Showing {{ start_date|date:"j M Y" }} – {{ end_date|date:"j M Y" }}</p>
+
+  <section class="gm-admin-metrics gm-analytics-metrics" aria-label="Marketplace totals">
+    {% if can_view_products %}
+      <article class="gm-admin-metric"><span>Seller listings</span><strong>{{ listing_total }}</strong><small>All non-preview listings</small></article>
+      <article class="gm-admin-metric"><span>Live</span><strong>{{ listing_live }}</strong><small>Published to buyers</small></article>
+      <article class="gm-admin-metric"><span>Not live</span><strong>{{ listing_inactive }}</strong><small>Pending, returned, draft, or sold</small></article>
+      <article class="gm-admin-metric{% if listing_pending %} gm-metric-attention{% endif %}"><span>Pending review</span><strong>{{ listing_pending }}</strong><small>Awaiting an admin decision</small></article>
+    {% endif %}
+    {% if can_view_users %}<article class="gm-admin-metric"><span>Registered accounts</span><strong>{{ user_total }}</strong><small>All account types</small></article><article class="gm-admin-metric"><span>Active seller accounts</span><strong>{{ seller_total }}</strong><small>Seller accounts not suspended</small></article>{% endif %}
+    {% if can_view_reports %}<article class="gm-admin-metric{% if open_report_total %} gm-metric-attention{% endif %}"><span>Open reports</span><strong>{{ open_report_total }}</strong><small>Awaiting moderation</small></article>{% endif %}
+  </section>
+
+  <div class="gm-analytics-grid">
+    {% if can_view_products %}
+      <section class="gm-analytics-panel gm-analytics-wide" aria-labelledby="listing-trend-title">
+        <div class="gm-analytics-panel-heading"><div><h2 id="listing-trend-title">Listing activity</h2><p>Non-preview listings created per day</p></div><span class="gm-analytics-total">{{ listing_total }} total</span></div>
+        {% if listing_activity_total %}
+          <ol class="gm-admin-chart-bars" aria-label="Daily listing creation counts">
+            {% for point in listing_series %}<li class="{% if point.count %}has-data{% endif %}" title="{{ point.label }}: {{ point.count }} listing(s)"><span style="height:{{ point.height }}%"></span>{% if point.show_label %}<small>{{ point.label }}</small>{% endif %}</li>{% endfor %}
+          </ol>
+        {% else %}<p class="gm-analytics-empty">No non-preview listings were created during this period.</p>{% endif %}
+      </section>
+      <section class="gm-analytics-panel" aria-labelledby="category-breakdown-title">
+        <div class="gm-analytics-panel-heading"><div><h2 id="category-breakdown-title">Listings by category</h2><p>Current catalogue mix</p></div></div>
+        {% if listing_total %}<ul class="gm-breakdown-list">{% for item in category_data %}<li><span>{{ item.label }}</span><span class="gm-breakdown-track"><span style="width:{{ item.percent }}%"></span></span><strong>{{ item.count }}</strong></li>{% endfor %}</ul>{% else %}<p class="gm-analytics-empty">Category totals will appear when real seller listings are added.</p>{% endif %}
+      </section>
+      <section class="gm-analytics-panel" aria-labelledby="region-breakdown-title">
+        <div class="gm-analytics-panel-heading"><div><h2 id="region-breakdown-title">Listings by region</h2><p>Current catalogue mix</p></div></div>
+        {% if listing_total %}<ul class="gm-breakdown-list">{% for item in region_data %}<li><span>{{ item.label }}</span><span class="gm-breakdown-track"><span style="width:{{ item.percent }}%"></span></span><strong>{{ item.count }}</strong></li>{% endfor %}</ul>{% else %}<p class="gm-analytics-empty">Region totals will appear when real seller listings are added.</p>{% endif %}
+      </section>
+    {% endif %}
+    {% if can_view_users %}
+      <section class="gm-analytics-panel gm-analytics-wide" aria-labelledby="registration-trend-title">
+        <div class="gm-analytics-panel-heading"><div><h2 id="registration-trend-title">Registration activity</h2><p>New accounts per day</p></div><span class="gm-analytics-total">{{ user_total }} accounts</span></div>
+        {% if registration_activity_total %}<ol class="gm-admin-chart-bars" aria-label="Daily registration counts">{% for point in user_series %}<li class="{% if point.count %}has-data{% endif %}" title="{{ point.label }}: {{ point.count }} account(s)"><span style="height:{{ point.height }}%"></span>{% if point.show_label %}<small>{{ point.label }}</small>{% endif %}</li>{% endfor %}</ol>{% else %}<p class="gm-analytics-empty">No new accounts were registered during this period.</p>{% endif %}
+      </section>
+    {% endif %}
+    {% if can_view_reports %}
+      <section class="gm-analytics-panel gm-analytics-wide" aria-labelledby="report-trend-title">
+        <div class="gm-analytics-panel-heading"><div><h2 id="report-trend-title">Report activity</h2><p>Buyer reports received per day</p></div><span class="gm-analytics-total">{{ open_report_total }} open</span></div>
+        {% if report_activity_total %}<ol class="gm-admin-chart-bars" aria-label="Daily report counts">{% for point in report_series %}<li class="{% if point.count %}has-data{% endif %}" title="{{ point.label }}: {{ point.count }} report(s)"><span style="height:{{ point.height }}%"></span>{% if point.show_label %}<small>{{ point.label }}</small>{% endif %}</li>{% endfor %}</ol>{% else %}<p class="gm-analytics-empty">No buyer reports were submitted during this period.</p>{% endif %}
+      </section>
+    {% endif %}
+    {% if can_view_orders %}
+      <section class="gm-analytics-panel gm-analytics-wide" aria-labelledby="order-trend-title">
+        <div class="gm-analytics-panel-heading"><div><h2 id="order-trend-title">Payments and orders</h2><p>Orders whose payment was verified with the provider, per day</p></div><span class="gm-analytics-total">{{ order_activity_total }} paid</span></div>
+        <div class="gm-admin-metrics gm-analytics-inline-metrics">
+          <article class="gm-admin-metric"><span>Paid value</span><strong>GH₵ {{ order_paid_value|floatformat:"0g" }}</strong><small>Items and delivery</small></article>
+          <article class="gm-admin-metric"><span>Average order</span><strong>GH₵ {{ order_average_value|floatformat:"0g" }}</strong><small>Per seller order</small></article>
+          <article class="gm-admin-metric"><span>Refunded</span><strong>GH₵ {{ order_refunded_value|floatformat:"0g" }}</strong><small>Completed or requested</small></article>
+          <article class="gm-admin-metric"><span>Payment success</span><strong>{% if payment_success_rate is not None %}{{ payment_success_rate }}%{% else %}—{% endif %}</strong><small>Verified vs failed attempts</small></article>
+        </div>
+        {% if order_activity_total %}<ol class="gm-admin-chart-bars" aria-label="Daily paid orders">{% for point in order_series %}<li class="{% if point.count %}has-data{% endif %}" title="{{ point.label }}: {{ point.count }} paid order(s)"><span style="height:{{ point.height }}%"></span>{% if point.show_label %}<small>{{ point.label }}</small>{% endif %}</li>{% endfor %}</ol>{% else %}<p class="gm-analytics-empty">No orders were paid during this period.</p>{% endif %}
+      </section>
+      <section class="gm-analytics-panel" aria-labelledby="order-status-title">
+        <div class="gm-analytics-panel-heading"><div><h2 id="order-status-title">Fulfilment status</h2><p>Orders paid in this period</p></div></div>
+        {% if order_paid_count %}<ul class="gm-breakdown-list">{% for item in order_status_data %}<li><span>{{ item.label }}</span><span class="gm-breakdown-track"><span style="width:{{ item.percent }}%"></span></span><strong>{{ item.count }}</strong></li>{% endfor %}</ul>{% else %}<p class="gm-analytics-empty">Status totals appear once orders are paid.</p>{% endif %}
+      </section>
+      <section class="gm-analytics-panel" aria-labelledby="channel-title">
+        <div class="gm-analytics-panel-heading"><div><h2 id="channel-title">Payment methods</h2><p>Verified payments by channel</p></div></div>
+        {% if payment_channels %}<ul class="gm-breakdown-list">{% for item in payment_channels %}<li><span>{{ item.channel|title }}</span><span class="gm-breakdown-track"><span style="width:100%"></span></span><strong>{{ item.total }}</strong></li>{% endfor %}</ul>{% else %}<p class="gm-analytics-empty">Payment methods appear once payments are verified.</p>{% endif %}
+      </section>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

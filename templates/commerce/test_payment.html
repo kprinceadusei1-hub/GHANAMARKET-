@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load market %}
+{% block title %}Test payment | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container container-narrow page-narrow-top">
+  <section class="auth-card test-payment">
+    <p class="notice notice-warn"><strong>Development test payment</strong>This page only exists on development servers. No money moves and no real provider is contacted.</p>
+    <h1>{{ payment.amount|cedis }}</h1>
+    <p class="form-intro">Payment {{ payment.reference }}</p>
+    {% if payment.status == "initiated" %}
+      <form method="post" class="stack-form">
+        {% csrf_token %}
+        <button class="button button-primary button-block" type="submit" name="outcome" value="success">Simulate successful payment</button>
+        <button class="button button-quiet button-block" type="submit" name="outcome" value="failed">Simulate failed payment</button>
+      </form>
+    {% else %}
+      <p>This payment is already {{ payment.get_status_display|lower }}.</p>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

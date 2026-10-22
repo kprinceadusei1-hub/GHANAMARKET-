@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Start selling | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container auth-shell">
+  {% include "partials/auth_aside.html" with aside_title="Sell to buyers across Ghana" %}
+  <section class="auth-card">
+    <h1>Set up your seller account</h1>
+    <p class="form-intro">Add your contact and location so buyers know where your items are. Your phone number is never shown publicly.</p>
+    <form method="post" class="stack-form form-grid">
+      {% csrf_token %}
+      {% for field in form %}{% include "partials/field.html" %}{% endfor %}
+      {% for error in form.non_field_errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      <button type="submit" class="button button-primary button-block">Continue to sell</button>
+    </form>
+  </section>
+</div>
+{% endblock %}
