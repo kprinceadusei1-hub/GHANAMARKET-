@@ -583,7 +583,7 @@ class ProductListingTests(TestCase):
         self.assertEqual(home_living["count"], 1)
         self.assertNotContains(response, "Private listing")
         self.assertContains(response, "Shop by Category")
-        self.assertContains(response, "Reviewed before publishing")
+        self.assertContains(response, "Every ad reviewed")
         self.assertContains(response, "Explore Ghana by region")
         self.assertContains(response, "?region=Greater%20Accra")
 

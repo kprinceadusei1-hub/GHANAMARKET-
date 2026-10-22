@@ -407,3 +407,11 @@ body.cc-body #header.cc-topbar .cc-top-actions { margin-left: auto; }
 .cc-btn-danger { border: 1px solid #fca5a5; background: #fff; color: #b91c1c !important; cursor: pointer; font: inherit; font-size: 13px; font-weight: 600; }
 .cc-btn-danger:hover { background: #fef2f2; }
 @media (max-width: 640px) { .cc-preview-notice { flex-wrap: wrap; } }
+
+.cc-locations { margin-bottom: 16px; }
+.cc-loc-note { display: flex; gap: 8px; align-items: flex-start; margin: 0 0 12px; padding: 10px 12px; border-radius: 10px; background: #fffbeb; color: #92400e; font-size: 13px; }
+.cc-loc-note svg { width: 16px; height: 16px; flex: none; margin-top: 1px; }
+.cc-loc-bar-col { width: 40%; }
+.cc-loc-bar { display: block; height: 8px; min-width: 4px; border-radius: 99px; background: #16a34a; }
+/* Five KPI cards sit on one row when there is room. */
+@media (min-width: 1280px) { .cc-kpis { grid-template-columns: repeat(5, minmax(0, 1fr)) !important; } }

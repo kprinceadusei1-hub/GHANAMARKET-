@@ -1,5 +1,40 @@
 # Production deployment checklist
 
+## Quick start: Render + Cloudflare R2 (recommended first host)
+
+The repository includes `render.yaml`, which creates the web app and a PostgreSQL database in Render's
+Frankfurt region (the closest to Ghana). Render provides HTTPS automatically. Photos and seller ID documents
+are stored in Cloudflare R2, because Render's own disk is wiped on every deploy.
+
+1. **Storage (Cloudflare R2, free up to 10 GB):** at dash.cloudflare.com → R2, create two buckets:
+   `ghanamarket-media` (turn on *Public access → R2.dev subdomain* and note the `pub-….r2.dev` address) and
+   `ghanamarket-private` (leave private). Under *Manage API tokens*, create a token with *Object Read & Write*
+   on both buckets; note the Access Key ID, Secret Access Key and the S3 endpoint
+   (`https://<account-id>.r2.cloudflarestorage.com`).
+2. **Email (e.g. Brevo, free 300 emails/day):** create an SMTP key. Host `smtp-relay.brevo.com`, port 587.
+   Password resets do not work without this.
+3. **Secret key:** run `python -c "import secrets; print(secrets.token_urlsafe(64))"` on your computer and
+   keep the output private.
+4. **Render:** sign in at render.com with GitHub → *New → Blueprint* → choose this repository. Fill in the
+   values it asks for (secret key, admin username/email/password, the R2 and email values). Click *Apply*.
+5. Open `https://<service-name>.onrender.com`, sign in with the admin account and change its password.
+
+Notes:
+- The free plans are for trying it out: the web service sleeps after 15 idle minutes (first visit then takes
+  ~1 minute) and the free database is deleted after 30 days. Before real users arrive, change `plan:` in
+  `render.yaml` to `starter` (web) and `basic-256mb` (database), about US$13/month together.
+- Production starts empty: no preview listings are created. Categories and the free collection delivery
+  option come from migrations.
+- Online checkout stays off until you add `PAYMENT_PROVIDER=paystack` and `PAYSTACK_SECRET_KEY` (section 3).
+- Own domain: add it in Render (*Settings → Custom domains*), then set `DJANGO_ALLOWED_HOSTS` and
+  `DJANGO_CSRF_TRUSTED_ORIGINS` (`https://yourdomain`) and `SITE_URL`.
+- After the first deploy, confirm login rate limits see real visitor IPs (Admin → audit/log entries show the
+  address), since `DJANGO_TRUST_X_FORWARDED_FOR=True` relies on Render's proxy headers.
+- `expire_checkouts` (section 4) needs a Render Cron Job (paid) once online payments are on.
+
+---
+
+
 This checklist covers what must be in place before GhanaMarket takes real users or real money.
 Items marked **(you)** need accounts, credentials or decisions only the business can provide.
 
@@ -37,7 +72,7 @@ Items marked **(you)** need accounts, credentials or decisions only the business
 - [ ] Add blocked and flagged words in **Admin → Prohibited terms**.
 - [ ] Review categories and category fields in **Admin → Categories**; mark regulated ones as restricted.
 - [ ] Create staff groups with least-privilege permissions (moderators, support, finance). Only finance staff should have `Can add refund`.
-- [ ] Remove the preview catalogue (`is_demo` listings and the `marketplace-preview-seller` account).
+- [x] Remove the preview catalogue (`is_demo` listings and the `marketplace-preview-seller` account). Done locally; production never seeds it.
 - [ ] Set `SUPPORT_EMAIL` and staff the support and verification queues.
 
 ## 6. Release steps

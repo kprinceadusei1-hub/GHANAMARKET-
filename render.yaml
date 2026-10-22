@@ -1,0 +1,67 @@
+# Render Blueprint: Dashboard -> New -> Blueprint -> pick this GitHub repository.
+# Values marked "sync: false" are asked for when you create the Blueprint. Never commit them.
+databases:
+  - name: ghanamarket-db
+    databaseName: ghanamarket
+    user: ghanamarket
+    plan: free            # Free databases expire after 30 days; switch to "basic-256mb" before launch.
+    region: frankfurt
+
+services:
+  - type: web
+    name: ghanamarket
+    runtime: python
+    plan: free            # Free web services sleep when idle; switch to "starter" for launch.
+    region: frankfurt     # Closest Render region to Ghana.
+    buildCommand: bash scripts/render-build.sh
+    startCommand: gunicorn config.wsgi:application --workers 2 --timeout 60
+    healthCheckPath: /
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.8"
+      - key: DJANGO_DEBUG
+        value: "False"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: ghanamarket-db
+          property: connectionString
+      - key: DJANGO_SECRET_KEY       # 50+ random characters (see DEPLOYMENT.md)
+        sync: false
+      - key: DJANGO_SECURE_PROXY_SSL_HEADER
+        value: "True"
+      - key: DJANGO_TRUST_X_FORWARDED_FOR
+        value: "True"
+      - key: DJANGO_ALLOWED_HOSTS    # Your own domain later, e.g. ghanamarket.com,www.ghanamarket.com
+        value: ""
+      # First admin account (created once; change the password after first login).
+      - key: DJANGO_SUPERUSER_USERNAME
+        sync: false
+      - key: DJANGO_SUPERUSER_EMAIL
+        sync: false
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false
+      # Photo and document storage (Cloudflare R2 or any S3-compatible service).
+      - key: S3_ENDPOINT_URL         # https://<account-id>.r2.cloudflarestorage.com
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: MEDIA_S3_BUCKET         # public bucket for listing photos
+        sync: false
+      - key: MEDIA_PUBLIC_DOMAIN     # e.g. pub-xxxx.r2.dev
+        sync: false
+      - key: PRIVATE_S3_BUCKET       # private bucket for seller ID documents
+        sync: false
+      # Email (password resets and notifications), e.g. Brevo SMTP.
+      - key: EMAIL_HOST
+        sync: false
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+      - key: SUPPORT_EMAIL
+        sync: false
+      # Online payments stay off until you add Paystack keys: PAYMENT_PROVIDER=paystack, PAYSTACK_SECRET_KEY.

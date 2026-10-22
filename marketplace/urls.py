@@ -27,6 +27,7 @@ urlpatterns = [
     ),
     path("accounts/logout/", auth_views.LogoutView.as_view(), name="logout"),
     path("listings/", views.product_list, name="product_list"),
+    path("listings/area/", views.set_area, name="set_area"),
     path("categories/", views.category_index, name="category_index"),
     path("search/suggest/", views.search_suggestions, name="search_suggestions"),
     path("saved/", views.saved_listings, name="saved_listings"),

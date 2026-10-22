@@ -8,6 +8,7 @@ import io
 import logging
 import os
 
+from django.core.cache import cache
 from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 from PIL import Image, ImageOps
@@ -46,6 +47,10 @@ def thumbnail_url(image_field, width):
         return ""
     name = image_field.name
     thumb_name = f"thumbs/{width}/{os.path.splitext(name)[0]}.jpg"
+    cache_key = f"thumb:{thumb_name}"
+    cached = cache.get(cache_key)
+    if cached:
+        return cached
     try:
         if not default_storage.exists(thumb_name):
             with default_storage.open(name, "rb") as handle, Image.open(handle) as source:
@@ -55,7 +60,9 @@ def thumbnail_url(image_field, width):
                 buffer = io.BytesIO()
                 image.save(buffer, format="JPEG", quality=THUMB_QUALITY, optimize=True, progressive=True)
             default_storage.save(thumb_name, ContentFile(buffer.getvalue()))
-        return default_storage.url(thumb_name)
+        url = default_storage.url(thumb_name)
+        cache.set(cache_key, url, 60 * 60 * 24)
+        return url
     except Exception:  # A missing or unreadable original must never break a page.
         logger.warning("Could not create %spx thumbnail for %s", width, name, exc_info=True)
         try:

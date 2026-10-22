@@ -89,3 +89,15 @@ document.querySelectorAll(".toast").forEach((toast, index) => {
   toast.querySelector(".toast-close")?.addEventListener("click", dismiss);
   if (!toast.classList.contains("error")) setTimeout(dismiss, 5000 + index * 600);
 });
+
+document.querySelectorAll("[data-share]").forEach((link) => {
+  link.addEventListener("click", async (event) => {
+    if (!navigator.share) return;
+    event.preventDefault();
+    try {
+      await navigator.share({ title: link.dataset.shareTitle, url: link.dataset.shareUrl });
+    } catch (error) {
+      if (error && error.name !== "AbortError") window.open(link.href, "_blank", "noopener");
+    }
+  });
+});

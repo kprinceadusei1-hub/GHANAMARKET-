@@ -42,3 +42,21 @@ def thumbnail(image_field, width=480):
     from marketplace.images import thumbnail_url
 
     return thumbnail_url(image_field, int(width))
+
+
+@register.inclusion_tag("partials/towns_datalist.html")
+def ghana_towns_datalist():
+    from marketplace.ghana_places import town_options
+
+    return {"towns": town_options()}
+
+
+@register.filter
+def place(obj):
+    """'Town, Region' for a user or listing; whichever parts are filled in."""
+    city, region = (getattr(obj, "city", "") or "").strip(), (getattr(obj, "region", "") or "").strip()
+    if city.lower() == region.lower():
+        city = ""
+    elif city.islower():
+        city = city.title()
+    return ", ".join(part for part in (city, region) if part)

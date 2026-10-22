@@ -5,14 +5,56 @@
   {% include "partials/auth_aside.html" %}
   <section class="auth-card">
     <h1>Create your account</h1>
-    <p class="form-intro">Choose <strong>buyer</strong> to shop, or <strong>seller</strong> to post ads. You can start selling later from any account.</p>
+    <p class="form-intro">It takes a minute. You can start selling later from any account.</p>
     {% if form.non_field_errors %}<div class="notice notice-danger">{{ form.non_field_errors }}</div>{% endif %}
-    <form method="post" class="stack-form form-grid">
+    <form method="post" class="stack-form register-form" data-register-form>
       {% csrf_token %}
-      {% for field in form %}{% include "partials/field.html" %}{% endfor %}
+      {{ form.country }}
+      <fieldset class="role-choice">
+        <legend>I want to</legend>
+        <div class="role-options">
+          {% for choice in form.role %}
+            <label class="role-option">
+              {{ choice.tag }}
+              <span class="role-option-icon">{% if choice.data.value == "seller" %}{% include "partials/icon.html" with name="store" %}{% else %}{% include "partials/icon.html" with name="cart" %}{% endif %}</span>
+              <span><strong>{% if choice.data.value == "seller" %}Sell{% else %}Buy{% endif %}</strong><small>{% if choice.data.value == "seller" %}Post ads. Approved by our team first.{% else %}Shop, chat and save ads.{% endif %}</small></span>
+            </label>
+          {% endfor %}
+        </div>
+        {% for error in form.role.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
+      </fieldset>
+
+      <div class="form-grid">
+        {% include "partials/field.html" with field=form.username %}
+        {% include "partials/field.html" with field=form.email %}
+        {% include "partials/field.html" with field=form.password1 %}
+        {% include "partials/field.html" with field=form.password2 %}
+      </div>
+
+      <fieldset class="form-section">
+        <legend>About you <small data-seller-note hidden>Phone, town and region are required for sellers.</small></legend>
+        <div class="form-grid">
+          {% include "partials/field.html" with field=form.first_name %}
+          {% include "partials/field.html" with field=form.last_name %}
+          {% include "partials/field.html" with field=form.phone_number %}
+          {% include "partials/field.html" with field=form.region %}
+          {% include "partials/field.html" with field=form.city %}
+        </div>
+      </fieldset>
       <button class="button button-primary button-block" type="submit">Create account</button>
+      <p class="form-legal">By creating an account you agree to the <a href="{% url 'help_page' 'terms' %}">Terms of use</a> and <a href="{% url 'help_page' 'privacy' %}">Privacy policy</a>.</p>
     </form>
     <p class="form-footnote">Already registered? <a href="{% url 'login' %}">Sign in</a></p>
   </section>
 </div>
+<script>
+(() => {
+  const form = document.querySelector("[data-register-form]");
+  if (!form) return;
+  const note = form.querySelector("[data-seller-note]");
+  const sync = () => { note.hidden = !(form.querySelector('input[name="role"]:checked') || {}).value?.includes("seller"); };
+  form.addEventListener("change", sync);
+  sync();
+})();
+</script>
 {% endblock %}

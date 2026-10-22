@@ -76,6 +76,12 @@
           {% elif not user.is_authenticated and product.allows_direct_contact and product.status == "published" and not product.is_demo %}
             <a class="button button-primary" href="{% url 'login' %}?next={% url 'product_detail' product.pk %}">{% include "partials/icon.html" with name="chat" %}Chat with seller</a>
           {% endif %}
+          {% if whatsapp_contact_url %}
+            <a class="button button-whatsapp" href="{{ whatsapp_contact_url }}"{% if user.is_authenticated %} target="_blank" rel="noopener"{% endif %}>{% include "partials/icon.html" with name="whatsapp" %}WhatsApp seller</a>
+          {% endif %}
+          {% if whatsapp_share_url %}
+            <a class="button button-outline" href="{{ whatsapp_share_url }}" target="_blank" rel="noopener" data-share data-share-title="{{ product.title }}" data-share-url="{{ request.build_absolute_uri }}">{% include "partials/icon.html" with name="share" %}Share</a>
+          {% endif %}
           {% if user.is_authenticated %}
             <form method="post" action="{% url 'toggle_favorite' product.pk %}">{% csrf_token %}<button class="button button-outline{% if is_favorite %} is-saved{% endif %}" type="submit" aria-pressed="{% if is_favorite %}true{% else %}false{% endif %}">{% include "partials/icon.html" with name="heart" %}{% if is_favorite %}Saved{% else %}Save{% endif %}</button></form>
           {% else %}
@@ -92,7 +98,7 @@
             {% if product.seller.is_verified_seller %}<span class="verified-badge" title="Identity checked by GhanaMarket staff">{% include "partials/icon.html" with name="shield" %}Verified seller</span>{% endif %}
             {% if seller_rating %}<span class="rating" aria-label="Rated {{ seller_rating.average }} out of 5 from {{ seller_rating.count }} review{{ seller_rating.count|pluralize }}"><span aria-hidden="true">★</span> {{ seller_rating.average }} <small>({{ seller_rating.count }} review{{ seller_rating.count|pluralize }})</small></span>{% endif %}
             <small>Member since {{ product.seller.date_joined|date:"M Y" }}{% if seller_active_count %} · {{ seller_active_count }} active ad{{ seller_active_count|pluralize }}{% endif %}</small>
-            {% if product.seller.city %}<small>{{ product.seller.city|title }}{% if product.seller.region %}, {{ product.seller.region }}{% endif %}</small>{% endif %}
+            {% with where=product.seller|place %}{% if where %}<small>{{ where }}</small>{% endif %}{% endwith %}
           </div>
         </div>
         {% if user == product.seller and product.seller.phone_number %}<p class="seller-own-contact">Your contact: {{ product.seller.phone_number }}</p>{% endif %}
@@ -182,6 +188,7 @@
 <div class="detail-action-bar">
   <p><strong>{{ product.price|cedis }}</strong>{% if product.price_negotiable %}<small>Negotiable</small>{% endif %}</p>
   {% if can_buy and user.is_authenticated %}<form method="post" action="{% url 'commerce:cart_add' product.pk %}">{% csrf_token %}<input type="hidden" name="quantity" value="1"><button class="button button-gold" type="submit" name="next" value="checkout">Buy now</button></form>{% endif %}
+  {% if whatsapp_contact_url %}<a class="button button-whatsapp" href="{{ whatsapp_contact_url }}"{% if user.is_authenticated %} target="_blank" rel="noopener"{% endif %} aria-label="WhatsApp seller">{% include "partials/icon.html" with name="whatsapp" %}</a>{% endif %}
   {% if can_chat %}<a class="button button-primary" href="#contact">{% include "partials/icon.html" with name="chat" %}Chat</a>
   {% elif not user.is_authenticated and product.allows_direct_contact and product.status == "published" and not product.is_demo %}<a class="button button-primary" href="{% url 'login' %}?next={% url 'product_detail' product.pk %}">{% include "partials/icon.html" with name="chat" %}Chat</a>{% endif %}
 </div>

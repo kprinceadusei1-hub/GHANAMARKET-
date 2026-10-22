@@ -76,7 +76,7 @@
       <div class="results-header">
         <div>
           <h1 id="browse-results-title">{% if query %}Results for “{{ query }}”{% if category %} in {{ subcategory.name|default:category.name }}{% endif %}{% elif subcategory %}{{ subcategory.name }}{% elif category %}{{ category.name }}{% else %}All ads in Ghana{% endif %}</h1>
-          <p class="results-count">{% if result_count %}{{ result_count }} listing{{ result_count|pluralize }}{% if selected_city or selected_region %} in {% if selected_city %}{{ selected_city }}{% endif %}{% if selected_city and selected_region %}, {% endif %}{{ selected_region }}{% endif %}{% else %}No listings match these filters yet{% endif %}</p>
+          <p class="results-count">{% if result_count %}{{ result_count }} listing{{ result_count|pluralize }}{% if near_me %} near {{ area_label }}{% elif selected_city or selected_region %} in {% if selected_city %}{{ selected_city }}{% endif %}{% if selected_city and selected_region %}, {% endif %}{{ selected_region }}{% endif %}{% else %}No listings match these filters yet{% endif %}</p>
         </div>
         <form class="sort-form" method="get">
           {% for key, value in request.GET.items %}{% if key != "sort" and key != "page" and value %}<input type="hidden" name="{{ key }}" value="{{ value }}">{% endif %}{% endfor %}
@@ -85,6 +85,26 @@
           </label>
           <noscript><button class="button button-quiet" type="submit">Sort</button></noscript>
         </form>
+      </div>
+
+      <div class="near-me-bar">
+        {% if area %}
+          <a class="chip{% if near_me %} is-selected{% endif %}" href="{% if near_me %}{% querystring near=None sort=None page=None %}{% else %}{% querystring near=1 sort=None page=None %}{% endif %}" aria-pressed="{% if near_me %}true{% else %}false{% endif %}">{% include "partials/icon.html" with name="pin" %}Near me</a>
+          <span class="near-me-where">Your area: <strong>{{ area_label }}</strong></span>
+        {% else %}
+          <span class="near-me-where">{% include "partials/icon.html" with name="pin" %}See ads near you first:</span>
+        {% endif %}
+        <details class="near-me-change">
+          <summary>{% if area %}Change{% else %}Set your area{% endif %}</summary>
+          <form method="post" action="{% url 'set_area' %}" class="near-me-form">
+            {% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <label class="field"><span>Region</span><select name="region" required><option value="">Choose…</option>{% for value, label in regions %}<option value="{{ value }}"{% if area.region == value %} selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+            <label class="field"><span>Town or area (optional)</span><input name="town" list="gh-towns" maxlength="100" value="{{ area.town }}" placeholder="e.g. Madina"></label>
+            {% load market %}{% ghana_towns_datalist %}
+            <div class="near-me-actions"><button class="button button-primary" type="submit">Save</button>{% if area %}<button class="button button-quiet" type="submit" name="clear" value="1" formnovalidate>Forget my area</button>{% endif %}</div>
+            <small>Saved in this browser only.{% if user.is_authenticated %} Your profile location is used when nothing is set here.{% endif %}</small>
+          </form>
+        </details>
       </div>
 
       {% if subcategories %}
@@ -107,6 +127,7 @@
 
       {% if query or has_extra_filters %}
         <div class="active-filters" aria-label="Active filters">
+          {% if near_me %}<a class="chip chip-removable" href="{% querystring near=None sort=None page=None %}" aria-label="Remove near me filter">Near me: {{ area.region }}{% include "partials/icon.html" with name="close" %}</a>{% endif %}
           {% if checkout_only %}<a class="chip chip-removable" href="{% querystring checkout=None page=None %}" aria-label="Remove buy online filter">Buy online{% include "partials/icon.html" with name="close" %}</a>{% endif %}
           {% if verified_only %}<a class="chip chip-removable" href="{% querystring verified=None page=None %}" aria-label="Remove verified sellers filter">Verified sellers{% include "partials/icon.html" with name="close" %}</a>{% endif %}
           {% for chip in attribute_chips %}<a class="chip chip-removable" href="{{ chip.remove_url }}" aria-label="Remove {{ chip.label }} filter">{{ chip.label }}: {{ chip.value }}{% include "partials/icon.html" with name="close" %}</a>{% endfor %}

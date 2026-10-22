@@ -5,7 +5,7 @@
 <div class="container page-narrow-top seller-dashboard">
   <div class="page-heading">
     <div>
-      <h1>Welcome{% if user.first_name %}, {{ user.first_name }}{% endif %}</h1>
+      <h1>Welcome, {{ user.first_name|default:user.username }}</h1>
       <p>Manage your ads, track approvals, and keep your shop up to date.</p>
     </div>
     <div class="page-heading-actions">

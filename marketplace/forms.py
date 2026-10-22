@@ -1,3 +1,4 @@
+from django.conf import settings
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.core.exceptions import ValidationError
@@ -44,10 +45,29 @@ class MultipleImageField(forms.ImageField):
         return cleaned_files
 
 
-class RegistrationForm(UserCreationForm):
+class TownFieldMixin:
+    """City/town box with Ghana town suggestions (datalist) and tidy, region-free values."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "city" in self.fields:
+            self.fields["city"].widget.attrs.update({
+                "list": "gh-towns", "autocomplete": "address-level2", "placeholder": "e.g. Madina, Kumasi, Tamale",
+            })
+            self.fields["city"].label = "Town or area"
+
+    def clean_city(self):
+        from .ghana_places import clean_city
+
+        return clean_city(self.cleaned_data.get("city", ""))
+
+
+class RegistrationForm(TownFieldMixin, UserCreationForm):
     country = forms.RegexField(
         regex=r"^[A-Za-z]{2}$",
         error_messages={"invalid": "Enter a two-letter country code."},
+        required=False,
+        widget=forms.HiddenInput,
     )
 
     class Meta:
@@ -68,11 +88,18 @@ class RegistrationForm(UserCreationForm):
         super().__init__(*args, **kwargs)
         self.fields["email"].required = True
         self.fields["country"].initial = "GH"
+        self.fields["role"].widget = forms.RadioSelect(choices=User.Role.choices)
+        self.fields["role"].initial = self.initial.get("role", User.Role.BUYER)
+        self.fields["username"].help_text = "Letters, numbers and @ . + - _ only."
+        self.fields["password1"].help_text = "At least 8 characters. Avoid common or all-number passwords."
+        self.fields["password2"].label = "Confirm password"
+        self.fields["password2"].help_text = ""
+        self.fields["phone_number"].widget.attrs.update({"inputmode": "tel", "placeholder": "e.g. 024 123 4567"})
         self.fields["region"].choices = (
             ("", "Choose a region"),
             *GhanaRegion.choices,
         )
-        self.fields["region"].help_text = "Optional. Select your Ghana region."
+        self.fields["region"].help_text = ""
 
     def clean_email(self):
         email = self.cleaned_data["email"].strip().lower()
@@ -81,7 +108,7 @@ class RegistrationForm(UserCreationForm):
         return email
 
     def clean_country(self):
-        return self.cleaned_data["country"].upper()
+        return (self.cleaned_data.get("country") or settings.DEFAULT_COUNTRY).upper()
 
     def clean(self):
         cleaned_data = super().clean()
@@ -92,14 +119,22 @@ class RegistrationForm(UserCreationForm):
         return cleaned_data
 
 
-class ProfileForm(forms.ModelForm):
+class ProfileForm(TownFieldMixin, forms.ModelForm):
     class Meta:
         model = User
-        fields = ("first_name", "last_name", "email", "phone_number", "city", "region")
-        labels = {"phone_number": "Phone number", "city": "City or town"}
+        fields = ("first_name", "last_name", "email", "phone_number", "whatsapp_contact", "city", "region")
+        labels = {"phone_number": "Phone number", "city": "City or town",
+                  "whatsapp_contact": "Let buyers contact me on WhatsApp"}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        if self.instance.role != User.Role.SELLER:
+            del self.fields["whatsapp_contact"]
+        else:
+            self.fields["whatsapp_contact"].help_text = (
+                "Adds a WhatsApp button to your listings for signed-in buyers. "
+                "This shares your phone number with them. Leave it off to keep chats inside GhanaMarket."
+            )
         self.fields["email"].required = True
         self.fields["region"].choices = (("", "Choose a region"), *GhanaRegion.choices)
         self.fields["region"].required = False
@@ -112,6 +147,7 @@ class ProfileForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
+        _check_whatsapp(self, cleaned_data)
         if self.instance.role == User.Role.SELLER:
             for field in ("phone_number", "city", "region"):
                 if not cleaned_data.get(field):
@@ -119,7 +155,14 @@ class ProfileForm(forms.ModelForm):
         return cleaned_data
 
 
-class SellerUpgradeForm(forms.ModelForm):
+def _check_whatsapp(form, cleaned_data):
+    if cleaned_data.get("whatsapp_contact"):
+        probe = User(phone_number=cleaned_data.get("phone_number", ""))
+        if not probe.whatsapp_number:
+            form.add_error("phone_number", "Enter a Ghana mobile number (for example 024 123 4567) to use WhatsApp.")
+
+
+class SellerUpgradeForm(TownFieldMixin, forms.ModelForm):
     class Meta:
         model = User
         fields = ("phone_number", "city", "region")
@@ -132,7 +175,7 @@ class SellerUpgradeForm(forms.ModelForm):
             field.required = True
 
 
-class ProductForm(forms.ModelForm):
+class ProductForm(TownFieldMixin, forms.ModelForm):
     images = MultipleImageField(
         required=False,
         label="Item photos",

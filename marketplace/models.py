@@ -36,6 +36,9 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.BUYER)
     phone_number = models.CharField(max_length=30, blank=True)
+    whatsapp_contact = models.BooleanField(
+        default=False, help_text="Show a WhatsApp button on this person's listings (reveals their phone number).",
+    )
     city = models.CharField(max_length=100, blank=True)
     region = models.CharField(
         max_length=30, choices=GhanaRegion.choices, blank=True, default=""
@@ -61,6 +64,14 @@ class User(AbstractUser):
     @property
     def can_sell(self):
         return self.role == self.Role.SELLER and self.seller_status == self.SellerStatus.APPROVED
+
+    @property
+    def whatsapp_number(self):
+        """International digits for wa.me links (e.g. 233241112222), or "" if not a usable Ghana number."""
+        digits = "".join(ch for ch in self.phone_number or "" if ch.isdigit())
+        if len(digits) == 10 and digits.startswith("0"):
+            digits = "233" + digits[1:]
+        return digits if len(digits) == 12 and digits.startswith("233") else ""
 
     def request_seller_approval(self):
         from django.utils import timezone
@@ -515,6 +526,13 @@ def private_storage():
     import os
 
     from django.core.files.storage import FileSystemStorage
+
+    if getattr(settings, "PRIVATE_S3_BUCKET", "") and not settings.DEBUG:
+        from storages.backends.s3 import S3Storage
+
+        # Private bucket: no public URL; the staff-only view streams documents through the app.
+        return S3Storage(**settings.S3_CONNECTION, bucket_name=settings.PRIVATE_S3_BUCKET, querystring_auth=True,
+                         querystring_expire=300)
 
     class PrivateStorage(FileSystemStorage):
         # Read the setting on every access so tests and deployments can relocate it.

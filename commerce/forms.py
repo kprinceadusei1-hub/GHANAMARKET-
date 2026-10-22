@@ -1,11 +1,12 @@
 from django import forms
 
+from marketplace.forms import TownFieldMixin
 from marketplace.models import GhanaRegion
 
 from .models import Address, DeliveryOption, Order, OrderIssue
 
 
-class AddressForm(forms.ModelForm):
+class AddressForm(TownFieldMixin, forms.ModelForm):
     class Meta:
         model = Address
         fields = ("full_name", "phone_number", "region", "city", "street", "digital_address")

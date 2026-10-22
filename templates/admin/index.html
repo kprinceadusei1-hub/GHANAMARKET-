@@ -168,6 +168,36 @@
     </section>
   </div>
 
+  {% if cc_locations %}
+  <section class="cc-card cc-panel cc-locations" aria-labelledby="cc-loc-title">
+    <div class="cc-panel-head"><h2 id="cc-loc-title">Where your users are</h2><a href="{% url 'admin:marketplace_user_changelist' %}">All users →</a></div>
+    {% if cc_locations.missing or cc_locations.town_is_region %}
+      <p class="cc-loc-note">{% include "partials/icon.html" with name="alert" %}<span>
+        {% if cc_locations.missing %}{{ cc_locations.missing }} of {{ cc_locations.total }} account{{ cc_locations.total|pluralize }} {{ cc_locations.missing|pluralize:"has,have" }} no town or region yet.{% endif %}
+        {% if cc_locations.town_is_region %}{{ cc_locations.town_is_region }} typed a region name in the town box (for example “Greater Accra” instead of “Madina”). They will be asked for a real town next time they edit their profile.{% endif %}
+      </span></p>
+    {% endif %}
+    {% if cc_locations.regions %}
+      <div class="cc-table-wrap">
+        <table class="cc-table">
+          <thead><tr><th scope="col">Region</th><th scope="col">Buyers</th><th scope="col">Sellers</th><th scope="col" class="cc-loc-bar-col"><span class="visually-hidden">Share</span></th></tr></thead>
+          <tbody>
+            {% for row in cc_locations.regions %}
+              <tr>
+                <th scope="row"><a href="{% url 'admin:marketplace_user_changelist' %}?region__exact={{ row.region|urlencode }}">{{ row.region }}</a></th>
+                <td>{{ row.buyers }}</td><td>{{ row.sellers }}</td>
+                <td class="cc-loc-bar-col"><span class="cc-loc-bar" style="width:{{ row.width }}%"></span></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="cc-empty">{% include "partials/icon.html" with name="pin" %}<strong>No locations yet</strong><span>Regions appear here once buyers and sellers add them to their accounts.</span></div>
+    {% endif %}
+  </section>
+  {% endif %}
+
   <div class="cc-grid cc-grid-footer">
     <section class="cc-card cc-grow">
       <span class="cc-grow-icon">{% include "partials/icon.html" with name="chart" %}</span>

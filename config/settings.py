@@ -1,4 +1,5 @@
 import os
+import warnings
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlsplit
 from dotenv import load_dotenv
@@ -9,14 +10,18 @@ load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only-change-me")
 DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
+# Render sets this to the service's public hostname (e.g. ghanamarket.onrender.com).
+RENDER_HOST = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()
 if not DEBUG:
     if SECRET_KEY in {"dev-only-change-me", "replace-this-for-local-development"} or len(SECRET_KEY) < 50:
         raise ImproperlyConfigured("Set DJANGO_SECRET_KEY to a unique secret of at least 50 characters when DEBUG is false.")
-    if not os.getenv("DJANGO_ALLOWED_HOSTS", "").strip():
+    if not os.getenv("DJANGO_ALLOWED_HOSTS", "").strip() and not RENDER_HOST:
         raise ImproperlyConfigured("Set DJANGO_ALLOWED_HOSTS explicitly when DEBUG is false.")
 ALLOWED_HOSTS = [host.strip() for host in os.getenv(
-    "DJANGO_ALLOWED_HOSTS", "127.0.0.1,localhost"
+    "DJANGO_ALLOWED_HOSTS", "" if RENDER_HOST else "127.0.0.1,localhost"
 ).split(",") if host.strip()]
+if RENDER_HOST:
+    ALLOWED_HOSTS.append(RENDER_HOST)
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -32,6 +37,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -114,6 +120,8 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
+# WhiteNoise warns when STATIC_ROOT does not exist yet (normal before `collectstatic`, e.g. in development).
+warnings.filterwarnings("ignore", message="No directory at: ")
 MEDIA_URL = "media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
@@ -155,6 +163,8 @@ SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_SAMESITE = "Lax"
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.getenv("DJANGO_CSRF_TRUSTED_ORIGINS", "").split(",") if origin.strip()]
+if RENDER_HOST:
+    CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_HOST}")
 # Only enable when the app runs behind a proxy that sets/overwrites these headers.
 TRUST_X_FORWARDED_FOR = os.getenv("DJANGO_TRUST_X_FORWARDED_FOR", "False").lower() == "true"
 if os.getenv("DJANGO_SECURE_PROXY_SSL_HEADER", "False").lower() == "true":
@@ -194,17 +204,43 @@ if PAYMENT_PROVIDER == "paystack" and not PAYSTACK_SECRET_KEY:
     raise ImproperlyConfigured("Set PAYSTACK_SECRET_KEY when PAYMENT_PROVIDER=paystack.")
 CHECKOUT_EXPIRY_MINUTES = int(os.getenv("CHECKOUT_EXPIRY_MINUTES", "60"))
 # Absolute base URL used in emails, e.g. https://ghanamarket.example
-SITE_URL = os.getenv("SITE_URL", "http://127.0.0.1:8000" if DEBUG else "").strip()
+SITE_URL = os.getenv("SITE_URL", "http://127.0.0.1:8000" if DEBUG else (f"https://{RENDER_HOST}" if RENDER_HOST else "")).strip()
 NOTIFICATION_EMAILS_ENABLED = os.getenv("NOTIFICATION_EMAILS_ENABLED", "True").lower() == "true"
 
 # Identity documents for seller verification live outside MEDIA_ROOT and are only served to staff.
 PRIVATE_MEDIA_ROOT = Path(os.getenv("PRIVATE_MEDIA_ROOT", BASE_DIR / "private_media"))
 SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", "").strip()
 
-# Production: hashed static filenames (cache-busting) after `collectstatic`. Serve STATIC_ROOT and
-# MEDIA_ROOT from the web server; never serve PRIVATE_MEDIA_ROOT.
+# Cloud storage for uploads: any S3-compatible service (Cloudflare R2, AWS S3, Backblaze B2...).
+# Listing photos go to MEDIA_S3_BUCKET (publicly readable); identity documents go to the separate,
+# private PRIVATE_S3_BUCKET and are only ever streamed to staff by the app. Keys come from the
+# environment only. Hosts with temporary disks (like Render) must use this, or uploads are lost.
+MEDIA_S3_BUCKET = os.getenv("MEDIA_S3_BUCKET", "").strip()
+PRIVATE_S3_BUCKET = os.getenv("PRIVATE_S3_BUCKET", "").strip()
+S3_CONNECTION = {
+    "endpoint_url": os.getenv("S3_ENDPOINT_URL", "").strip() or None,
+    "access_key": os.getenv("S3_ACCESS_KEY_ID", "").strip(),
+    "secret_key": os.getenv("S3_SECRET_ACCESS_KEY", "").strip(),
+    "region_name": os.getenv("S3_REGION", "auto").strip(),
+    "signature_version": "s3v4",
+    "file_overwrite": False,
+    "default_acl": None,
+}
+# Public hostname that serves the media bucket, e.g. pub-xxxx.r2.dev or media.ghanamarket.com.
+MEDIA_PUBLIC_DOMAIN = os.getenv("MEDIA_PUBLIC_DOMAIN", "").strip().removeprefix("https://").rstrip("/")
+if MEDIA_S3_BUCKET and not PRIVATE_S3_BUCKET:
+    raise ImproperlyConfigured("Set PRIVATE_S3_BUCKET too, so identity documents are kept off the server's temporary disk.")
+if not DEBUG and os.getenv("RENDER") and not MEDIA_S3_BUCKET:
+    raise ImproperlyConfigured("Render's disk is wiped on every deploy: set MEDIA_S3_BUCKET and PRIVATE_S3_BUCKET.")
+
+# Production: compressed, hashed static files (cache-busting) served by WhiteNoise after `collectstatic`.
 if not DEBUG:
     STORAGES = {
         "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-        "staticfiles": {"BACKEND": "django.contrib.staticfiles.storage.ManifestStaticFilesStorage"},
+        "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
     }
+    if MEDIA_S3_BUCKET:
+        STORAGES["default"] = {"BACKEND": "storages.backends.s3.S3Storage", "OPTIONS": {
+            **S3_CONNECTION, "bucket_name": MEDIA_S3_BUCKET,
+            "custom_domain": MEDIA_PUBLIC_DOMAIN or None, "querystring_auth": not MEDIA_PUBLIC_DOMAIN,
+        }}

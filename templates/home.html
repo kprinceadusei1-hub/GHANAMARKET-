@@ -9,9 +9,9 @@
       <h1 id="hero-title">Everything You Need,<br><span>All in One Place</span></h1>
       <p>Buy and sell new and used products, find services, and discover great listings from sellers across Ghana.</p>
       <ul class="hero-trust">
-        <li>{% include "partials/icon.html" with name="shield" %}Verified payments</li>
-        <li>{% include "partials/icon.html" with name="shield" %}Verified sellers</li>
-        <li>{% include "partials/icon.html" with name="shield" %}Reviewed before publishing</li>
+        <li>{% include "partials/icon.html" with name="shield" %}Every ad reviewed</li>
+        <li>{% include "partials/icon.html" with name="shield" %}Private chat, number hidden</li>
+        <li>{% include "partials/icon.html" with name="shield" %}Free to post</li>
       </ul>
       {% if has_demo_listings %}<span class="preview-pill">Preview catalogue</span>{% endif %}
     </div>
@@ -78,6 +78,14 @@
       {% for key, label, items in product_tabs %}
         <div class="product-grid" role="tabpanel" id="panel-{{ key }}" aria-labelledby="tab-{{ key }}"{% if not forloop.first %} hidden{% endif %}>
           {% for product in items %}{% include "marketplace/_product_card.html" %}{% endfor %}
+          {% if items|length < 4 %}
+            <a class="invite-card" href="{{ sell_url }}">
+              <span class="invite-card-icon">{% include "partials/icon.html" with name="plus" %}</span>
+              <strong>Your ad could be here</strong>
+              <small>Post for free in about two minutes. Our team reviews every ad before buyers see it.</small>
+              <span class="invite-card-cta">Post a free ad {% include "partials/icon.html" with name="chevron" %}</span>
+            </a>
+          {% endif %}
         </div>
       {% empty %}
         <div class="launch-inline">
@@ -99,7 +107,7 @@
       {% endfor %}
     </section>
 
-    {% if collections %}
+    {% if collections|length >= 3 %}
     <section class="panel" aria-labelledby="popular-categories-heading">
       <div class="panel-head"><h2 id="popular-categories-heading">Popular Categories</h2><a class="panel-link" href="{% url 'category_index' %}">View All {% include "partials/icon.html" with name="chevron" %}</a></div>
       <div class="photo-categories">
@@ -115,7 +123,7 @@
 
     {% if nearby %}
     <section class="panel" aria-labelledby="nearby-heading">
-      <div class="panel-head"><h2 id="nearby-heading">Near you in {{ user.region }}</h2><a class="panel-link" href="{% url 'product_list' %}?region={{ user.region|urlencode }}">View All {% include "partials/icon.html" with name="chevron" %}</a></div>
+      <div class="panel-head"><h2 id="nearby-heading">Near you in {{ area.region }}</h2><a class="panel-link" href="{% url 'product_list' %}?near=1">View All {% include "partials/icon.html" with name="chevron" %}</a></div>
       <div class="product-grid">{% for product in nearby %}{% include "marketplace/_product_card.html" %}{% endfor %}</div>
     </section>
     {% endif %}

@@ -9,7 +9,7 @@
       <a class="icon-button" href="{% url 'conversation_list' %}" aria-label="Back to messages">{% include "partials/icon.html" with name="back" %}</a>
       <a class="chat-product" href="{% url 'product_detail' conversation.product.pk %}">
         <span class="conversation-thumb">{% if conversation.product.image %}<img src="{{ conversation.product.image|thumbnail:160 }}" alt="">{% else %}{% include "partials/icon.html" with name="camera" %}{% endif %}</span>
-        <span><strong>{% if user == conversation.buyer %}{{ conversation.seller.get_full_name|default:conversation.seller.username }}{% else %}{{ conversation.buyer.get_full_name|default:conversation.buyer.username }}{% endif %}</strong><small>{{ conversation.product.title }} · {{ conversation.product.price|cedis }}</small></span>
+        <span><strong>{% if user == conversation.buyer %}{{ conversation.seller.get_full_name|default:conversation.seller.username }}{% else %}{{ conversation.buyer.get_full_name|default:conversation.buyer.username }}{% endif %}</strong><small>{{ conversation.product.title }} · {{ conversation.product.price|cedis }}{% with where=other_user|place %}{% if where %} · {{ where }}{% endif %}{% endwith %}</small></span>
       </a>
       <details class="chat-menu">
         <summary class="icon-button" aria-label="More actions">⋮</summary>

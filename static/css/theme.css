@@ -530,3 +530,95 @@ h1, h2, h3 { color: var(--ink); letter-spacing: -.015em; }
 
 .card-btn-disabled { border-color: var(--line-strong); color: var(--muted); background: #f3f4f6; cursor: not-allowed; }
 .card-btn-disabled:hover { background: #f3f4f6; }
+
+.conversation-place { display: inline-flex; align-items: center; gap: 3px; margin-left: 8px; font-size: 12px; font-weight: 500; color: #64748b; }
+.conversation-place svg { width: 12px; height: 12px; }
+
+/* Near me */
+.near-me-bar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 14px; font-size: 14px; color: #475569; }
+.near-me-bar .chip { display: inline-flex; align-items: center; gap: 5px; }
+.near-me-bar .chip svg, .near-me-where svg { width: 15px; height: 15px; }
+.near-me-where { display: inline-flex; align-items: center; gap: 5px; }
+.near-me-change { position: relative; }
+.near-me-change > summary { cursor: pointer; color: #047857; font-weight: 600; list-style: none; }
+.near-me-change > summary::-webkit-details-marker { display: none; }
+.near-me-form { position: absolute; z-index: 30; top: calc(100% + 8px); left: 0; width: min(320px, calc(100vw - 32px)); display: grid; gap: 10px; padding: 14px; background: #fff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 12px 32px rgba(15, 23, 42, .12); }
+.near-me-form small { color: #64748b; }
+.near-me-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 640px) { .near-me-form { position: fixed; left: 16px; right: 16px; top: auto; bottom: 16px; width: auto; } }
+
+/* WhatsApp */
+.button-whatsapp { background: #25d366; border-color: #25d366; color: #0b3d22 !important; font-weight: 600; }
+.button-whatsapp:hover { background: #1ebe5b; border-color: #1ebe5b; }
+.button-whatsapp .icon { stroke: currentColor; }
+/* Detail actions: main contact buttons take a full row; Share and Save sit side by side. */
+.detail-actions .button { white-space: nowrap; }
+.detail-actions > a.button-primary, .detail-actions > a.button-whatsapp { flex: 1 1 100%; }
+.detail-actions > a.button-outline, .detail-actions > form { flex: 1 1 0; }
+
+/* ===== UI pass 2026-10-22 ===== */
+/* The hidden attribute must win over display rules (tab panels, notes). */
+[hidden] { display: none !important; }
+
+/* Invite card fills sparse product rows */
+.invite-card { display: flex; flex-direction: column; justify-content: center; gap: 8px; min-height: 100%; padding: 22px 18px; border: 1.5px dashed #a7d7bd; border-radius: 14px; background: linear-gradient(180deg, #f3fbf6, #fff); color: #0f172a; text-decoration: none; transition: border-color .15s, box-shadow .15s; }
+.invite-card:hover { border-color: #15803d; box-shadow: 0 8px 24px rgba(21, 128, 61, .12); }
+.invite-card-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%; background: #15803d; color: #fff; }
+.invite-card-icon .icon { width: 22px; height: 22px; stroke: #fff; }
+.invite-card strong { font-size: 1.05rem; }
+.invite-card small { color: #475569; line-height: 1.45; }
+.invite-card-cta { display: inline-flex; align-items: center; gap: 4px; margin-top: 4px; color: #15803d; font-weight: 700; font-size: .92rem; }
+.invite-card-cta .icon { width: 16px; height: 16px; }
+
+/* Auth pages */
+.auth-shell { max-width: 1040px; }
+@media (min-width: 860px) {
+  .auth-shell { align-items: start; }
+  .auth-aside { position: sticky; top: 140px; overflow: hidden; padding: 32px 32px 0; gap: 22px; }
+  .auth-aside h2 { color: #fff !important; font-size: 1.7rem; line-height: 1.2; letter-spacing: -.01em; }
+  .auth-aside-lead { margin: 8px 0 0; color: rgb(255 255 255 / .82); }
+  .auth-aside li { color: rgb(255 255 255 / .9); line-height: 1.4; }
+  .auth-aside li strong { color: #fff; }
+  .auth-aside li .icon { flex: none; width: 20px; height: 20px; padding: 3px; border-radius: 50%; background: rgb(255 255 255 / .16); stroke: #fff !important; color: #fff !important; }
+  .auth-aside-photo { display: block; align-self: flex-end; width: 190px; height: auto; margin: 8px -8px 0 auto; }
+}
+.register-form { gap: 18px; }
+.role-choice, .form-section { border: 0; margin: 0; padding: 0; min-width: 0; }
+.role-choice legend, .form-section legend { padding: 0; margin-bottom: 10px; font-weight: 700; color: #0f172a; }
+.form-section legend small { display: block; margin-top: 2px; font-weight: 500; color: #b45309; }
+.form-section { padding-top: 16px; border-top: 1px solid #e2e8f0; }
+.role-options { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.role-option { position: relative; display: flex; align-items: center; gap: 12px; padding: 14px; border: 1.5px solid #e2e8f0; border-radius: 12px; cursor: pointer; background: #fff; transition: border-color .15s, background .15s; }
+.role-option input { position: absolute; opacity: 0; pointer-events: none; }
+.role-option strong { display: block; font-size: 1rem; }
+.role-option small { display: block; color: #64748b; font-size: .82rem; line-height: 1.35; }
+.role-option-icon { display: grid; place-items: center; flex: none; width: 40px; height: 40px; border-radius: 10px; background: #f1f5f9; color: #334155; }
+.role-option-icon .icon { width: 20px; height: 20px; }
+.role-option:has(input:checked) { border-color: #15803d; background: #f0fdf4; box-shadow: 0 0 0 3px rgba(21, 128, 61, .12); }
+.role-option:has(input:checked) .role-option-icon { background: #15803d; color: #fff; }
+.role-option:has(input:checked) .role-option-icon .icon { stroke: #fff; }
+.role-option:has(input:focus-visible) { outline: 2px solid #15803d; outline-offset: 2px; }
+@media (max-width: 420px) { .role-options { grid-template-columns: 1fr; } }
+.form-legal { margin: 0; font-size: .82rem; color: #64748b; text-align: center; }
+.form-legal a { color: #15803d; }
+
+/* Account settings */
+.container.container-narrow { max-width: 760px; }
+
+/* Listing detail on phones: details and description before the safety tips */
+@media (max-width: 959px) {
+  .detail-layout { display: flex; flex-direction: column; }
+  .detail-summary { display: contents; }
+  .detail-gallery { order: 0; }
+  .price-card { order: 1; }
+  .contact-card { order: 2; }
+  .detail-info { order: 3; }
+  .seller-card { order: 4; }
+  .safety-card { order: 5; }
+}
+.register-form .form-grid > .field:has(input[name="email"]) { grid-column: auto; }
+.form-section legend { float: left; width: 100%; }
+.form-section legend + * { clear: both; }
+.auth-aside-photo { border-radius: 14px 14px 0 0; }
+/* Post / edit ad form: comfortable reading width */
+.container.container-medium { max-width: 920px; }

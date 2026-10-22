@@ -3,3 +3,4 @@
   {% if field.help_text %}<small>{{ field.help_text|safe }}</small>{% endif %}
   {% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
 </div>
+{% if field.field.widget.attrs.list == "gh-towns" %}{% load market %}{% ghana_towns_datalist %}{% endif %}

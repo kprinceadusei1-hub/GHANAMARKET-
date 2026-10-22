@@ -196,8 +196,10 @@ def home(request):
             ("recommended", "Recommended", recommended),
         ) if tab[2]]
     nearby = []
-    if request.user.is_authenticated and request.user.region:
-        nearby = list(with_photo_counts.filter(region=request.user.region)[:4])
+    area = buyer_area(request)
+    if area:
+        nearby = list(with_proximity(with_photo_counts.filter(region=area["region"]), area).order_by(
+            "is_demo", "proximity", "-created_at")[:4])
     verified_sellers = [seller for seller in seller_storefronts if seller.verified_at]
     own_pending = []
     if request.user.is_authenticated and request.user.role == User.Role.SELLER:
@@ -208,6 +210,7 @@ def home(request):
         "own_pending": own_pending,
         "product_tabs": tabs,
         "nearby": nearby,
+        "area": area,
         "verified_sellers": verified_sellers,
         "collections": collections,
         "products": products,
@@ -288,7 +291,8 @@ def register(request):
     if request.user.is_authenticated:
         return redirect("home")
     data = request.POST if request.method == "POST" else None
-    form = RegistrationForm(data)
+    initial = {"role": User.Role.SELLER} if request.GET.get("role") == "seller" else {}
+    form = RegistrationForm(data, initial=initial)
     if request.method == "POST" and throttling.hit(
         "register", throttling.client_ip(request), REGISTRATIONS_PER_HOUR, 3600
     ):
@@ -339,6 +343,59 @@ def become_seller(request):
     return render(request, "registration/seller_upgrade.html", {"form": form})
 
 
+AREA_SESSION_KEY = "buyer_area"
+
+
+def buyer_area(request):
+    """The buyer's area as {"town", "region"}: chosen on the site, else from their profile. Empty if unknown."""
+    chosen = request.session.get(AREA_SESSION_KEY)
+    if chosen and chosen.get("region"):
+        return chosen
+    user = request.user
+    if user.is_authenticated and user.region:
+        from .ghana_places import REGION_NAMES
+
+        town = (user.city or "").strip()
+        return {"town": "" if town.lower() in REGION_NAMES else town, "region": user.region}
+    return {}
+
+
+def with_proximity(products, area):
+    """Annotate ``proximity``: 0 = same town, 1 = same region, 2 = elsewhere in Ghana."""
+    whens = []
+    if area.get("town"):
+        whens.append(When(region=area["region"], city__iexact=area["town"], then=Value(0)))
+    whens.append(When(region=area["region"], then=Value(1)))
+    return products.annotate(proximity=Case(*whens, default=Value(2), output_field=IntegerField()))
+
+
+@require_POST
+def set_area(request):
+    """Remember where the buyer is shopping from (this browser only), or forget it."""
+    from django.core.exceptions import ValidationError
+
+    from .ghana_places import clean_city
+
+    next_url = request.POST.get("next", "")
+    if not url_has_allowed_host_and_scheme(next_url, {request.get_host()}, request.is_secure()):
+        next_url = reverse("product_list")
+    if request.POST.get("clear"):
+        request.session.pop(AREA_SESSION_KEY, None)
+        return redirect(next_url)
+    region = request.POST.get("region", "").strip()
+    if region not in {value for value, _ in GhanaRegion.choices}:
+        messages.error(request, "Choose your region to see listings near you.")
+        return redirect(next_url)
+    try:
+        town = clean_city(request.POST.get("town", "")[:100])
+    except ValidationError as error:
+        messages.error(request, error.messages[0])
+        return redirect(next_url)
+    request.session[AREA_SESSION_KEY] = {"town": town, "region": region}
+    messages.success(request, f"Showing listings near {', '.join(part for part in (town, region) if part)} first.")
+    return redirect(next_url)
+
+
 def product_list(request):
     products = catalog.showcase_products().annotate(extra_photo_count=Count("photos", distinct=True))
     params = request.GET
@@ -349,6 +406,8 @@ def product_list(request):
     maximum_price = params.get("max_price", "").strip()
     condition = params.get("condition", "").strip()
     sort = params.get("sort", "").strip()
+    area = buyer_area(request)
+    near_me = params.get("near") == "1" and bool(area)
 
     category = catalog.top_categories().filter(slug=params.get("category", "").strip()).first()
     subcategory = None
@@ -363,6 +422,8 @@ def product_list(request):
         products = products.filter(region=region)
     else:
         region = ""
+    if near_me:
+        products = products.filter(region=area["region"])
     if city:
         products = products.filter(city__icontains=city)
     quick_prices = catalog.price_buckets(products)
@@ -403,14 +464,20 @@ def product_list(request):
     sort_options = [("newest", "Most recent"), ("price-low", "Price: low to high"), ("price-high", "Price: high to low")]
     if query:
         sort_options.insert(0, ("relevance", "Best match"))
+    if area:
+        sort_options.append(("nearest", "Closest to me"))
     orderings = {
         "relevance": ("-relevance", "-created_at"),
         "newest": ("-created_at",),
         "price-low": ("price", "-created_at"),
         "price-high": ("-price", "-created_at"),
+        "nearest": ("proximity", "-created_at"),
     }
+    default_sort = "nearest" if near_me else ("relevance" if query else "newest")
     if sort not in dict(sort_options):
-        sort = "relevance" if query else "newest"
+        sort = default_sort
+    if area:
+        products = with_proximity(products, area)
     products = catalog.with_promotion(products, catalog.CATEGORY_PLACEMENTS)
     ordering = orderings[sort]
     if sort in {"newest", "relevance"} and (category or query):
@@ -438,8 +505,11 @@ def product_list(request):
         "facet": facet,
         "has_extra_filters": bool(
             region or city or minimum_price or maximum_price or condition or active_attributes or verified_only
-            or checkout_only
+            or checkout_only or near_me
         ),
+        "area": area,
+        "near_me": near_me,
+        "area_label": ", ".join(part for part in (area.get("town"), area.get("region")) if part),
         "verified_only": verified_only,
         "checkout_only": checkout_only,
         "selected_region": region,
@@ -448,7 +518,7 @@ def product_list(request):
         "maximum_price": maximum_price,
         "selected_condition": condition,
         "selected_sort": sort,
-        "default_sort": "relevance" if query else "newest",
+        "default_sort": default_sort,
         "sort_options": sort_options,
         "condition_options": Product.Condition.choices,
         "categories": [(c.slug, c.name) for c in catalog.top_categories()],
@@ -521,6 +591,24 @@ def _detail_context(request, product, **overrides):
         "stock_choices": range(1, min(product.stock_quantity, 10) + 1),
         "recently_viewed": _recently_viewed(request, exclude=product.pk),
     }
+    from urllib.parse import quote
+
+    listing_url = request.build_absolute_uri(reverse("product_detail", args=[product.pk]))
+    is_live = product.status == Product.Status.PUBLISHED and not product.is_demo
+    if is_live:
+        context["whatsapp_share_url"] = "https://wa.me/?text=" + quote(
+            f"{product.title} – GH₵ {product.price:,.2f} on GhanaMarket: {listing_url}"
+        )
+    seller = product.seller
+    if is_live and seller.whatsapp_contact and seller.whatsapp_number and user.pk != seller.pk and not (
+        user.is_authenticated and User.blocked_between(user, seller)
+    ):
+        # Signed-in buyers only, so phone numbers are not handed to scrapers.
+        context["whatsapp_contact_url"] = (
+            f"https://wa.me/{seller.whatsapp_number}?text=" + quote(
+                f"Hello, I saw your ad “{product.title}” on GhanaMarket: {listing_url} Is it still available?"
+            ) if user.is_authenticated else f"{reverse('login')}?next={reverse('product_detail', args=[product.pk])}"
+        )
     context.update(overrides)
     return context
 

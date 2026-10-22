@@ -389,6 +389,31 @@ def quick_actions(user):
             for label, icon, perm, url_name, query in actions if user.has_perm(perm)]
 
 
+def _users_by_region():
+    """Active buyers and sellers per region, plus accounts whose location is missing or needs fixing."""
+    from .ghana_places import REGION_NAMES
+
+    people = User.objects.filter(is_active=True, is_staff=False, role__in=(User.Role.BUYER, User.Role.SELLER)).exclude(
+        email__endswith="@example.invalid"
+    )
+    rows = {}
+    for row in people.exclude(region="").order_by().values("region", "role").annotate(total=Count("id")):
+        entry = rows.setdefault(row["region"], {"region": row["region"], "buyers": 0, "sellers": 0})
+        entry["buyers" if row["role"] == User.Role.BUYER else "sellers"] += row["total"]
+    regions = sorted(rows.values(), key=lambda r: (-(r["buyers"] + r["sellers"]), r["region"]))
+    peak = max((r["buyers"] + r["sellers"] for r in regions), default=0)
+    for entry in regions:
+        entry["total"] = entry["buyers"] + entry["sellers"]
+        entry["width"] = round(entry["total"] * 100 / peak) if peak else 0
+    cities = people.values_list("city", flat=True)
+    return {
+        "regions": regions,
+        "total": people.count(),
+        "missing": people.filter(Q(region="") | Q(city="")).count(),
+        "town_is_region": sum(1 for city in cities if city.strip().lower().replace(" region", "") in REGION_NAMES),
+    }
+
+
 def build_dashboard(user, period, queues=None):
     today = timezone.localdate()
     start_date = today - timedelta(days=period - 1)
@@ -412,5 +437,6 @@ def build_dashboard(user, period, queues=None):
         "cc_activity": _recent_activity(user),
         "cc_quick_actions": quick_actions(user),
         "cc_demo_count": Product.objects.filter(is_demo=True).count(),
+        "cc_locations": _users_by_region() if user.has_perm("marketplace.view_user") else None,
         "cc_category_count": Category.objects.filter(parent__isnull=True, is_active=True).count(),
     }
