@@ -46,6 +46,10 @@ class PaymentProvider:
         """Validate and parse a webhook request. Raises WebhookSignatureError when invalid."""
         raise NotImplementedError
 
+    def refund_status(self, provider_reference):
+        """Return "completed", "failed" or "pending" for a refund created earlier."""
+        raise NotImplementedError
+
     def refund(self, payment, amount):
         """Request a refund. Returns (status, provider_reference) where status is 'requested' or 'completed'."""
         raise NotImplementedError

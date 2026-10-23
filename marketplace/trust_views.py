@@ -43,10 +43,15 @@ def seller_verification(request):
         verification = form.save(commit=False)
         verification.user = request.user
         verification.save()
+        if request.user.seller_status == User.SellerStatus.PENDING:
+            messages.success(request, "Thanks. Your seller application and Ghana Card are now with our team. "
+                                      "We will notify you, usually within one working day.")
+            return redirect("seller_listings")
         messages.success(request, "Thanks. Our team will review your documents, usually within two working days.")
         return redirect("seller_verification")
     return render(request, "marketplace/seller_verification.html", {
         "form": form, "latest": latest, "can_submit": can_submit,
+        "applying": request.user.seller_status == User.SellerStatus.PENDING,
     })
 
 
@@ -56,11 +61,20 @@ def verification_document(request, pk):
     if not request.user.has_perm("marketplace.view_sellerverification"):
         raise Http404()
     verification = get_object_or_404(SellerVerification, pk=pk)
-    response = FileResponse(verification.document.open("rb"))
+    extension = verification.document.name.rsplit(".", 1)[-1].lower()
+    content_type = DOCUMENT_CONTENT_TYPES.get(extension)
+    response = FileResponse(verification.document.open("rb"), content_type=content_type or "application/octet-stream")
     response["Cache-Control"] = "private, no-store"
     response["X-Content-Type-Options"] = "nosniff"
-    response["Content-Disposition"] = "inline"
+    # Only known image/PDF types are shown in the browser; anything else downloads. No scripts can run.
+    response["Content-Disposition"] = "inline" if content_type else "attachment"
+    response["Content-Security-Policy"] = "default-src 'none'; img-src 'self'; style-src 'unsafe-inline'; sandbox"
     return response
+
+
+DOCUMENT_CONTENT_TYPES = {
+    "pdf": "application/pdf", "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp",
+}
 
 
 # ---------------------------------------------------------------- reviews

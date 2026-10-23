@@ -60,3 +60,21 @@ def place(obj):
     elif city.islower():
         city = city.title()
     return ", ".join(part for part in (city, region) if part)
+
+
+@register.filter
+def tidy_caps(value):
+    """Show ALL-CAPS seller text ('18 PRO MAX') as '18 Pro Max'; leave normal text alone."""
+    text = str(value or "")
+    letters = [ch for ch in text if ch.isalpha()]
+    if len(letters) > 3 and all(ch.isupper() for ch in letters):
+        return " ".join(word if len(word) <= 3 and word.isalpha() and word in {"TV", "USB", "HD", "SSD", "RAM", "GB", "TB", "4K", "LED", "AC"} else word.capitalize() for word in text.split(" "))
+    return text
+
+
+@register.filter
+def with_error_aria(field):
+    """Render an invalid field so screen readers announce its error message."""
+    attrs = field.field.widget.attrs
+    described = " ".join(filter(None, [attrs.get("aria-describedby", ""), f"{field.auto_id}_errors"]))
+    return field.as_widget(attrs={"aria-invalid": "true", "aria-describedby": described})

@@ -101,7 +101,7 @@ class VerificationTests(TrustFixtures):
         self.assertEqual(verification.status, SellerVerification.Status.PENDING)
         self.seller.refresh_from_db()
         self.assertFalse(self.seller.is_verified_seller)
-        self.assertNotContains(self.client.get(reverse("product_detail", args=[self.product.pk])), "Verified seller")
+        self.assertNotContains(self.client.get(reverse("product_detail", args=[self.product.pk])), "seller-badge-verified")
 
         self.staff.user_permissions.add(*Permission.objects.filter(codename__in=(
             "view_sellerverification", "change_sellerverification")))
@@ -111,7 +111,7 @@ class VerificationTests(TrustFixtures):
         })
         self.seller.refresh_from_db()
         self.assertTrue(self.seller.is_verified_seller)
-        self.assertContains(self.client.get(reverse("product_detail", args=[self.product.pk])), "Verified seller")
+        self.assertContains(self.client.get(reverse("product_detail", args=[self.product.pk])), "seller-badge-verified")
         self.assertTrue(Notification.objects.filter(user=self.seller, title__contains="verified seller").exists())
 
     def test_rejecting_removes_badge(self):

@@ -9,7 +9,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only-change-me")
-DEBUG = os.getenv("DJANGO_DEBUG", "True").lower() == "true"
+# Off unless explicitly enabled (local .env sets DJANGO_DEBUG=True), so a missing variable can never
+# switch on development features such as the test payment provider.
+DEBUG = os.getenv("DJANGO_DEBUG", "False").lower() == "true"
 # Render sets this to the service's public hostname (e.g. ghanamarket.onrender.com).
 RENDER_HOST = os.getenv("RENDER_EXTERNAL_HOSTNAME", "").strip()
 if not DEBUG:
@@ -167,6 +169,9 @@ if RENDER_HOST:
     CSRF_TRUSTED_ORIGINS.append(f"https://{RENDER_HOST}")
 # Only enable when the app runs behind a proxy that sets/overwrites these headers.
 TRUST_X_FORWARDED_FOR = os.getenv("DJANGO_TRUST_X_FORWARDED_FOR", "False").lower() == "true"
+# How many proxies in front of the app append to X-Forwarded-For (Render: 1). The client IP is read
+# that many entries from the right, so a forged header cannot bypass rate limits.
+TRUSTED_PROXY_COUNT = int(os.getenv("DJANGO_TRUSTED_PROXY_COUNT", "1"))
 if os.getenv("DJANGO_SECURE_PROXY_SSL_HEADER", "False").lower() == "true":
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 

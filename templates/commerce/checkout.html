@@ -76,6 +76,10 @@
     section.hidden = !chosen.some((radio) => needsAddress.has(radio.value));
     const saved = section.querySelector('input[name="address"]:checked');
     fields.hidden = Boolean(saved && saved.value);
+    // Hidden fields must also be disabled, or the browser refuses to submit because of their
+    // "required" rule (e.g. a first-time buyer choosing collection, who has no saved address).
+    const off = section.hidden || fields.hidden;
+    fields.querySelectorAll("input, select, textarea").forEach((input) => { input.disabled = off; });
   };
   form.addEventListener("change", sync);
   sync();

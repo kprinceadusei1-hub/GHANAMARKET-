@@ -16,6 +16,7 @@ currency, categories, delivery options and payment provider all configurable.
 Open a terminal in this folder (the one containing `manage.py`). In VS Code you can also run **Terminal → Run Task → Run Africa Marketplace (Django)**.
 
 ```powershell
+copy .env.example .env          # DEBUG is off unless .env says DJANGO_DEBUG=True
 py -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe manage.py migrate
@@ -24,7 +25,7 @@ py -m venv .venv
 ```
 Open http://127.0.0.1:8000/ (site) and http://127.0.0.1:8000/admin/ (control room).
 
-- `manage.py seed_demo_marketplace`: optional preview catalogue (clearly labelled, hidden from buyers).
+- `manage.py seed_demo_marketplace`: optional preview catalogue, clearly labelled "Preview example" and never buyable; remove with `--delete` or the admin button.
 - `manage.py seed_categories`: restores any missing launch categories (already run by migrations).
 - `manage.py expire_checkouts`: releases stock from unpaid checkouts. Schedule it every few minutes in production.
 
@@ -32,6 +33,8 @@ Open http://127.0.0.1:8000/ (site) and http://127.0.0.1:8000/admin/ (control roo
 With `DEBUG=True`, the payment provider defaults to **test mode**: the "Pay" button opens a clearly labelled in-app page where you choose *Simulate successful payment* or *Simulate failed payment*. No money moves, and the same server-side verification path as a real provider is used. To sell online, a seller ticks **Sell online with checkout** on a listing (not available in property, jobs, services or vehicles by default) and sets the units available.
 
 ## Features
+**New since the first release:** live chat (instant send, new messages every few seconds, "Seen" receipts) open to any signed-in user; call / text / WhatsApp the seller after an authenticated "Show contact" (sellers can hide their number); request a call back; Jiji-style seller box (time on GhanaMarket, Verified ID, real reply speed, feedback); Ghana Card step for new sellers with a staff verification desk (card photo in the panel, automatic warnings such as a card number reused on another account, one-step approve + badge); "Near me" filter and sort; Ghana town suggestions; two-pane category menu and sidebar with live counts and category search; full-screen photo viewer.
+
 **Buyers:** search with suggestions, recent and popular searches; category, subcategory, region, price, condition and category-specific filters (e.g. year/mileage for cars, bedrooms for property); verified-seller filter; listing pages with gallery, seller rating and verification, safety tips and similar ads; recently viewed; favourites; private chat with quick replies; cart and checkout split by seller; saved addresses; order tracking; confirm receipt; return/refund/dispute requests; seller reviews after completed orders; block and report users; notifications; password reset; account deletion.
 
 **Sellers:** guided category-first listing form with category-specific fields; up to 8 photos (auto-rotated, resized, location metadata removed); choose chat, online checkout or both; stock; dashboard with status filters; deactivate, resubmit and delete; paid order queue with status updates and tracking reference; cancel with automatic full refund; identity/business verification; storefront with reviews.
@@ -53,7 +56,9 @@ With `DEBUG=True`, the payment provider defaults to **test mode**: the "Pay" but
 ```powershell
 .\.venv\Scripts\python.exe manage.py test
 ```
-163 tests cover accounts, permissions, listings, categories and attribute filters, search, messaging and blocking, reports, checkout and stock, payment verification, webhooks and duplicates, refunds, order state rules, verification, reviews, image processing, admin queues and analytics, rate limits and account deletion. Tests write uploads to a temporary folder, never to `media/`.
+290 tests cover accounts, permissions (including admin privilege escalation), listings, categories and attribute filters, search, messaging, live chat and blocking, reports, checkout and stock (including reservations during seller edits), payment verification, webhooks, duplicates and provider outages, late/duplicate-payment refunds, refund reconciliation, order state rules, verification and the Ghana Card step, reviews, image processing (including oversized images), admin queues and analytics, rate limits, account deletion and accessibility of form errors. Tests write uploads to a temporary folder, never to `media/`.
+
+Browser checks (Edge, desktop and phone sizes) were also run for the header, category menu and sidebar, photo viewer, live chat and a complete purchase with the test payment provider.
 
 ## Configuration
 See `.env.example` for every setting and `DEPLOYMENT.md` for the production checklist.
@@ -67,3 +72,7 @@ See `.env.example` for every setting and `DEPLOYMENT.md` for the production chec
 - **Search** uses database matching with relevance ranking; PostgreSQL full-text or a search engine can be added behind `marketplace/catalog.py` when traffic needs it.
 - **Ghana regions** are a code enum (`GhanaRegion`); adding countries needs a region model.
 - The help and policy pages are plain-language drafts and need legal review before launch.
+- Paystack **refund webhooks** are not processed; refunds still "requested" are reconciled with the admin action "Re-check selected refunds with the provider".
+- "Buy now" adds the item to the existing cart, so other cart items are bought too.
+- Staff decisions on order issues (e.g. accepting a cancellation request) do not change the order automatically; staff cancel or refund it separately.
+- Chat messages of a deleted account are kept for the other person; identity documents are deleted.

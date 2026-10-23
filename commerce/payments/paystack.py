@@ -120,3 +120,12 @@ class PaystackProvider(PaymentProvider):
         })
         status = "completed" if data.get("status") == "processed" else "requested"
         return status, str(data.get("id", ""))
+
+    def refund_status(self, provider_reference):
+        data = self._request("GET", f"/refund/{provider_reference}")
+        status = data.get("status", "")
+        if status == "processed":
+            return "completed"
+        if status == "failed":
+            return "failed"
+        return "pending"

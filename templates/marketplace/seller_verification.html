@@ -3,8 +3,9 @@
 {% block content %}
 <div class="container container-narrow page-narrow-top">
   <section class="auth-card">
-    <h1>Get verified</h1>
-    <p class="form-intro">Verified sellers show a badge on their listings and storefront. A GhanaMarket team member checks your Ghana Card or business registration before the badge appears. We never show your document or number to buyers.</p>
+    {% if applying %}<p class="step-label">Step 2 of 2</p>{% endif %}
+    <h1>{% if applying %}Add your Ghana Card{% else %}Get verified{% endif %}</h1>
+    <p class="form-intro">{% if applying %}Every seller on GhanaMarket gives their Ghana Card details. It keeps buyers safe and earns you the <strong>Verified ID</strong> badge once our team has checked it. {% endif %}Verified sellers show a badge on their listings and storefront. A GhanaMarket team member checks your Ghana Card or business registration before the badge appears. We never show your document or number to buyers.</p>
 
     {% if user.is_verified_seller %}
       <p class="notice"><strong>{% include "partials/icon.html" with name="shield" %} You are a verified seller</strong>Verified on {{ user.verified_at|date:"j F Y" }}.</p>
@@ -25,4 +26,15 @@
     {% endif %}
   </section>
 </div>
+<script>
+(() => {
+  const kind = document.querySelector('select[name="kind"]');
+  const business = document.querySelector('input[name="business_name"]');
+  if (!kind || !business) return;
+  const box = business.closest(".field");
+  const sync = () => { box.hidden = kind.value !== "business"; };
+  kind.addEventListener("change", sync);
+  sync();
+})();
+</script>
 {% endblock %}

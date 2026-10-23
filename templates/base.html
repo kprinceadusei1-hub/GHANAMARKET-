@@ -9,11 +9,12 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="icon" href="{% static 'marketplace/brand/favicon.svg' %}" type="image/svg+xml">
   <link rel="stylesheet" href="{% static 'css/site.css' %}">
   <link rel="stylesheet" href="{% static 'css/theme.css' %}">
   <script>document.documentElement.classList.add("js")</script>
 </head>
-<body class="{% block body_class %}{% endblock %}">
+<body{% if user.is_authenticated %} data-unread-url="{% url 'unread_counts' %}"{% endif %} class="{% block body_class %}{% endblock %}">
   <a class="skip-link" href="#main-content">Skip to content</a>
 
   <header class="site-header">
@@ -41,7 +42,8 @@
 
         <nav class="header-actions" aria-label="Account and shopping">
           {% if user.is_authenticated %}
-            <a class="header-action hide-sm" href="{% url 'conversation_list' %}" aria-label="Messages{% if unread_messages %}, {{ unread_messages }} unread{% endif %}">{% include "partials/icon.html" with name="chat" %}{% if unread_messages %}<b class="badge">{{ unread_messages }}</b>{% endif %}<span>Messages</span></a>
+            <a class="header-action hide-sm" data-unread="messages" href="{% url 'conversation_list' %}" aria-label="Messages{% if unread_messages %}, {{ unread_messages }} unread{% endif %}">{% include "partials/icon.html" with name="chat" %}{% if unread_messages %}<b class="badge">{{ unread_messages }}</b>{% endif %}<span>Messages</span></a>
+            <a class="header-action hide-sm" href="{% url 'notification_list' %}" aria-label="Notifications{% if unread_notifications %}, {{ unread_notifications }} unread{% endif %}">{% include "partials/icon.html" with name="bell" %}{% if unread_notifications %}<b class="badge">{{ unread_notifications }}</b>{% endif %}<span>Alerts</span></a>
             <a class="header-action hide-sm" href="{% url 'saved_listings' %}">{% include "partials/icon.html" with name="heart" %}<span>Saved</span></a>
           {% else %}
             <a class="header-action hide-sm" href="{% url 'login' %}?next={% url 'saved_listings' %}" aria-label="Log in to view favourites">{% include "partials/icon.html" with name="heart" %}<span>Saved</span></a>
@@ -49,7 +51,10 @@
           <a class="header-action" href="{% url 'commerce:cart' %}" aria-label="Cart{% if cart_count %}, {{ cart_count }} item{{ cart_count|pluralize }}{% endif %}">{% include "partials/icon.html" with name="cart" %}{% if cart_count %}<b class="badge">{{ cart_count }}</b>{% endif %}<span>Cart</span></a>
           {% if user.is_authenticated %}
             <details class="account-menu">
-              <summary class="account-trigger">{% include "partials/icon.html" with name="user" %}{% if unread_notifications %}<b class="badge" aria-label="{{ unread_notifications }} unread notifications">{{ unread_notifications }}</b>{% endif %}<span class="account-label">My Account</span>{% include "partials/icon.html" with name="chevron-down" class="account-caret" %}</summary>
+              <summary class="account-trigger" aria-label="My account">
+                <span class="account-avatar" aria-hidden="true">{{ user.first_name|default:user.username|slice:":1"|upper }}</span>
+                <span class="account-label"><small>Hello, {{ user.first_name|default:user.username|truncatechars:14 }}</small>My Account</span>{% include "partials/icon.html" with name="chevron-down" class="account-caret" %}
+              </summary>
               <div class="account-menu-panel">
                 <p class="account-menu-name">{{ user.get_full_name|default:user.username }}<small>{{ user.email }}</small></p>
                 <a href="{% url 'notification_list' %}">{% include "partials/icon.html" with name="bell" %}Notifications{% if unread_notifications %}<b class="menu-count">{{ unread_notifications }}</b>{% endif %}</a>
@@ -67,7 +72,10 @@
               </div>
             </details>
           {% else %}
-            <a class="account-trigger" href="{% url 'login' %}">{% include "partials/icon.html" with name="user" %}<span class="account-label">Sign in</span></a>
+            <a class="account-trigger" href="{% url 'login' %}">
+              <span class="account-avatar account-avatar-guest" aria-hidden="true">{% include "partials/icon.html" with name="user" %}</span>
+              <span class="account-label"><small>Hello, sign in</small>Account</span>
+            </a>
           {% endif %}
           <a class="sell-button" href="{{ sell_url }}">{% include "partials/icon.html" with name="plus" %}<span>Sell</span></a>
         </nav>
@@ -78,21 +86,54 @@
       <div class="container header-sub-row">
         <details class="category-menu">
           <summary>{% include "partials/icon.html" with name="list" %}<span>All Categories</span>{% include "partials/icon.html" with name="chevron-down" class="account-caret" %}</summary>
-          <div class="category-menu-panel">
-            {% for value, label in nav_categories %}<a href="{% url 'product_list' %}?category={{ value|urlencode }}"><span class="cat-badge cat-{{ value }}">{% include "partials/icon.html" with name=value %}</span>{{ label }}</a>{% endfor %}
+          <div class="category-menu-panel mega" data-mega>
+            <ul class="mega-main" aria-label="Categories">
+              {% for cat in nav_menu %}
+                <li>
+                  <a class="mega-cat{% if forloop.first %} is-active{% endif %}" href="{% url 'product_list' %}?category={{ cat.slug|urlencode }}" data-mega-target="mega-{{ cat.slug }}">
+                    <span class="mega-thumb cat-badge cat-{{ cat.slug }}">{% include "partials/icon.html" with name=cat.icon %}</span>
+                    <span class="mega-text"><strong>{{ cat.name }}</strong><small>{% if cat.count %}{{ cat.count }} ad{{ cat.count|pluralize }}{% else %}No ads yet{% endif %}</small></span>
+                    {% include "partials/icon.html" with name="chevron" class="mega-chevron" %}
+                  </a>
+                </li>
+              {% endfor %}
+            </ul>
+            <div class="mega-subs">
+              {% for cat in nav_menu %}
+                <section class="mega-pane" id="mega-{{ cat.slug }}"{% if not forloop.first %} hidden{% endif %} aria-label="{{ cat.name }}">
+                  <div class="mega-pane-head">
+                    <button type="button" class="mega-back" data-mega-back aria-label="Back to all categories">{% include "partials/icon.html" with name="back" %}</button>
+                    <strong>{{ cat.name }}</strong>
+                    <a href="{% url 'product_list' %}?category={{ cat.slug|urlencode }}">See all {% include "partials/icon.html" with name="chevron" %}</a>
+                  </div>
+                  <ul>
+                    {% for sub in cat.children %}
+                      <li>
+                        <a class="mega-sub" href="{% url 'product_list' %}?category={{ cat.slug|urlencode }}&amp;sub={{ sub.slug|urlencode }}">
+                          <span class="mega-thumb{% if sub.photo %} has-photo{% else %} cat-badge cat-{{ cat.slug }}{% endif %}">{% if sub.photo %}<img src="{{ sub.photo }}" alt="" loading="lazy">{% else %}{% include "partials/icon.html" with name=sub.icon %}{% endif %}</span>
+                          <span class="mega-text"><strong>{{ sub.name }}</strong><small>{% if sub.count %}{{ sub.count }} ad{{ sub.count|pluralize }}{% else %}No ads yet{% endif %}</small></span>
+                        </a>
+                      </li>
+                    {% empty %}
+                      <li><a class="mega-sub" href="{% url 'product_list' %}?category={{ cat.slug|urlencode }}"><span class="mega-thumb cat-badge cat-{{ cat.slug }}">{% include "partials/icon.html" with name=cat.icon %}</span><span class="mega-text"><strong>All {{ cat.name }}</strong><small>{% if cat.count %}{{ cat.count }} ad{{ cat.count|pluralize }}{% else %}No ads yet{% endif %}</small></span></a></li>
+                    {% endfor %}
+                  </ul>
+                </section>
+              {% endfor %}
+            </div>
             <a class="category-menu-all" href="{% url 'category_index' %}">View all categories {% include "partials/icon.html" with name="chevron" %}</a>
           </div>
         </details>
         {% with url_name=request.resolver_match.url_name %}
         <nav class="primary-links" aria-label="Main navigation">
-          <a href="{% url 'home' %}"{% if url_name == 'home' %} aria-current="page"{% endif %}>Home</a>
-          <a href="{% url 'product_list' %}?sort=newest"{% if url_name == 'product_list' and request.GET.sort == 'newest' and not request.GET.checkout and not request.GET.verified %} aria-current="page"{% endif %}>New Arrivals</a>
-          <a href="{% url 'product_list' %}?checkout=1"{% if request.GET.checkout %} aria-current="page"{% endif %}>Buy Online</a>
-          <a href="{% url 'product_list' %}?verified=1"{% if request.GET.verified %} aria-current="page"{% endif %}>Verified Sellers</a>
-          <a href="{% url 'help' %}"{% if url_name == 'help' or url_name == 'help_page' or url_name == 'contact_support' %} aria-current="page"{% endif %}>Help &amp; Support</a>
+          <a href="{% url 'home' %}"{% if url_name == 'home' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="home" %}Home</a>
+          <a href="{% url 'product_list' %}?sort=newest"{% if url_name == 'product_list' and request.GET.sort == 'newest' and not request.GET.checkout and not request.GET.verified %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="trending" %}New Arrivals</a>
+          <a href="{% url 'product_list' %}?checkout=1"{% if request.GET.checkout %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="wallet" %}Buy Online</a>
+          <a href="{% url 'product_list' %}?verified=1"{% if request.GET.verified %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="user-check" %}Verified Sellers</a>
+          <a href="{% url 'help' %}"{% if url_name == 'help' or url_name == 'help_page' or url_name == 'contact_support' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="support" %}Help &amp; Support</a>
         </nav>
         {% endwith %}
-        <p class="header-note">{% include "partials/icon.html" with name="shield" %}Free to post · Every ad reviewed<span class="gh-flag" aria-label="Ghana"><i></i><i></i><i></i></span></p>
+        <p class="header-note">{% include "partials/icon.html" with name="shield" %}Free to post · Every ad reviewed{% include "partials/gh_flag.html" %}</p>
       </div>
     </div>
   </header>
@@ -111,7 +152,7 @@
     <a href="{% url 'product_list' %}"{% if url_name == 'product_list' or url_name == 'product_detail' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="search" %}<span>Browse</span></a>
     <a class="mobile-dock-sell" href="{{ sell_url }}"><span class="mobile-dock-plus">{% include "partials/icon.html" with name="plus" %}</span><span>Sell</span></a>
     {% if user.is_authenticated %}
-      <a href="{% url 'conversation_list' %}"{% if url_name == 'conversation_list' or url_name == 'conversation_detail' %} aria-current="page"{% endif %}><span class="dock-icon">{% include "partials/icon.html" with name="chat" %}{% if unread_messages %}<b class="badge">{{ unread_messages }}</b>{% endif %}</span><span>Messages</span></a>
+      <a data-unread="messages" href="{% url 'conversation_list' %}"{% if url_name == 'conversation_list' or url_name == 'conversation_detail' %} aria-current="page"{% endif %}><span class="dock-icon">{% include "partials/icon.html" with name="chat" %}{% if unread_messages %}<b class="badge">{{ unread_messages }}</b>{% endif %}</span><span>Messages</span></a>
       <a href="{% if user.role == 'seller' %}{% url 'seller_listings' %}{% else %}{% url 'account_settings' %}{% endif %}"{% if url_name == 'seller_listings' or url_name == 'account_settings' or url_name == 'saved_listings' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="user" %}<span>Account</span></a>
     {% else %}
       <a href="{% url 'login' %}">{% include "partials/icon.html" with name="heart" %}<span>Saved</span></a>
@@ -121,41 +162,63 @@
   </nav>
 
   <footer class="site-footer">
-    <div class="footer-flag" aria-hidden="true"><span></span><span></span><span></span></div>
-    <div class="footer-inner">
+    <div class="footer-trust">
+      <ul class="container footer-trust-row" aria-label="Why GhanaMarket">
+        <li><span class="ft-icon">{% include "partials/icon.html" with name="shield" %}</span><span><strong>Every ad reviewed</strong><small>Checked by our team before it goes live</small></span></li>
+        <li><span class="ft-icon">{% include "partials/icon.html" with name="chat" %}</span><span><strong>Private chat</strong><small>Your number stays hidden until you share it</small></span></li>
+        <li><span class="ft-icon">{% include "partials/icon.html" with name="user-check" %}</span><span><strong>Verified ID sellers</strong><small>Ghana Card checked by our staff</small></span></li>
+        <li><span class="ft-icon">{% include "partials/icon.html" with name="wallet" %}</span><span><strong>Buy online</strong><small>Mobile Money or card on marked items</small></span></li>
+      </ul>
+    </div>
+
+    <div class="container footer-main">
       <div class="footer-brand">
         <a class="brand" href="{% url 'home' %}"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 42" fill="none"><path d="M8 12h24l2.4 25.5a2 2 0 0 1-2 2.2H7.6a2 2 0 0 1-2-2.2L8 12Z" fill="currentColor"/><path d="M14 15V9.5a6 6 0 0 1 12 0V15" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="m20 19.5 1.9 4.6h4.9l-4 3 1.5 4.7-4.3-2.9-4.3 2.9 1.5-4.7-4-3h4.9z" fill="#fff"/></svg></span><span class="brand-text"><span class="brand-name">GhanaMarket</span><small>Buy · Sell · Connect</small></span></a>
         <p>Buy and sell locally across all 16 regions of Ghana. Free listings during launch, prices in Ghana cedis.</p>
+        <div class="footer-cta">
+          <div><strong>Have something to sell?</strong><small>Post it free in about two minutes.</small></div>
+          <a class="footer-cta-btn" href="{{ sell_url }}">{% include "partials/icon.html" with name="plus" %}Post a free ad</a>
+        </div>
       </div>
-      <div>
-        <h2>Buy</h2>
-        <a href="{% url 'product_list' %}">All listings</a>
-        <a href="{% url 'product_list' %}?category=phones-tech">Phones &amp; Tech</a>
-        <a href="{% url 'product_list' %}?category=vehicles">Cars &amp; Vehicles</a>
-        <a href="{% url 'product_list' %}?category=property">Property</a>
-      </div>
-      <div>
-        <h2>Sell</h2>
-        <a href="{{ sell_url }}">Post a free ad</a>
-        {% if user.is_authenticated and user.role == "seller" %}<a href="{% url 'seller_listings' %}">My shop</a>{% endif %}
-        <a href="{% url 'register' %}">Create an account</a>
-      </div>
-      <div>
-        <h2>Help</h2>
-        <a href="{% url 'help' %}">Help centre</a>
-        <a href="{% url 'help_page' 'safety' %}">Staying safe</a>
-        <a href="{% url 'help_page' 'refunds' %}">Refunds</a>
-        <a href="{% url 'contact_support' %}">Contact support</a>
-      </div>
-      <div>
-        <h2>Policies</h2>
-        <a href="{% url 'help_page' 'terms' %}">Terms of use</a>
-        <a href="{% url 'help_page' 'privacy' %}">Privacy</a>
-        <a href="{% url 'help_page' 'prohibited-items' %}">Prohibited items</a>
-        <a href="{% url 'help_page' 'fees' %}">Fees</a>
+      <nav class="footer-cols" aria-label="Footer">
+        <div>
+          <h2>Buy</h2>
+          <a href="{% url 'product_list' %}">All listings</a>
+          <a href="{% url 'category_index' %}">All categories</a>
+          <a href="{% url 'product_list' %}?checkout=1">Buy online</a>
+          <a href="{% url 'product_list' %}?verified=1">Verified sellers</a>
+          <a href="{% url 'help_page' 'buying' %}">How buying works</a>
+        </div>
+        <div>
+          <h2>Sell</h2>
+          <a href="{{ sell_url }}">Post a free ad</a>
+          {% if user.is_authenticated and user.role == "seller" %}<a href="{% url 'seller_listings' %}">My shop</a><a href="{% url 'seller_verification' %}">Get verified</a>{% else %}<a href="{% url 'register' %}?role=seller">Become a seller</a>{% endif %}
+          <a href="{% url 'help_page' 'selling' %}">How selling works</a>
+          <a href="{% url 'help_page' 'fees' %}">Fees</a>
+        </div>
+        <div>
+          <h2>Help</h2>
+          <a href="{% url 'help' %}">Help centre</a>
+          <a href="{% url 'help_page' 'safety' %}">Staying safe</a>
+          <a href="{% url 'help_page' 'refunds' %}">Returns &amp; refunds</a>
+          <a href="{% url 'contact_support' %}">Contact support</a>
+        </div>
+        <div>
+          <h2>Policies</h2>
+          <a href="{% url 'help_page' 'terms' %}">Terms of use</a>
+          <a href="{% url 'help_page' 'privacy' %}">Privacy</a>
+          <a href="{% url 'help_page' 'prohibited-items' %}">Prohibited items</a>
+        </div>
+      </nav>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="container footer-bottom-row">
+        <p>© {% now "Y" %} GhanaMarket · Made in Ghana {% include "partials/gh_flag.html" with class="gh-flag-inline" %}</p>
+        <p class="footer-bottom-links"><a href="{% url 'help_page' 'terms' %}">Terms</a><a href="{% url 'help_page' 'privacy' %}">Privacy</a><a href="/static/marketplace/demo/photo-credits.html">Photo credits</a></p>
+        <a class="footer-top" href="#main-content" data-back-to-top>{% include "partials/icon.html" with name="chevron-down" %}Back to top</a>
       </div>
     </div>
-    <p class="footer-legal">© GhanaMarket · Made in Ghana · <a href="/static/marketplace/demo/photo-credits.html">Photo credits</a></p>
   </footer>
   <script src="{% static 'js/search-suggest.js' %}" defer></script>
   <script src="{% static 'js/site.js' %}" defer></script>

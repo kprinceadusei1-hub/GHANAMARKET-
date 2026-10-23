@@ -12,12 +12,41 @@
 
   <div class="browse-layout">
     <aside class="browse-sidebar" aria-label="Marketplace filters">
-      <nav class="panel filter-categories" aria-label="Browse by category">
-        <h2>Categories</h2>
-        <a class="{% if not selected_category %}is-selected{% endif %}" href="{% url 'product_list' %}{% if query %}?q={{ query|urlencode }}{% endif %}">{% include "partials/icon.html" with name="list" %}All categories</a>
-        {% for value, label in categories %}
-          <a class="{% if selected_category == value %}is-selected{% endif %}" href="{% url 'product_list' %}?category={{ value|urlencode }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}{% if selected_region %}&amp;region={{ selected_region|urlencode }}{% endif %}">{% include "partials/icon.html" with name=value %}{{ label }}</a>
+      <nav class="panel filter-categories side-cats" aria-label="Browse by category" data-side-cats>
+        <div class="side-cats-head"><h2>Categories</h2>{% if selected_category %}<a class="side-cats-clear" href="{% url 'product_list' %}{% if query %}?q={{ query|urlencode }}{% endif %}">Clear</a>{% endif %}</div>
+        <label class="side-find">
+          {% include "partials/icon.html" with name="search" %}
+          <span class="visually-hidden">Find a category</span>
+          <input type="search" placeholder="Find a category…" autocomplete="off" data-side-find>
+        </label>
+        <div class="side-row{% if not selected_category %} is-selected{% endif %}" data-side-all>
+          <a class="side-cat{% if not selected_category %} is-selected{% endif %}" href="{% url 'product_list' %}{% if query %}?q={{ query|urlencode }}{% endif %}">
+            <span class="side-cat-thumb side-cat-all">{% include "partials/icon.html" with name="grid" %}</span>
+            <span class="side-cat-text"><strong>All categories</strong></span>{% if menu_total %}<b class="side-count">{{ menu_total }}</b>{% endif %}
+          </a>
+        </div>
+        {% for cat in nav_menu %}
+          <div class="side-group" data-side-group>
+            <div class="side-row{% if selected_category == cat.slug %} is-selected{% endif %}">
+              <a class="side-cat{% if selected_category == cat.slug %} is-selected{% endif %}" href="{% url 'product_list' %}?category={{ cat.slug|urlencode }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}{% if selected_region %}&amp;region={{ selected_region|urlencode }}{% endif %}"{% if selected_category == cat.slug %} aria-current="page"{% endif %} title="{{ cat.name }}">
+                <span class="side-cat-thumb cat-badge cat-{{ cat.slug }}">{% include "partials/icon.html" with name=cat.icon %}</span>
+                <span class="side-cat-text"><strong data-side-name>{{ cat.name }}</strong></span>{% if cat.count %}<b class="side-count" aria-label="{{ cat.count }} ad{{ cat.count|pluralize }}">{{ cat.count }}</b>{% endif %}
+              </a>
+              {% if cat.children %}
+                <button type="button" class="side-toggle" data-side-toggle aria-controls="side-subs-{{ cat.slug }}" aria-expanded="{% if selected_category == cat.slug %}true{% else %}false{% endif %}" aria-label="Show {{ cat.name }} subcategories">{% include "partials/icon.html" with name="chevron-down" %}</button>
+              {% endif %}
+            </div>
+            {% if cat.children %}
+              <ul class="side-subs cat-{{ cat.slug }}" id="side-subs-{{ cat.slug }}"{% if selected_category != cat.slug %} hidden{% endif %}>
+                <li data-side-all-sub><a class="{% if selected_category == cat.slug and not subcategory %}is-selected{% endif %}" href="{% url 'product_list' %}?category={{ cat.slug|urlencode }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}{% if selected_region %}&amp;region={{ selected_region|urlencode }}{% endif %}" title="All {{ cat.name }}"><i aria-hidden="true"></i><span>All {{ cat.name }}</span>{% if cat.count %}<b>{{ cat.count }}</b>{% endif %}</a></li>
+                {% for sub in cat.children %}
+                  <li data-side-sub><a class="{% if subcategory.slug == sub.slug %}is-selected{% endif %}" href="{% url 'product_list' %}?category={{ cat.slug|urlencode }}&amp;sub={{ sub.slug|urlencode }}{% if query %}&amp;q={{ query|urlencode }}{% endif %}{% if selected_region %}&amp;region={{ selected_region|urlencode }}{% endif %}" title="{{ sub.name }}"{% if subcategory.slug == sub.slug %} aria-current="page"{% endif %}><i aria-hidden="true"></i><span data-side-name>{{ sub.name }}</span>{% if sub.count %}<b>{{ sub.count }}</b>{% endif %}</a></li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </div>
         {% endfor %}
+        <p class="side-empty" data-side-empty hidden>No category matches “<span></span>”. <button type="button" data-side-clear>Clear</button></p>
       </nav>
 
       <details class="panel filters-panel" data-filters>

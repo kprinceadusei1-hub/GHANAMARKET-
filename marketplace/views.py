@@ -25,6 +25,7 @@ from .models import (
     Category, Conversation, Favorite, GhanaRegion, Message, Product, ProductPhoto, SearchTerm, User,
 )
 from . import catalog, throttling, trust
+from .images import thumbnail_url
 
 LOGIN_FAILURES_PER_ACCOUNT = 5
 LOGIN_ATTEMPTS_PER_IP = 30
@@ -49,6 +50,8 @@ def _seller_cannot_post(request):
         messages.info(request, "Your seller account is waiting for admin approval. You can post ads once it is approved.")
     return redirect("seller_listings")
 REGISTRATIONS_PER_HOUR = 10
+PHONE_REVEALS_PER_HOUR = 30
+REVEALED_PHONES_SESSION_KEY = "revealed_phone_listings"
 NEW_LISTINGS_PER_DAY = 20
 
 
@@ -87,7 +90,10 @@ class ThrottledPasswordResetView(auth_views.PasswordResetView):
     subject_template_name = "registration/password_reset_subject.txt"
 
     def post(self, request, *args, **kwargs):
-        if throttling.hit("password-reset", throttling.client_ip(request), PASSWORD_RESETS_PER_HOUR, 3600):
+        email = request.POST.get("email", "").strip().lower()[:254]
+        if throttling.hit("password-reset", throttling.client_ip(request), PASSWORD_RESETS_PER_HOUR, 3600) or (
+            email and throttling.hit("password-reset-email", email, 3, 3600)
+        ):
             # Same destination as a successful request, so the limit does not leak account data.
             return redirect("password_reset_done")
         return super().post(request, *args, **kwargs)
@@ -131,11 +137,13 @@ def _gallery_photos(product):
     if product.image:
         photos.append({
             "url": product.image.url,
+            "thumb": thumbnail_url(product.image, 160),
             "alt": f"{product.title} main photo",
         })
     photos.extend(
         {
             "url": photo.image.url,
+            "thumb": thumbnail_url(photo.image, 160),
             "alt": f"{product.title} photo {index + (2 if product.image else 1)}",
         }
         for index, photo in enumerate(product.photos.all())
@@ -145,11 +153,12 @@ def _gallery_photos(product):
 
 def home(request):
     published_products = catalog.showcase_products()
+    real_products = catalog.published_products()
     region_labels = dict(GhanaRegion.choices)
     popular_regions = [
-        {"name": item["region"], "label": region_labels[item["region"]], "count": item["total"]}
+        {"name": item["region"], "label": region_labels.get(item["region"], item["region"]), "count": item["total"]}
         for item in (
-            published_products.exclude(region="").order_by()
+            real_products.exclude(region="").order_by()
             .values("region").annotate(total=Count("id")).order_by("-total", "region")[:6]
         )
     ]
@@ -216,7 +225,7 @@ def home(request):
         "products": products,
         "hero_products": [product for product in products if product.image][:3],
         "seller_storefronts": seller_storefronts,
-        "listing_count": published_products.count(),
+        "listing_count": real_products.count(),
         "categories": catalog.categories_with_counts(),
         "regions": GhanaRegion.choices,
         "popular_regions": popular_regions,
@@ -307,8 +316,8 @@ def register(request):
         login(request, user)
         messages.success(request, "Your account is ready.")
         if user.role == User.Role.SELLER:
-            messages.info(request, SELLER_PENDING_MESSAGE)
-            return redirect("seller_listings")
+            messages.info(request, "Step 2 of 2: add your Ghana Card details. Our team checks them before approving your seller account.")
+            return redirect("seller_verification")
         return redirect("home")
     return render(request, "registration/register.html", {"form": form})
 
@@ -338,6 +347,9 @@ def become_seller(request):
         seller = form.save(commit=False)
         seller.request_seller_approval()
         seller.save()
+        if not request.user.verifications.exclude(status="rejected").exists():
+            messages.info(request, "Step 2 of 2: add your Ghana Card details. Our team checks them before approving your seller account.")
+            return redirect("seller_verification")
         messages.success(request, SELLER_PENDING_MESSAGE)
         return redirect("seller_listings")
     return render(request, "registration/seller_upgrade.html", {"form": form})
@@ -522,6 +534,7 @@ def product_list(request):
         "sort_options": sort_options,
         "condition_options": Product.Condition.choices,
         "categories": [(c.slug, c.name) for c in catalog.top_categories()],
+        "menu_total": sum(entry["count"] for entry in catalog.category_menu()),
         "regions": GhanaRegion.choices,
         "result_count": result_count,
         "has_demo_listings": products.filter(is_demo=True).exists(),
@@ -546,7 +559,7 @@ def saved_listings(request):
 @require_POST
 def toggle_favorite(request, product_id):
     product = get_object_or_404(
-        Product.objects.filter(status=Product.Status.PUBLISHED, is_demo=False), pk=product_id
+        Product.objects.filter(status=Product.Status.PUBLISHED, is_demo=False, seller__is_active=True), pk=product_id
     )
     favorite, created = Favorite.objects.get_or_create(user=request.user, product=product)
     if not created:
@@ -578,16 +591,20 @@ def _detail_context(request, product, **overrides):
             product.allows_direct_contact
             and not (user.is_authenticated and User.blocked_between(user, product.seller))
             and user.is_authenticated
-            and user.role == User.Role.BUYER
             and user.pk != product.seller_id
             and product.status == Product.Status.PUBLISHED
             and not product.is_demo
         ),
         "seller_active_count": _published_products().filter(seller=product.seller).count(),
         "seller_rating": trust.seller_rating(product.seller),
+        "seller_tenure": trust.seller_tenure(product.seller),
+        "seller_reply_speed": trust.seller_reply_speed(product.seller),
+        "seller_review_count": product.seller.reviews_received.filter(is_hidden=False).count(),
+        "callback_phone": (user.phone_display if user.is_authenticated else ""),
         "similar_products": list(similar.annotate(extra_photo_count=Count("photos", distinct=True))[:8]),
         "attribute_items": product.attribute_items(),
-        "can_buy": product.can_checkout and user.pk != product.seller_id,
+        "can_buy": product.can_checkout and user.pk != product.seller_id and not (
+            user.is_authenticated and User.blocked_between(user, product.seller)),
         "stock_choices": range(1, min(product.stock_quantity, 10) + 1),
         "recently_viewed": _recently_viewed(request, exclude=product.pk),
     }
@@ -599,18 +616,88 @@ def _detail_context(request, product, **overrides):
         context["whatsapp_share_url"] = "https://wa.me/?text=" + quote(
             f"{product.title} – GH₵ {product.price:,.2f} on GhanaMarket: {listing_url}"
         )
-    seller = product.seller
-    if is_live and seller.whatsapp_contact and seller.whatsapp_number and user.pk != seller.pk and not (
-        user.is_authenticated and User.blocked_between(user, seller)
-    ):
-        # Signed-in buyers only, so phone numbers are not handed to scrapers.
-        context["whatsapp_contact_url"] = (
-            f"https://wa.me/{seller.whatsapp_number}?text=" + quote(
-                f"Hello, I saw your ad “{product.title}” on GhanaMarket: {listing_url} Is it still available?"
-            ) if user.is_authenticated else f"{reverse('login')}?next={reverse('product_detail', args=[product.pk])}"
-        )
+    context["phone_available"] = _phone_available(user, product)
+    if context["phone_available"] and product.pk in request.session.get(REVEALED_PHONES_SESSION_KEY, []):
+        # The number only reaches the page after a signed-in buyer asks for it (see reveal_phone).
+        seller = product.seller
+        greeting = f"Hello, I saw your ad “{product.title}” on GhanaMarket: {listing_url} Is it still available?"
+        context["seller_phone"] = {
+            "display": seller.phone_display,
+            "tel": f"tel:+{seller.whatsapp_number}",
+            "sms": f"sms:+{seller.whatsapp_number}?&body=" + quote(greeting),
+            "whatsapp": f"https://wa.me/{seller.whatsapp_number}?text=" + quote(greeting),
+        }
     context.update(overrides)
     return context
+
+
+def _phone_available(user, product):
+    """Whether this viewer may see the seller's number for this listing (anonymous viewers sign in first)."""
+    seller = product.seller
+    return (
+        product.status == Product.Status.PUBLISHED and not product.is_demo
+        and seller.can_be_called and user.pk != seller.pk
+        and not (user.is_authenticated and User.blocked_between(user, seller))
+    )
+
+
+@login_required
+@require_POST
+def reveal_phone(request, pk):
+    """Show the seller's phone number to a signed-in buyer. Rate-limited so numbers cannot be harvested."""
+    product = get_object_or_404(catalog.showcase_products(), pk=pk)
+    detail_url = reverse("product_detail", args=[product.pk])
+    if not _phone_available(request.user, product):
+        messages.error(request, "This seller prefers to be contacted through chat.")
+        return redirect(detail_url)
+    if throttling.hit("reveal-phone", str(request.user.pk), PHONE_REVEALS_PER_HOUR, 3600):
+        messages.error(request, "You have viewed a lot of phone numbers. Please try again in an hour, or use chat.")
+        return redirect(detail_url)
+    revealed = [pk for pk in request.session.get(REVEALED_PHONES_SESSION_KEY, []) if pk != product.pk]
+    request.session[REVEALED_PHONES_SESSION_KEY] = [*revealed, product.pk][-50:]
+    return redirect(f"{detail_url}#seller-phone")
+
+
+CALLBACKS_PER_HOUR = 10
+
+
+@login_required
+@require_POST
+def request_callback(request, pk):
+    """A buyer leaves their number; the seller gets it in chat and a notification. Uses the real chat."""
+    from .notifications import notify
+
+    product = get_object_or_404(
+        Product.objects.filter(status=Product.Status.PUBLISHED, is_demo=False, seller__is_active=True).select_related("seller"), pk=pk,
+    )
+    detail_url = reverse("product_detail", args=[product.pk])
+    if product.seller_id == request.user.pk:
+        messages.error(request, "You cannot request a call back on your own listing.")
+        return redirect(detail_url)
+    if not product.allows_direct_contact or User.blocked_between(request.user, product.seller):
+        messages.error(request, "This seller cannot be contacted about this listing.")
+        return redirect(detail_url)
+    phone = User(phone_number=request.POST.get("phone", "") or request.user.phone_number)
+    if not phone.whatsapp_number:
+        messages.error(request, "Enter your Ghana phone number (for example 024 123 4567) so the seller can call you.")
+        return redirect(f"{detail_url}#callback")
+    if throttling.hit("callback", str(request.user.pk), CALLBACKS_PER_HOUR, 3600):
+        messages.error(request, "You have sent several call-back requests. Please try again later or use chat.")
+        return redirect(detail_url)
+    conversation, _ = Conversation.objects.get_or_create(
+        product=product, buyer=request.user, defaults={"seller": product.seller},
+    )
+    name = request.user.get_full_name() or request.user.username
+    Message.objects.create(
+        conversation=conversation, sender=request.user,
+        body=f"Call-back request: please call me on {phone.phone_display} about “{product.title}”.",
+    )
+    conversation.save(update_fields=("updated_at",))
+    notify(product.seller, "Call-back request",
+           f"{name} asked you to call them about “{product.title}” on {phone.phone_display}.",
+           reverse("conversation_detail", args=[conversation.pk]))
+    messages.success(request, "Request sent. The seller has your number and will call you back.")
+    return redirect("conversation_detail", pk=conversation.pk)
 
 
 def product_detail(request, pk):
@@ -672,7 +759,7 @@ def seller_listings(request):
         needs_changes=Count("id", filter=Q(status=Product.Status.REJECTED)),
         sold=Count("id", filter=Q(status=Product.Status.SOLD)),
     )
-    products = seller_products.annotate(
+    products = seller_products.select_related("category", "subcategory").annotate(
         extra_photo_count=Count("photos", distinct=True)
     )
     query = request.GET.get("q", "").strip()
@@ -687,14 +774,17 @@ def seller_listings(request):
     valid_statuses = {value for value, _ in Product.Status.choices}
     if status in valid_statuses:
         products = products.filter(status=status)
-    products = products.order_by("-updated_at")
+    page = Paginator(products.order_by("-updated_at"), LISTINGS_PER_PAGE).get_page(request.GET.get("page"))
     return render(request, "marketplace/seller_listings.html", {
-        "products": products,
+        "products": page.object_list,
+        "page": page,
         "counts": counts,
         "query": query,
         "selected_status": status,
         "status_options": Product.Status.choices,
         "orders_to_fulfil": request.user.seller_orders.filter(status__in=("paid", "processing")).count(),
+        "needs_ghana_card": request.user.seller_status == User.SellerStatus.PENDING
+        and not request.user.verifications.exclude(status="rejected").exists(),
     })
 
 
@@ -774,6 +864,12 @@ def product_update(request, pk):
     form = ProductForm(data, files, instance=product, category=chosen[0] if chosen else None, initial=initial)
     if request.method == "POST" and form.is_valid():
         product = form.save(commit=False)
+        seen = form.cleaned_data.get("stock_seen")
+        if seen is not None:
+            # Buyers may have reserved units while the form was open: apply the seller's change as a
+            # difference on top of the current stock instead of overwriting it.
+            current = Product.objects.values_list("stock_quantity", flat=True).get(pk=product.pk)
+            product.stock_quantity = max(0, current + (form.cleaned_data["stock_quantity"] - seen))
         product.status = Product.Status.PENDING
         product.moderation_note = ""
         product.risk_flags = trust.listing_risk_flags(product)
@@ -871,12 +967,9 @@ def conversation_start(request, product_id):
     if request.method != "POST":
         return redirect("product_detail", pk=product_id)
     product = get_object_or_404(
-        Product.objects.filter(status=Product.Status.PUBLISHED, is_demo=False).select_related("seller"),
+        Product.objects.filter(status=Product.Status.PUBLISHED, is_demo=False, seller__is_active=True).select_related("seller"),
         pk=product_id,
     )
-    if request.user.role != User.Role.BUYER:
-        messages.error(request, "Only buyer accounts can start a conversation.")
-        return redirect("product_detail", pk=product.pk)
     if product.seller_id == request.user.id:
         messages.error(request, "You cannot message yourself about your listing.")
         return redirect("product_detail", pk=product.pk)
@@ -921,11 +1014,16 @@ def conversation_detail(request, pk):
         pk=pk,
     )
     other = conversation.seller if request.user.pk == conversation.buyer_id else conversation.buyer
-    is_blocked = User.blocked_between(request.user, other)
+    is_blocked = User.blocked_between(request.user, other) or not other.is_active
+    wants_json = request.headers.get("X-Requested-With") == "fetch"
     if request.method == "POST" and is_blocked:
+        if wants_json:
+            return JsonResponse({"error": "Messages are turned off because one of you blocked the other."}, status=403)
         messages.error(request, "Messages are turned off because one of you blocked the other.")
         return redirect("conversation_detail", pk=conversation.pk)
     if request.method == "POST" and _message_limit_reached(request):
+        if wants_json:
+            return JsonResponse({"error": "You are sending messages too quickly. Please wait a moment."}, status=429)
         return redirect("conversation_detail", pk=conversation.pk)
     form = MessageForm(request.POST if request.method == "POST" else None)
     if request.method == "POST" and form.is_valid():
@@ -934,16 +1032,65 @@ def conversation_detail(request, pk):
         message.sender = request.user
         message.save()
         conversation.save(update_fields=("updated_at",))
+        conversation.mark_read(request.user)
+        if wants_json:
+            return JsonResponse({"message": _message_json(message, request.user)}, status=201)
         return redirect("conversation_detail", pk=conversation.pk)
+    if request.method == "POST" and wants_json:
+        return JsonResponse({"error": " ".join(e for errors in form.errors.values() for e in errors)}, status=400)
     conversation.mark_read(request.user)
     return render(request, "marketplace/conversation_detail.html", {
         "conversation": conversation,
         "thread_messages": conversation.messages.select_related("sender"),
+        "seen_until": _seen_until(conversation, request.user),
         "form": form,
         "other_user": other,
         "is_blocked": is_blocked,
         "i_blocked": request.user.has_blocked(other),
         "report_user_form": UserReportForm(),
+    })
+
+
+def _message_json(message, viewer):
+    from django.utils import timezone as tz
+    from django.utils.dateformat import format as date_format
+
+    local = tz.localtime(message.created_at)
+    return {
+        "id": message.pk, "body": message.body, "mine": message.sender_id == viewer.pk,
+        "time": date_format(local, "g:i a"), "day": date_format(local, "l, j F"), "iso": local.isoformat(),
+    }
+
+
+def _seen_until(conversation, viewer):
+    """When the other person last opened the chat (their read receipt for my messages)."""
+    seen = conversation.seller_last_read_at if viewer.pk == conversation.buyer_id else conversation.buyer_last_read_at
+    return seen.isoformat() if seen else None
+
+
+@login_required
+def conversation_poll(request, pk):
+    """New messages after ?after=<id>, for the live chat. Opening the chat counts as reading it."""
+    conversation = get_object_or_404(Conversation, Q(buyer=request.user) | Q(seller=request.user), pk=pk)
+    try:
+        after = int(request.GET.get("after", 0))
+    except ValueError:
+        after = 0
+    new = list(conversation.messages.filter(pk__gt=after).order_by("pk")[:100])
+    if new and any(m.sender_id != request.user.pk for m in new):
+        conversation.mark_read(request.user)
+    return JsonResponse({
+        "messages": [_message_json(m, request.user) for m in new],
+        "seen_until": _seen_until(conversation, request.user),
+    })
+
+
+@login_required
+def unread_counts(request):
+    """Header badges refresh without reloading the page."""
+    return JsonResponse({
+        "messages": Message.objects.filter(Conversation.unread_filter(request.user)).count(),
+        "notifications": request.user.notifications.filter(is_read=False).count(),
     })
 
 

@@ -66,7 +66,7 @@
         <div class="form-grid">
           {% with field=form.allows_direct_contact %}{% include "partials/field.html" %}{% endwith %}
           {% with field=form.allows_checkout %}{% include "partials/field.html" %}{% endwith %}
-          {% with field=form.stock_quantity %}{% include "partials/field.html" %}{% endwith %}
+          {% with field=form.stock_quantity %}{% include "partials/field.html" %}{% endwith %}{{ form.stock_seen }}
         </div>
       </fieldset>
     </section>

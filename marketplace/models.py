@@ -36,8 +36,8 @@ class User(AbstractUser):
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=10, choices=Role.choices, default=Role.BUYER)
     phone_number = models.CharField(max_length=30, blank=True)
-    whatsapp_contact = models.BooleanField(
-        default=False, help_text="Show a WhatsApp button on this person's listings (reveals their phone number).",
+    show_phone = models.BooleanField(
+        default=True, help_text="Signed-in buyers can tap “Show phone number” on your ads to call, text or WhatsApp you.",
     )
     city = models.CharField(max_length=100, blank=True)
     region = models.CharField(
@@ -72,6 +72,16 @@ class User(AbstractUser):
         if len(digits) == 10 and digits.startswith("0"):
             digits = "233" + digits[1:]
         return digits if len(digits) == 12 and digits.startswith("233") else ""
+
+    @property
+    def phone_display(self):
+        """Ghana number written the local way, e.g. 024 111 2222."""
+        digits = self.whatsapp_number
+        return f"0{digits[3:5]} {digits[5:8]} {digits[8:]}" if digits else ""
+
+    @property
+    def can_be_called(self):
+        return bool(self.show_phone and self.whatsapp_number)
 
     def request_seller_approval(self):
         from django.utils import timezone
@@ -288,7 +298,7 @@ class Product(models.Model):
         """Online checkout is offered only when the seller enabled it, the category allows it and stock remains."""
         return (
             self.allows_checkout and self.category.allows_checkout and self.stock_quantity > 0
-            and self.status == self.Status.PUBLISHED and not self.is_demo
+            and self.status == self.Status.PUBLISHED and not self.is_demo and self.seller.is_active
         )
 
     @property
@@ -319,7 +329,12 @@ class Product(models.Model):
             elif definition.kind == CategoryAttribute.Kind.NUMBER:
                 # Group digits only for measured quantities (98,000 km); years and counts stay plain.
                 grouping = "," if definition.unit else ""
-                value = f"{value:{grouping}}" if isinstance(value, int) else f"{value:{grouping}.2f}".rstrip("0").rstrip(".")
+                if isinstance(value, bool) or not isinstance(value, (int, float)):
+                    value = str(value)
+                elif isinstance(value, int):
+                    value = f"{value:{grouping}}"
+                else:
+                    value = f"{value:{grouping}.2f}".rstrip("0").rstrip(".")
                 if definition.unit:
                     value = f"{value} {definition.unit}"
             items.append((definition.label, value))

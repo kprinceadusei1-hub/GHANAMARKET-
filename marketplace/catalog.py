@@ -11,7 +11,7 @@ MAX_SEARCH_TERMS = 6
 
 def published_products():
     return Product.objects.filter(
-        status=Product.Status.PUBLISHED, is_demo=False
+        status=Product.Status.PUBLISHED, is_demo=False, seller__is_active=True,
     ).select_related("seller", "category", "subcategory")
 
 
@@ -21,7 +21,7 @@ def showcase_products():
     Previews stay visible until the owner deletes them (``seed_demo_marketplace --delete``).
     Real listings always come first: views order by ``is_demo`` before anything else.
     """
-    return Product.objects.filter(status=Product.Status.PUBLISHED).select_related(
+    return Product.objects.filter(status=Product.Status.PUBLISHED, seller__is_active=True).select_related(
         "seller", "category", "subcategory"
     ).order_by("is_demo", "-created_at")
 
@@ -34,7 +34,7 @@ def categories_with_counts():
     """Active top-level categories with their live listing counts, as template-friendly dicts."""
     counts = {
         row["category"]: row["total"]
-        for row in showcase_products().order_by().values("category").annotate(total=Count("id"))
+        for row in published_products().order_by().values("category").annotate(total=Count("id"))
     }
     return [
         {
@@ -189,3 +189,50 @@ def with_promotion(queryset, placements):
     return queryset.annotate(is_promoted=Exists(
         Promotion.objects.active().filter(product=OuterRef("pk"), placement__in=placements)
     ))
+
+
+CATEGORY_MENU_CACHE_KEY = "category-menu:v1"
+
+
+def category_menu():
+    """Two-level category menu with live ad counts and a recent real photo per subcategory.
+
+    Counts and photos come from approved, real listings only (previews excluded). Cached for
+    five minutes because it renders on every page.
+    """
+    from django.core.cache import cache
+
+    from .images import thumbnail_url
+
+    menu = cache.get(CATEGORY_MENU_CACHE_KEY)
+    if menu is not None:
+        return menu
+    live = Product.objects.filter(status=Product.Status.PUBLISHED, is_demo=False, seller__is_active=True).order_by()
+    top_counts = dict(live.values_list("category").annotate(total=Count("id")))
+    sub_counts = dict(live.exclude(subcategory=None).values_list("subcategory").annotate(total=Count("id")))
+    photos = {}
+    for product in live.exclude(image="").exclude(subcategory=None).order_by("-created_at").only(
+        "image", "subcategory_id"
+    )[:300]:
+        if product.subcategory_id not in photos:
+            photos[product.subcategory_id] = thumbnail_url(product.image, 160)
+    menu = []
+    categories = Category.objects.filter(is_active=True).order_by("position", "name")
+    children = {}
+    for category in categories:
+        if category.parent_id:
+            children.setdefault(category.parent_id, []).append(category)
+    for category in categories:
+        if category.parent_id:
+            continue
+        menu.append({
+            "slug": category.slug, "name": category.name, "icon": category.icon_key,
+            "count": top_counts.get(category.slug, 0),
+            "children": [
+                {"slug": sub.slug, "name": sub.name, "icon": sub.icon or category.icon_key,
+                 "count": sub_counts.get(sub.pk, 0), "photo": photos.get(sub.pk, "")}
+                for sub in children.get(category.pk, [])
+            ],
+        })
+    cache.set(CATEGORY_MENU_CACHE_KEY, menu, 300)
+    return menu

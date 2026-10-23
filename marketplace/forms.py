@@ -1,3 +1,4 @@
+import secrets
 from django.conf import settings
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
@@ -122,18 +123,18 @@ class RegistrationForm(TownFieldMixin, UserCreationForm):
 class ProfileForm(TownFieldMixin, forms.ModelForm):
     class Meta:
         model = User
-        fields = ("first_name", "last_name", "email", "phone_number", "whatsapp_contact", "city", "region")
+        fields = ("first_name", "last_name", "email", "phone_number", "show_phone", "city", "region")
         labels = {"phone_number": "Phone number", "city": "City or town",
-                  "whatsapp_contact": "Let buyers contact me on WhatsApp"}
+                  "show_phone": "Let buyers call, text or WhatsApp me"}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if self.instance.role != User.Role.SELLER:
-            del self.fields["whatsapp_contact"]
+            del self.fields["show_phone"]
         else:
-            self.fields["whatsapp_contact"].help_text = (
-                "Adds a WhatsApp button to your listings for signed-in buyers. "
-                "This shares your phone number with them. Leave it off to keep chats inside GhanaMarket."
+            self.fields["show_phone"].help_text = (
+                "Signed-in buyers can tap “Show phone number” on your ads. "
+                "Turn this off to be contacted through GhanaMarket chat only."
             )
         self.fields["email"].required = True
         self.fields["region"].choices = (("", "Choose a region"), *GhanaRegion.choices)
@@ -156,10 +157,10 @@ class ProfileForm(TownFieldMixin, forms.ModelForm):
 
 
 def _check_whatsapp(form, cleaned_data):
-    if cleaned_data.get("whatsapp_contact"):
+    if cleaned_data.get("show_phone"):
         probe = User(phone_number=cleaned_data.get("phone_number", ""))
         if not probe.whatsapp_number:
-            form.add_error("phone_number", "Enter a Ghana mobile number (for example 024 123 4567) to use WhatsApp.")
+            form.add_error("phone_number", "Enter a Ghana mobile number (for example 024 123 4567) so buyers can call you.")
 
 
 class SellerUpgradeForm(TownFieldMixin, forms.ModelForm):
@@ -176,6 +177,8 @@ class SellerUpgradeForm(TownFieldMixin, forms.ModelForm):
 
 
 class ProductForm(TownFieldMixin, forms.ModelForm):
+    # The stock the seller saw when the form was opened; used to apply only their change.
+    stock_seen = forms.IntegerField(required=False, widget=forms.HiddenInput)
     images = MultipleImageField(
         required=False,
         label="Item photos",
@@ -229,6 +232,7 @@ class ProductForm(TownFieldMixin, forms.ModelForm):
             self.selected_category.children.filter(is_active=True) if self.selected_category else Category.objects.none()
         )
         self.fields["subcategory"].queryset = subcategories
+        self.selected_subcategory = self._resolve_subcategory(subcategories)
         self.fields["subcategory"].label_from_instance = lambda category: category.name
         self.fields["subcategory"].empty_label = "Choose a subcategory"
         self.fields["subcategory"].required = False
@@ -246,6 +250,7 @@ class ProductForm(TownFieldMixin, forms.ModelForm):
         self.fields["allows_checkout"].help_text = (
             "Buyers pay online (Mobile Money or card) and you fulfil the order. Requires stock below."
         )
+        self.fields["stock_seen"].initial = self.instance.stock_quantity if self.instance.pk else None
         self.fields["stock_quantity"].label = "Units available"
         self.fields["stock_quantity"].required = False
         self.fields["stock_quantity"].widget.attrs.update({"min": 0, "inputmode": "numeric"})
@@ -282,11 +287,22 @@ class ProductForm(TownFieldMixin, forms.ModelForm):
             slug = self.initial.get("category")
         return Category.objects.filter(parent__isnull=True, is_active=True, slug=slug).first() if slug else None
 
+    def _resolve_subcategory(self, subcategories):
+        value = self.data.get(self.add_prefix("subcategory")) if self.is_bound else None
+        if not value and not self.is_bound:
+            value = self.initial.get("subcategory") or (self.instance.subcategory_id if self.instance.pk else None)
+        if isinstance(value, Category):
+            value = value.pk
+        if not value or not str(value).isdigit():
+            return None
+        return subcategories.filter(pk=int(value)).first()
+
     def _add_attribute_fields(self):
         if not self.selected_category:
             return
         existing = self.instance.attributes or {}
-        for definition in self.selected_category.attribute_definitions():
+        # Subcategory attributes include the parent category's; top-level only when none is chosen.
+        for definition in (self.selected_subcategory or self.selected_category).attribute_definitions():
             name = self.ATTRIBUTE_PREFIX + definition.key
             options = {
                 "label": definition.label + (f" ({definition.unit})" if definition.unit else ""),
@@ -328,7 +344,7 @@ class ProductForm(TownFieldMixin, forms.ModelForm):
 
         reason = blocked_listing_reason(
             cleaned_data.get("title", ""), cleaned_data.get("description", ""),
-            cleaned_data.get("brand", ""), cleaned_data.get("model", ""),
+            cleaned_data.get("brand", ""), cleaned_data.get("model", ""), cleaned_data.get("included_items", "") or "",
         )
         if reason:
             raise ValidationError(reason)
@@ -397,6 +413,19 @@ MAX_DOCUMENT_SIZE = 5 * 1024 * 1024
 DOCUMENT_TYPES = {"application/pdf", "image/jpeg", "image/png", "image/webp"}
 
 
+def sniff_document_type(header):
+    """File extension for a PDF/JPEG/PNG/WebP identified by its first bytes, else None."""
+    if header.startswith(b"%PDF"):
+        return "pdf"
+    if header.startswith(b"\xff\xd8\xff"):
+        return "jpg"
+    if header.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+    if header[:4] == b"RIFF" and header[8:12] == b"WEBP":
+        return "webp"
+    return None
+
+
 class SellerVerificationForm(forms.ModelForm):
     confirm = forms.BooleanField(
         label="I confirm these details are mine (or my business's) and are accurate.",
@@ -406,11 +435,25 @@ class SellerVerificationForm(forms.ModelForm):
     class Meta:
         model = SellerVerification
         fields = ("kind", "legal_name", "document_number", "business_name", "document")
-        labels = {"kind": "What are you verifying?", "document": "Photo or scan of the document"}
-        help_texts = {
-            "business_name": "Only for registered businesses.",
-            "document": "PDF, JPG or PNG, up to 5 MB. Only GhanaMarket staff can see it.",
+        labels = {
+            "kind": "What are you verifying?",
+            "legal_name": "Full name as on the card",
+            "document_number": "Ghana Card number",
+            "document": "Photo of the front of your Ghana Card",
         }
+        help_texts = {
+            "document_number": "Example: GHA-123456789-0. For a business, enter the registration number.",
+            "business_name": "Only for registered businesses.",
+            "document": "Clear photo or scan (PDF, JPG or PNG, up to 5 MB). For a business, upload the "
+                        "registration certificate. Only GhanaMarket staff can see it.",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["kind"].initial = SellerVerification.Kind.GHANA_CARD
+        self.fields["document_number"].widget.attrs.update({
+            "placeholder": "GHA-123456789-0", "autocapitalize": "characters", "autocomplete": "off",
+        })
 
     def clean_document(self):
         document = self.cleaned_data["document"]
@@ -419,18 +462,40 @@ class SellerVerificationForm(forms.ModelForm):
         content_type = getattr(document, "content_type", "")
         if content_type not in DOCUMENT_TYPES:
             raise ValidationError("Upload a PDF, JPG or PNG file.")
-        header = document.read(8)
+        header = document.read(12)
         document.seek(0)
-        signatures = (b"%PDF", b"\xff\xd8\xff", b"\x89PNG\r\n\x1a\n", b"RIFF")  # PDF, JPEG, PNG, WebP
-        if not header.startswith(signatures):
+        extension = sniff_document_type(header)
+        if extension is None:
             raise ValidationError("The file does not look like a PDF or image.")
+        # The stored name and extension are chosen by the server from the file's real content, never
+        # from the upload, so a disguised file (e.g. card.html) can never be served as a web page.
+        document.name = f"id-{secrets.token_hex(8)}.{extension}"
         return document
 
     def clean(self):
         cleaned = super().clean()
         if cleaned.get("kind") == SellerVerification.Kind.BUSINESS and not cleaned.get("business_name"):
             self.add_error("business_name", "Enter the registered business name.")
+        if cleaned.get("kind") == SellerVerification.Kind.GHANA_CARD and cleaned.get("document_number"):
+            number = normalise_ghana_card(cleaned["document_number"])
+            if number is None:
+                self.add_error("document_number", "Enter the number exactly as on your card, for example GHA-123456789-0.")
+            else:
+                cleaned["document_number"] = number
+                self.instance.document_number = number
         return cleaned
+
+
+def normalise_ghana_card(value):
+    """'gha 123456789 0' -> 'GHA-123456789-0'; None if it is not a Ghana Card number."""
+    import re
+
+    compact = re.sub(r"[\s-]", "", value or "").upper()
+    if compact.startswith("GHA"):
+        compact = compact[3:]
+    if not re.fullmatch(r"\d{10}", compact):
+        return None
+    return f"GHA-{compact[:9]}-{compact[9]}"
 
 
 class SellerReviewForm(forms.ModelForm):
@@ -475,3 +540,4 @@ class AccountDeletionForm(forms.Form):
         if not self.user.check_password(password):
             raise ValidationError("That password is not correct.")
         return password
+

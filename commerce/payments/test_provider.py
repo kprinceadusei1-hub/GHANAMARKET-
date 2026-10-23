@@ -37,3 +37,6 @@ class TestProvider(PaymentProvider):
 
     def refund(self, payment, amount):
         return "completed", f"TEST-REFUND-{payment.pk}"
+
+    def refund_status(self, provider_reference):
+        return "completed"

@@ -36,6 +36,8 @@ urlpatterns = [
     path("my-listings/", views.seller_listings, name="seller_listings"),
     path("sellers/<int:pk>/", views.seller_storefront, name="seller_storefront"),
     path("listings/<int:pk>/", views.product_detail, name="product_detail"),
+    path("listings/<int:pk>/phone/", views.reveal_phone, name="reveal_phone"),
+    path("listings/<int:pk>/callback/", views.request_callback, name="request_callback"),
     path("listings/<int:pk>/edit/", views.product_update, name="product_update"),
     path("my-listings/<int:pk>/status/", views.seller_listing_status, name="seller_listing_status"),
     path("listings/<int:product_id>/report/", views.report_listing, name="report_listing"),
@@ -53,4 +55,6 @@ urlpatterns = [
     path("messages/", views.conversation_list, name="conversation_list"),
     path("messages/start/<int:product_id>/", views.conversation_start, name="conversation_start"),
     path("messages/<int:pk>/", views.conversation_detail, name="conversation_detail"),
+    path("messages/<int:pk>/poll/", views.conversation_poll, name="conversation_poll"),
+    path("messages/unread/", views.unread_counts, name="unread_counts"),
 ]

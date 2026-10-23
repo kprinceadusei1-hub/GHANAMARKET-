@@ -2,6 +2,7 @@
 {% load i18n static %}
 {% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{% if title %}{{ title }} | {% endif %}GhanaMarket Control Centre{% endblock %}
 {% block extrastyle %}{{ block.super }}
+<link rel="icon" href="{% static 'marketplace/brand/favicon.svg' %}" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'css/admin-review.css' %}">
@@ -27,7 +28,7 @@
       <input id="cc-search-input" type="search" name="q" value="{{ query|default:'' }}" placeholder="Search users, listings, orders…" autocomplete="off">
     </form>
     {% endif %}
-    <span class="cc-country" title="Active market">{% include "partials/icon.html" with name="pin" %}Ghana<span class="cc-flag" aria-hidden="true"><i></i><i></i><i></i></span></span>
+    <span class="cc-country" title="Active market">{% include "partials/icon.html" with name="pin" %}Ghana{% include "partials/gh_flag.html" with class="cc-flag-svg" %}</span>
     <div class="cc-top-actions">
       <details class="cc-menu">
         <summary class="cc-icon-btn" aria-label="Notifications{% if cc_alert_total %}, {{ cc_alert_total }} items need attention{% endif %}">{% include "partials/icon.html" with name="bell" %}<b class="cc-badge" data-pulse-total{% if not cc_alert_total %} hidden{% endif %}>{{ cc_alert_total }}</b></summary>

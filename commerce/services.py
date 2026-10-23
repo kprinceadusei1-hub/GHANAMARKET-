@@ -15,7 +15,7 @@ from django.db.models import F, Sum
 from django.urls import reverse
 from django.utils import timezone
 
-from marketplace.models import Product
+from marketplace.models import Product, User
 from marketplace.notifications import notify
 from marketplace.templatetags.market import cedis
 
@@ -24,6 +24,9 @@ from .payments import PaymentError
 
 logger = logging.getLogger(__name__)
 MAX_QUANTITY_PER_ITEM = 20
+# A checkout with a payment still in progress is kept open this long past its expiry, so a Mobile
+# Money approval that lands at the last minute is not cancelled under the buyer.
+PAYMENT_GRACE_MINUTES = 30
 
 
 class CommerceError(Exception):
@@ -37,6 +40,8 @@ def add_to_cart(user, product, quantity=1):
         raise CommerceError("You cannot buy your own listing.")
     if not product.can_checkout:
         raise CommerceError("This item is not available for online checkout. Message the seller instead.")
+    if User.blocked_between(user, product.seller):
+        raise CommerceError("You cannot buy from this seller.")
     item, created = CartItem.objects.get_or_create(user=user, product=product, defaults={"quantity": 0})
     new_quantity = item.quantity + quantity
     if new_quantity > product.stock_quantity:
@@ -104,6 +109,8 @@ def create_checkout(user, delivery_by_seller, address=None, note=""):
         product = products[item.product_id]
         if not product.can_checkout:
             raise CommerceError(f"“{product.title}” is no longer available for online checkout.")
+        if User.blocked_between(user, product.seller):
+            raise CommerceError(f"“{product.title}” cannot be bought from this seller. Remove it from your cart.")
         if item.quantity > product.stock_quantity:
             raise CommerceError(f"Only {product.stock_quantity} of “{product.title}” left. Update your cart.")
         by_seller.setdefault(product.seller_id, []).append((product, item.quantity))
@@ -174,9 +181,24 @@ def close_unpaid_checkout(checkout, status=Checkout.Status.CANCELLED, actor=None
 
 
 def expire_stale_checkouts(now=None):
+    """Expire unpaid checkouts, first asking the provider about any payment still in progress."""
+    from .payments import get_provider
+
     now = now or timezone.now()
     expired = 0
     for checkout in Checkout.objects.filter(status=Checkout.Status.PENDING, expires_at__lte=now):
+        in_progress = list(checkout.payments.filter(status=Payment.Status.INITIATED))
+        for payment in in_progress:
+            try:
+                verify_and_apply(payment, get_provider(payment.provider))
+            except Exception:  # Provider unavailable: fall back to the grace period below.
+                logger.warning("Could not check payment %s before expiry", payment.reference, exc_info=True)
+        checkout.refresh_from_db()
+        if checkout.status != Checkout.Status.PENDING:
+            continue  # It was paid (or closed) after all.
+        still_open = checkout.payments.filter(status=Payment.Status.INITIATED).exists()
+        if still_open and now < checkout.expires_at + timedelta(minutes=PAYMENT_GRACE_MINUTES):
+            continue
         close_unpaid_checkout(checkout, status=Checkout.Status.EXPIRED, note="Payment window expired")
         expired += 1
     return expired
@@ -186,13 +208,15 @@ def expire_stale_checkouts(now=None):
 
 def start_payment(checkout, provider, callback_url):
     """Create a payment attempt and return the provider URL to send the buyer to."""
-    if not checkout.is_payable:
-        raise CommerceError("This checkout can no longer be paid.")
-    attempt = checkout.payments.count() + 1
-    payment = Payment.objects.create(
-        checkout=checkout, provider=provider.name, reference=f"{checkout.reference}-P{attempt}",
-        amount=checkout.total, currency=checkout.currency,
-    )
+    with transaction.atomic():
+        checkout = Checkout.objects.select_for_update().select_related("buyer").get(pk=checkout.pk)
+        if not checkout.is_payable:
+            raise CommerceError("This checkout can no longer be paid.")
+        attempt = checkout.payments.count() + 1
+        payment = Payment.objects.create(
+            checkout=checkout, provider=provider.name, reference=f"{checkout.reference}-P{attempt}",
+            amount=checkout.total, currency=checkout.currency,
+        )
     try:
         return provider.initialize(payment, checkout.buyer.email, callback_url)
     except PaymentError as exc:
@@ -202,18 +226,26 @@ def start_payment(checkout, provider, callback_url):
         raise CommerceError(str(exc)) from exc
 
 
-def verify_and_apply(payment, provider):
-    """Ask the provider for the authoritative status and apply it. Safe to call repeatedly."""
+def verify_and_apply(payment, provider, raise_errors=False):
+    """Ask the provider for the authoritative status and apply it. Safe to call repeatedly.
+
+    With ``raise_errors`` a provider outage raises ``PaymentError`` (webhooks use this so the
+    provider retries the event instead of it being marked processed).
+    """
     try:
         result = provider.verify(payment)
     except PaymentError as exc:
         logger.warning("Verification of %s failed: %s", payment.reference, exc)
+        if raise_errors:
+            raise
         return Payment.objects.get(pk=payment.pk)
     return apply_verification(payment, result)
 
 
 @transaction.atomic
 def apply_verification(payment, result):
+    checkout_id = Payment.objects.values_list("checkout_id", flat=True).get(pk=payment.pk)
+    checkout = Checkout.objects.select_for_update().get(pk=checkout_id)
     payment = Payment.objects.select_for_update().select_related("checkout").get(pk=payment.pk)
     if payment.status == Payment.Status.SUCCEEDED:
         return payment  # Already confirmed: duplicate webhook or callback.
@@ -240,12 +272,16 @@ def apply_verification(payment, result):
     payment.verified_at = timezone.now()
     payment.channel = result.channel[:30]
     payment.provider_transaction_id = result.transaction_id[:100]
-    checkout = Checkout.objects.select_for_update().get(pk=payment.checkout_id)
     if checkout.status != Checkout.Status.PENDING:
-        # Money arrived after the checkout closed (e.g. expired). Never silently keep it.
-        payment.failure_reason = f"Paid after checkout was {checkout.get_status_display().lower()}; refund required."
+        # Money arrived after the checkout closed (expired, cancelled, or already paid by another
+        # attempt). Never silently keep it: flag it for a refund and tell the buyer.
+        state = "already paid" if checkout.status == Checkout.Status.PAID else checkout.get_status_display().lower()
+        payment.failure_reason = f"Paid after checkout was {state}; refund required."
         payment.save()
         logger.error("Payment %s succeeded for closed checkout %s", payment.reference, checkout.reference)
+        notify(checkout.buyer, "We received an extra payment",
+               f"{cedis(payment.amount)} arrived after {checkout.reference} was {state}. "
+               "It will be refunded to you; you do not need to do anything.", reverse("commerce:order_list"))
         return payment
     payment.save()
     checkout.status = Checkout.Status.PAID
@@ -313,7 +349,9 @@ def change_order_status(order, to_status, actor, note="", tracking_reference="")
     if to_status == Order.Status.CANCELLED and order.is_paid:
         # A paid order cancelled by the seller is refunded in full and its stock returned.
         _restock(order)
-        refund_order(order, order.total, actor, f"Seller cancelled: {note}"[:300])
+        remaining = order.total - refunded_amount(order)
+        if remaining > 0:
+            refund_order(order, remaining, actor, f"Seller cancelled: {note}"[:300])
     return order
 
 
@@ -337,7 +375,8 @@ def refund_order(order, amount, actor, reason, provider=None):
         raise CommerceError("Only paid orders can be refunded.")
     if amount <= 0 or amount > order.total - refunded_amount(order):
         raise CommerceError("Refund amount exceeds what remains refundable for this order.")
-    payment = order.checkout.payments.filter(status=Payment.Status.SUCCEEDED).first()
+    payment = order.checkout.payments.filter(status=Payment.Status.SUCCEEDED, failure_reason="").order_by(
+        "verified_at").first()
     refund = Refund(order=order, payment=payment, amount=amount, reason=reason[:300], created_by=actor)
     if payment is None:
         refund.status = Refund.Status.FAILED
@@ -361,4 +400,57 @@ def refund_order(order, amount, actor, reason, provider=None):
                                       note=f"Refund of {cedis(amount)} {refund.get_status_display().lower()}")
     notify(order.buyer, f"Refund for order {order.number}",
            f"{cedis(amount)}: {refund.get_status_display()}.", reverse("commerce:order_detail", args=[order.number]))
+    return refund
+
+
+def needs_payment_refund(payment):
+    """A verified payment that did not pay for any order (late or duplicate) and is not refunded yet."""
+    return (
+        payment.status == Payment.Status.SUCCEEDED and "refund required" in payment.failure_reason
+        and not payment.refunds.exclude(status=Refund.Status.FAILED).exists()
+    )
+
+
+@transaction.atomic
+def refund_payment(payment, actor, reason="Payment received after checkout closed", provider=None):
+    """Refund a whole orphaned payment (one that arrived late or twice) through its provider."""
+    from .payments import get_provider
+
+    payment = Payment.objects.select_for_update().select_related("checkout__buyer").get(pk=payment.pk)
+    if not needs_payment_refund(payment):
+        raise CommerceError("This payment is not waiting for a refund.")
+    refund = Refund(order=None, payment=payment, amount=payment.amount, reason=reason[:300], created_by=actor)
+    try:
+        status, provider_reference = (provider or get_provider(payment.provider)).refund(payment, payment.amount)
+        refund.status = Refund.Status.COMPLETED if status == "completed" else Refund.Status.REQUESTED
+        refund.provider_reference = provider_reference[:100]
+    except PaymentError as exc:
+        refund.status = Refund.Status.FAILED
+        refund.reason = f"{reason} — provider error: {exc}"[:300]
+        logger.error("Refund of payment %s failed: %s", payment.reference, exc)
+    refund.save()
+    notify(payment.checkout.buyer, "Refund of your extra payment",
+           f"{cedis(payment.amount)}: {refund.get_status_display()}.", reverse("commerce:order_list"))
+    return refund
+
+
+def recheck_refund(refund, provider=None):
+    """Ask the provider for the latest status of a refund that is still in progress."""
+    from .payments import get_provider
+
+    if refund.status != Refund.Status.REQUESTED or refund.payment is None or not refund.provider_reference:
+        return refund
+    try:
+        status = (provider or get_provider(refund.payment.provider)).refund_status(refund.provider_reference)
+    except PaymentError as exc:
+        logger.warning("Could not re-check refund %s: %s", refund.provider_reference, exc)
+        return refund
+    mapped = {"completed": Refund.Status.COMPLETED, "failed": Refund.Status.FAILED}.get(status)
+    if mapped:
+        refund.status = mapped
+        refund.save(update_fields=("status",))
+        if refund.order_id:
+            notify(refund.order.buyer, f"Refund for order {refund.order.number}",
+                   f"{cedis(refund.amount)}: {refund.get_status_display()}.",
+                   reverse("commerce:order_detail", args=[refund.order.number]))
     return refund

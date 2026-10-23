@@ -87,7 +87,14 @@ document.querySelectorAll(".toast").forEach((toast, index) => {
     setTimeout(() => toast.remove(), 600);
   };
   toast.querySelector(".toast-close")?.addEventListener("click", dismiss);
-  if (!toast.classList.contains("error")) setTimeout(dismiss, 5000 + index * 600);
+  if (toast.classList.contains("error")) return;  // Errors stay until closed.
+  let timer = setTimeout(dismiss, 8000 + index * 600);
+  const pause = () => clearTimeout(timer);
+  const resume = () => { clearTimeout(timer); timer = setTimeout(dismiss, 4000); };
+  toast.addEventListener("mouseenter", pause);
+  toast.addEventListener("focusin", pause);
+  toast.addEventListener("mouseleave", resume);
+  toast.addEventListener("focusout", resume);
 });
 
 document.querySelectorAll("[data-share]").forEach((link) => {
@@ -99,5 +106,148 @@ document.querySelectorAll("[data-share]").forEach((link) => {
     } catch (error) {
       if (error && error.name !== "AbortError") window.open(link.href, "_blank", "noopener");
     }
+  });
+});
+
+// Keep the Messages badge current without reloading (signed-in pages only).
+(() => {
+  const url = document.body.dataset.unreadUrl;
+  if (!url || document.querySelector("[data-chat-thread]")) return;
+  const links = document.querySelectorAll('[data-unread="messages"]');
+  async function refresh() {
+    if (document.hidden) return;
+    try {
+      const response = await fetch(url, { headers: { "X-Requested-With": "fetch" } });
+      if (!response.ok) return;
+      const { messages } = await response.json();
+      links.forEach((link) => {
+        const holder = link.querySelector(".dock-icon") || link;
+        let badge = holder.querySelector(".badge");
+        if (messages && !badge) {
+          badge = document.createElement("b");
+          badge.className = "badge";
+          holder.insertBefore(badge, holder.querySelector("span") && holder === link ? link.querySelector("span") : null);
+        }
+        if (badge) {
+          if (messages) badge.textContent = messages; else badge.remove();
+        }
+        link.setAttribute("aria-label", messages ? `Messages, ${messages} unread` : "Messages");
+      });
+    } catch (error) { /* ignore */ }
+  }
+  setInterval(refresh, 30000);
+  document.addEventListener("visibilitychange", refresh);
+})();
+
+// Category mega menu: hover/focus shows subcategories (desktop); tap opens them (phones).
+document.querySelectorAll("[data-mega]").forEach((panel) => {
+  const menu = panel.closest("details");
+  const links = panel.querySelectorAll("[data-mega-target]");
+  const narrow = () => window.matchMedia("(max-width: 759px)").matches;
+  const show = (link) => {
+    links.forEach((item) => item.classList.toggle("is-active", item === link));
+    panel.querySelectorAll(".mega-pane").forEach((pane) => { pane.hidden = pane.id !== link.dataset.megaTarget; });
+  };
+  links.forEach((link) => {
+    link.addEventListener("mouseenter", () => { if (!narrow()) show(link); });
+    link.addEventListener("focus", () => { if (!narrow()) show(link); });
+    link.addEventListener("click", (event) => {
+      if (!narrow()) return;
+      event.preventDefault();
+      show(link);
+      panel.classList.add("show-subs");
+    });
+  });
+  panel.querySelectorAll("[data-mega-back]").forEach((button) => {
+    button.addEventListener("click", () => panel.classList.remove("show-subs"));
+  });
+  menu?.addEventListener("toggle", () => { if (!menu.open) panel.classList.remove("show-subs"); });
+});
+
+// Close header dropdowns when clicking elsewhere or pressing Escape.
+document.addEventListener("click", (event) => {
+  document.querySelectorAll("details.category-menu[open], details.account-menu[open]").forEach((menu) => {
+    if (!menu.contains(event.target)) menu.open = false;
+  });
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key !== "Escape") return;
+  document.querySelectorAll("details.category-menu[open], details.account-menu[open]").forEach((menu) => {
+    menu.open = false;
+    menu.querySelector("summary")?.focus();
+  });
+});
+
+// Browse sidebar: expand categories in place and find a category as you type.
+document.querySelectorAll("[data-side-cats]").forEach((nav) => {
+  const groups = [...nav.querySelectorAll("[data-side-group]")];
+  const find = nav.querySelector("[data-side-find]");
+  const empty = nav.querySelector("[data-side-empty]");
+  const allRow = nav.querySelector("[data-side-all]");
+  const setOpen = (group, open) => {
+    const button = group.querySelector("[data-side-toggle]");
+    const list = group.querySelector(".side-subs");
+    if (!button || !list) return;
+    button.setAttribute("aria-expanded", String(open));
+    list.hidden = !open;
+  };
+  groups.forEach((group) => {
+    const button = group.querySelector("[data-side-toggle]");
+    group.dataset.initialOpen = button ? button.getAttribute("aria-expanded") : "false";
+    button?.addEventListener("click", () => {
+      const open = button.getAttribute("aria-expanded") !== "true";
+      setOpen(group, open);
+      if (!find.value) group.dataset.initialOpen = String(open);
+    });
+    group.querySelectorAll("[data-side-name]").forEach((node) => { node.dataset.label = node.textContent; });
+  });
+
+  const mark = (node, query) => {
+    const label = node.dataset.label;
+    const at = label.toLowerCase().indexOf(query);
+    node.textContent = "";
+    if (!query || at < 0) { node.textContent = label; return; }
+    const hit = document.createElement("mark");
+    hit.textContent = label.slice(at, at + query.length);
+    node.append(label.slice(0, at), hit, label.slice(at + query.length));
+  };
+
+  const filter = () => {
+    const query = find.value.trim().toLowerCase();
+    let shown = 0;
+    allRow.hidden = Boolean(query);
+    groups.forEach((group) => {
+      const name = group.querySelector(".side-row [data-side-name]");
+      const catHit = name.dataset.label.toLowerCase().includes(query);
+      let subHits = 0;
+      group.querySelectorAll("[data-side-sub]").forEach((item) => {
+        const sub = item.querySelector("[data-side-name]");
+        const hit = !query || catHit || sub.dataset.label.toLowerCase().includes(query);
+        item.hidden = !hit;
+        if (query && sub.dataset.label.toLowerCase().includes(query)) subHits += 1;
+        mark(sub, query);
+      });
+      const allSub = group.querySelector("[data-side-all-sub]");
+      if (allSub) allSub.hidden = Boolean(query) && !catHit;
+      mark(name, query);
+      const visible = !query || catHit || subHits > 0;
+      group.hidden = !visible;
+      if (visible) shown += 1;
+      setOpen(group, query ? subHits > 0 : group.dataset.initialOpen === "true");
+    });
+    empty.hidden = shown > 0;
+    empty.querySelector("span").textContent = find.value.trim();
+  };
+  find.addEventListener("input", filter);
+  find.addEventListener("keydown", (event) => { if (event.key === "Escape") { find.value = ""; filter(); } });
+  nav.querySelector("[data-side-clear]").addEventListener("click", () => { find.value = ""; filter(); find.focus(); });
+});
+
+// Footer "Back to top": smooth scroll, then move focus to the page content.
+document.querySelectorAll("[data-back-to-top]").forEach((link) => {
+  link.addEventListener("click", (event) => {
+    event.preventDefault();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    document.getElementById("main-content")?.focus({ preventScroll: true });
   });
 });

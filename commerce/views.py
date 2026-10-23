@@ -18,7 +18,7 @@ from marketplace.trust import can_review
 from . import services
 from .forms import AddressForm, CheckoutForm, OrderIssueForm, OrderStatusForm
 from .models import Address, CartItem, Checkout, DeliveryOption, Order, OrderIssue, Payment, PaymentEvent
-from .payments import WebhookSignatureError, get_provider
+from .payments import PaymentError, WebhookSignatureError, get_provider
 from .payments.test_provider import OUTCOME_KEY
 
 logger = logging.getLogger(__name__)
@@ -204,7 +204,13 @@ def payment_webhook(request, provider_name):
         outcome = "No matching payment"
     elif event.event_type == "charge.success":
         # Re-verify with the provider API rather than trusting the event body alone.
-        outcome = f"Payment {services.verify_and_apply(payment, provider).status}"
+        try:
+            outcome = f"Payment {services.verify_and_apply(payment, provider, raise_errors=True).status}"
+        except PaymentError:
+            # Leave the event unprocessed and answer with an error so the provider retries it.
+            record.outcome = "Verification failed; waiting for provider retry"
+            record.save(update_fields=("outcome",))
+            return HttpResponse("retry later", status=503)
     else:
         outcome = "Ignored event type"
     record.processed_at = timezone.now()
@@ -298,7 +304,7 @@ def _require_seller(request):
 @login_required
 def seller_orders(request):
     _require_seller(request)
-    orders = Order.objects.filter(seller=request.user).exclude(status=Order.Status.PENDING_PAYMENT)
+    orders = Order.objects.filter(seller=request.user, paid_at__isnull=False)
     status = request.GET.get("status", "")
     if status in dict(Order.Status.choices):
         orders = orders.filter(status=status)
@@ -314,10 +320,8 @@ def seller_order_detail(request, number):
     _require_seller(request)
     order = get_object_or_404(
         Order.objects.select_related("buyer").prefetch_related("items", "events", "issues", "refunds"),
-        number=number, seller=request.user,
+        number=number, seller=request.user, paid_at__isnull=False,
     )
-    if order.status == Order.Status.PENDING_PAYMENT:
-        raise Http404()
     transitions = services.allowed_transitions(order, request.user)
     form = OrderStatusForm(transitions, request.POST or None)
     if request.method == "POST" and form.is_valid():

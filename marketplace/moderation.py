@@ -61,6 +61,9 @@ def return_listing(product, staff, note):
 def approve_seller(user, staff):
     if user.role != User.Role.SELLER or user.seller_status != User.SellerStatus.PENDING:
         raise ModerationError("This account has no seller request waiting for review.")
+    if not user.verifications.exclude(status=SellerVerification.Status.REJECTED).exists():
+        raise ModerationError("This person has not submitted their Ghana Card details yet. "
+                              "Wait for them to add it, or choose Do not approve.")
     user.seller_status = User.SellerStatus.APPROVED
     user.seller_review_note = ""
     user.save(update_fields=("seller_status", "seller_review_note"))
@@ -98,6 +101,15 @@ def decide_verification(verification, staff, approve, note=""):
     verification.reviewed_at = timezone.now()
     verification.save()
     _sync_verified_at(verification.user)
+    user = verification.user
+    if (not approve and user.role == User.Role.SELLER and user.seller_status == User.SellerStatus.APPROVED
+            and not user.verifications.filter(status=SellerVerification.Status.APPROVED).exists()
+            and not user.verifications.filter(status=SellerVerification.Status.PENDING).exists()
+            and user.seller_requested_at is not None):
+        # Approved on the strength of a card that has now been rejected: pause selling until a valid one is added.
+        user.seller_status = User.SellerStatus.PENDING
+        user.save(update_fields=("seller_status",))
+        _log(staff, user, "Seller paused: Ghana Card rejected and no approved card on file.")
     _log(staff, verification, f"Verification {verification.status}" + ("" if approve else f": {verification.reviewer_note}"))
     if approve:
         notify(verification.user, "You are now a verified seller",

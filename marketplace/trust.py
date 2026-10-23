@@ -24,9 +24,9 @@ def _matching_terms(text):
             yield term
 
 
-def blocked_listing_reason(title, description, brand="", model=""):
+def blocked_listing_reason(title, description, brand="", model="", included=""):
     """Return a seller-facing reason when the listing uses a blocked term, otherwise None."""
-    text = " ".join((title, description, brand, model))
+    text = " ".join((title, description, brand, model, included))
     for term in _matching_terms(text):
         if term.action == ProhibitedTerm.Action.BLOCK:
             return term.reason or "This item is not allowed on GhanaMarket. See our prohibited items list."
@@ -36,7 +36,7 @@ def blocked_listing_reason(title, description, brand="", model=""):
 def listing_risk_flags(product):
     """Moderator hints for a listing about to be (re)submitted. Never shown to buyers."""
     flags = []
-    text = " ".join((product.title, product.description, product.brand, product.model))
+    text = " ".join((product.title, product.description, product.brand, product.model, product.included_items or ""))
     flagged = [t.term for t in _matching_terms(text) if t.action == ProhibitedTerm.Action.FLAG]
     if flagged:
         flags.append("Flagged words: " + ", ".join(flagged))
@@ -81,19 +81,33 @@ def delete_account(user):
     """Anonymise an account. Order records are kept (financial record-keeping) without contact details."""
     from commerce.models import Address, CartItem, Order
 
-    open_sales = Order.objects.filter(seller=user, status__in=(
-        Order.Status.PAID, Order.Status.PROCESSING, Order.Status.SHIPPED, Order.Status.READY_FOR_PICKUP,
-    ))
-    open_purchases = Order.objects.filter(buyer=user, status__in=(
-        Order.Status.PAID, Order.Status.PROCESSING, Order.Status.SHIPPED, Order.Status.READY_FOR_PICKUP,
-    ))
+    open_statuses = (
+        Order.Status.PENDING_PAYMENT, Order.Status.PAID, Order.Status.PROCESSING, Order.Status.SHIPPED,
+        Order.Status.READY_FOR_PICKUP, Order.Status.DELIVERED,
+    )
+    open_sales = Order.objects.filter(seller=user, status__in=open_statuses)
+    open_purchases = Order.objects.filter(buyer=user, status__in=open_statuses)
     if open_sales.exists() or open_purchases.exists():
-        raise AccountDeletionBlocked("Finish or cancel your open orders before deleting your account.")
+        raise AccountDeletionBlocked("Finish your open orders (including payments in progress and deliveries not yet confirmed) before deleting your account.")
     Product.objects.filter(seller=user).exclude(status=Product.Status.SOLD).update(status=Product.Status.DRAFT)
+    from django.core.cache import cache
+
+    from .catalog import CATEGORY_MENU_CACHE_KEY
+
+    cache.delete(CATEGORY_MENU_CACHE_KEY)
     Favorite.objects.filter(user=user).delete()
     CartItem.objects.filter(user=user).delete()
     Address.objects.filter(user=user).delete()
     user.notifications.all().delete()
+    for verification in user.verifications.all():
+        # Identity documents and numbers are personal data: remove the file and redact the record.
+        if verification.document:
+            verification.document.delete(save=False)
+        verification.document = ""
+        verification.legal_name = "[deleted]"
+        verification.document_number = "[deleted]"
+        verification.business_name = ""
+        verification.save(update_fields=("document", "legal_name", "document_number", "business_name"))
     Order.objects.filter(buyer=user).update(recipient_name="", recipient_phone="", delivery_address="", buyer_note="")
     user.username = f"deleted-{user.pk}"
     user.email = f"deleted-{user.pk}@deleted.invalid"
@@ -103,3 +117,56 @@ def delete_account(user):
     user.deleted_at = timezone.now()
     user.password = make_password(None)
     user.save()
+
+
+def seller_tenure(seller):
+    """'3 months on GhanaMarket' from the real join date."""
+    days = (timezone.now() - seller.date_joined).days
+    if days < 30:
+        return "New on GhanaMarket"
+    if days < 365:
+        months = days // 30
+        return f"{months} month{'s' if months != 1 else ''} on GhanaMarket"
+    years = days // 365
+    return f"{years}+ year{'s' if years != 1 else ''} on GhanaMarket"
+
+
+REPLY_SPEED_MIN_CHATS = 3
+
+
+def seller_reply_speed(seller):
+    """'Replies within an hour' etc., measured from real chats in the last 90 days.
+
+    Returns None until the seller has answered at least REPLY_SPEED_MIN_CHATS conversations,
+    so the label is never invented.
+    """
+    from django.core.cache import cache
+
+    from .models import Conversation
+
+    key = f"reply-speed:{seller.pk}"
+    cached = cache.get(key)
+    if cached is not None:
+        return cached or None
+    since = timezone.now() - timedelta(days=90)
+    delays = []
+    for conversation in Conversation.objects.filter(seller=seller, created_at__gte=since).order_by("-created_at")[:50]:
+        first_question = None
+        for sender_id, sent_at in conversation.messages.order_by("created_at").values_list("sender_id", "created_at"):
+            if sender_id != seller.pk and first_question is None:
+                first_question = sent_at
+            elif sender_id == seller.pk and first_question is not None:
+                delays.append(sent_at - first_question)
+                break
+    label = ""
+    if len(delays) >= REPLY_SPEED_MIN_CHATS:
+        delays.sort()
+        median = delays[len(delays) // 2]
+        if median <= timedelta(hours=1):
+            label = "Replies within an hour"
+        elif median <= timedelta(days=1):
+            label = "Replies within a day"
+        else:
+            label = "Replies within a few days"
+    cache.set(key, label, 60 * 60)
+    return label or None

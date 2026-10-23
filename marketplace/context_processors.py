@@ -5,6 +5,12 @@ from datetime import timedelta
 from .models import Category, GhanaRegion, ListingReport, Product, User
 
 
+def _category_menu():
+    from .catalog import category_menu
+
+    return category_menu()
+
+
 def marketplace_nav(request):
     """Give every public page the Ghana region list and current search query."""
     match = getattr(request, "resolver_match", None)
@@ -32,6 +38,8 @@ def marketplace_nav(request):
         "header_region": request.GET.get("region", ""),
         "header_query": request.GET.get("q", ""),
         "nav_categories": Category.objects.filter(parent__isnull=True, is_active=True).values_list("slug", "name"),
+        # A callable: templates only build (or read the cached) menu when the menu is rendered.
+        "nav_menu": _category_menu,
         "sell_url": sell_url,
     }
 

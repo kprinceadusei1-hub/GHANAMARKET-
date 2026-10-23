@@ -45,8 +45,30 @@
         {% if detail.photos %}
           <div class="rc-photos">{% for photo in detail.photos %}<a href="{{ photo.url }}" target="_blank" rel="noopener"><img src="{{ photo|thumbnail:480 }}" alt="Listing photo {{ forloop.counter }}" loading="lazy"></a>{% endfor %}</div>
         {% endif %}
-        {% if detail.document_url %}
-          <a class="cc-btn cc-btn-outline rc-doc" href="{{ detail.document_url }}" target="_blank" rel="noopener">{% include "partials/icon.html" with name="audit" %}Open the uploaded document</a>
+        {% if detail.id_check %}{% with card=detail.id_check %}
+          <section class="rc-id" aria-label="Ghana Card check">
+            <div class="rc-id-head">
+              <strong>{% include "partials/icon.html" with name="user-check" %}{{ card.kind }}</strong>
+              <span class="rc-id-status{% if card.is_pending %} is-pending{% endif %}">{{ card.status }}</span>
+            </div>
+            <div class="rc-id-body">
+              <a class="rc-id-photo" href="{{ card.url }}" target="_blank" rel="noopener" title="Open full size">
+                {% if card.is_image %}<img src="{{ card.url }}" alt="Uploaded {{ card.kind }}">{% else %}<span class="rc-id-pdf">{% include "partials/icon.html" with name="audit" %}PDF document<small>Open to view</small></span>{% endif %}
+                <span class="rc-id-zoom">Open full size ↗</span>
+              </a>
+              <dl class="rc-id-typed">
+                <div><dt>Name on card</dt><dd>{{ card.legal_name }}</dd></div>
+                <div><dt>Card number</dt><dd class="rc-mono">{{ card.number }}</dd></div>
+                {% if card.business_name %}<div><dt>Business</dt><dd>{{ card.business_name }}</dd></div>{% endif %}
+                <div><dt>Submitted</dt><dd>{{ card.submitted|date:"j M Y, H:i" }}</dd></div>
+              </dl>
+            </div>
+            <ul class="rc-signals" aria-label="Automatic checks">
+              {% for level, text in card.signals %}<li class="rc-signal rc-signal-{{ level }}"><span aria-hidden="true">{% if level == "ok" %}✓{% elif level == "warn" %}!{% else %}✕{% endif %}</span>{{ text }}</li>{% endfor %}
+            </ul>
+          </section>
+        {% endwith %}{% elif tab.key == "sellers" %}
+          <div class="rc-warning">{% include "partials/icon.html" with name="alert" %}<div><strong>No Ghana Card submitted yet.</strong> This seller cannot be approved until they add it. You can send them a note with “Do not approve”.</div></div>
         {% endif %}
 
         <dl class="rc-facts">{% for label, value in detail.facts %}<div><dt>{{ label }}</dt><dd>{% if value.year %}{{ value|date:"j M Y, H:i" }}{% else %}{{ value }}{% endif %}</dd></div>{% endfor %}</dl>
@@ -61,9 +83,15 @@
               <legend>Before approving, confirm you checked:</legend>
               {% for check in detail.checks %}<label><input type="checkbox" data-review-check> {{ check }}</label>{% endfor %}
             </fieldset>
+            {% if tab.key == "sellers" and detail.id_check.is_pending and perms.marketplace.change_sellerverification %}
+              <label class="rc-also"><input type="checkbox" name="also_verify" value="1" checked> <span><strong>Also give the Verified ID badge</strong><small>Tick only if you have checked the Ghana Card above.</small></span></label>
+            {% endif %}
             <label class="rc-note"><span>Note to the person <small>(required if you do not approve)</small></span>
-              <textarea name="note" rows="2" maxlength="300" placeholder="e.g. Please add clear photos of the actual item"></textarea>
+              <textarea name="note" rows="2" maxlength="300" placeholder="e.g. Please add clear photos of the actual item" data-review-note></textarea>
             </label>
+            {% if detail.reasons %}
+              <div class="rc-reasons" aria-label="Common reasons">{% for reason in detail.reasons %}<button type="button" data-reason="{{ reason }}">{{ reason|truncatechars:48 }}</button>{% endfor %}</div>
+            {% endif %}
             <div class="rc-actions">
               <button type="submit" name="decision" value="reject" class="rc-btn rc-btn-reject" data-review-reject>{{ detail.reject_label }}</button>
               <button type="submit" name="decision" value="approve" class="rc-btn rc-btn-approve" data-review-approve disabled>{% include "partials/icon.html" with name="check" %}Approve</button>
@@ -83,6 +111,13 @@
 {% block footer %}{{ block.super }}
 <script>
 (() => {
+  document.querySelectorAll("[data-reason]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const note = document.querySelector("[data-review-note]");
+      note.value = button.dataset.reason;
+      note.focus();
+    });
+  });
   const form = document.querySelector("[data-review-form]");
   if (!form) return;
   const checks = [...form.querySelectorAll("[data-review-check]")];

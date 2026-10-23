@@ -22,7 +22,7 @@ class SellerApprovalFlowTests(TestCase):
         })
         response = self.client.get(reverse("product_create"), follow=True)
         self.assertRedirects(response, reverse("seller_listings"))
-        self.assertContains(response, "waiting for approval")
+        self.assertContains(response, "Add your Ghana Card to finish your application")
 
     def test_existing_sellers_are_approved_by_default(self):
         seller = User.objects.create_user("old", "old@example.com", PASSWORD, role=User.Role.SELLER)
@@ -46,6 +46,8 @@ class ReviewCentreTests(TestCase):
                                                   phone_number="0241234567", city="Kumasi", region=GhanaRegion.ASHANTI)
         self.applicant.request_seller_approval()
         self.applicant.save()
+        SellerVerification.objects.create(user=self.applicant, kind="ghana_card", legal_name="Ama Mensah",
+                                          document_number="GHA-123456789-0", document="verifications/a.pdf")
         self.seller = User.objects.create_user("kojo", "kojo@example.com", PASSWORD, role=User.Role.SELLER)
         self.listing = Product.objects.create(
             seller=self.seller, title="Blender", description="Works well", category_id="home-living", price="250",
@@ -138,5 +140,5 @@ class ReviewCentreChromeTests(ReviewCentreTests):
         response = self.client.get(self.url)
         self.assertTrue(response.context["cc_sidebar"])
         self.assertTrue(response.context["cc_can_search"])
-        self.assertEqual(response.context["cc_review_total"], 2)
+        self.assertEqual(response.context["cc_review_total"], 3)  # seller request, listing, Ghana Card
         self.assertContains(response, 'href="/admin/review/"')

@@ -102,7 +102,7 @@ class AccountTests(TestCase):
         }
         response = self.client.post(reverse("register"), data)
         seller = User.objects.get(username="kojo")
-        self.assertRedirects(response, reverse("seller_listings"))
+        self.assertRedirects(response, reverse("seller_verification"))
         self.assertEqual(seller.role, User.Role.SELLER)
         self.assertEqual(seller.seller_status, User.SellerStatus.PENDING)
         self.assertEqual(seller.phone_number, "0240000000")
@@ -176,7 +176,7 @@ class AccountTests(TestCase):
             "city": "Accra",
             "region": GhanaRegion.GREATER_ACCRA,
         })
-        self.assertRedirects(response, reverse("seller_listings"))
+        self.assertRedirects(response, reverse("seller_verification"))  # Ghana Card step next
         buyer.refresh_from_db()
         self.assertEqual(buyer.role, User.Role.SELLER)
         self.assertEqual(buyer.seller_status, User.SellerStatus.PENDING)
@@ -765,14 +765,9 @@ class MessagingTests(TestCase):
         self.assertRedirects(response, reverse("product_detail", args=[self.product.pk]))
         self.assertFalse(Conversation.objects.exists())
 
-    def test_seller_role_cannot_initiate_a_conversation(self):
-        another_seller = User.objects.create_user(
-            username="another-seller",
-            email="another-seller@example.com",
-            password="A-strong-password-482!",
-            role=User.Role.SELLER,
-        )
-        self.client.force_login(another_seller)
+    def test_seller_cannot_message_themselves_about_their_own_listing(self):
+        # Other sellers may ask about an ad (see tests_live_chat); the owner may not chat with themselves.
+        self.client.force_login(self.seller)
         self.client.post(
             reverse("conversation_start", args=[self.product.pk]),
             {"body": "Hello."},

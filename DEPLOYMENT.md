@@ -28,8 +28,13 @@ Notes:
 - Online checkout stays off until you add `PAYMENT_PROVIDER=paystack` and `PAYSTACK_SECRET_KEY` (section 3).
 - Own domain: add it in Render (*Settings → Custom domains*), then set `DJANGO_ALLOWED_HOSTS` and
   `DJANGO_CSRF_TRUSTED_ORIGINS` (`https://yourdomain`) and `SITE_URL`.
-- After the first deploy, confirm login rate limits see real visitor IPs (Admin → audit/log entries show the
-  address), since `DJANGO_TRUST_X_FORWARDED_FOR=True` relies on Render's proxy headers.
+- After the first deploy, confirm rate limits see real visitor IPs. The app reads the client IP
+  `DJANGO_TRUSTED_PROXY_COUNT` entries from the right of `X-Forwarded-For` (1 for Render), so forged headers
+  are ignored; if your hosting adds another proxy (e.g. Cloudflare in front), raise it to 2.
+- Rate limits need a shared cache across workers: create a Render **Key Value** instance and set `REDIS_URL`
+  (`manage.py check --deploy` warns with `marketplace.W001` until you do).
+- `DJANGO_DEBUG` now defaults to **False**: development features (test payments, debug pages) only switch on
+  when the variable explicitly says `True`.
 - `expire_checkouts` (section 4) needs a Render Cron Job (paid) once online payments are on.
 
 ---

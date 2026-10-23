@@ -15,7 +15,9 @@
     </div>
   </div>
 
-  {% if user.seller_status == "pending" %}
+  {% if needs_ghana_card %}
+  <div class="status-banner status-banner-danger">{% include "partials/icon.html" with name="user-check" %}<span><strong>Add your Ghana Card to finish your application</strong><small>Our team can only approve your seller account after checking your Ghana Card details.</small></span><a class="button button-primary" href="{% url 'seller_verification' %}">Add Ghana Card</a></div>
+  {% elif user.seller_status == "pending" %}
   <div class="status-banner">{% include "partials/icon.html" with name="clock" %}<span><strong>Your seller account is waiting for approval</strong><small>Our team reviews every new seller, usually within one working day. You will get a notification when you can start posting ads.</small></span></div>
   {% elif user.seller_status == "rejected" %}
   <div class="status-banner status-banner-danger">{% include "partials/icon.html" with name="alert" %}<span><strong>Your seller request was not approved</strong><small>{{ user.seller_review_note|default:"Please check your details." }}</small></span><a class="button button-primary" href="{% url 'become_seller' %}">Update and apply again</a></div>
@@ -77,6 +79,13 @@
           </article>
         {% endfor %}
       </div>
+      {% if page.has_other_pages %}
+        <nav class="pagination" aria-label="Listing pages">
+          {% if page.has_previous %}<a class="button button-quiet" href="{% querystring page=page.previous_page_number %}">{% include "partials/icon.html" with name="back" %}Previous</a>{% else %}<span></span>{% endif %}
+          <span>Page <strong>{{ page.number }}</strong> of {{ page.paginator.num_pages }}</span>
+          {% if page.has_next %}<a class="button button-quiet" href="{% querystring page=page.next_page_number %}">Next{% include "partials/icon.html" with name="chevron" %}</a>{% else %}<span></span>{% endif %}
+        </nav>
+      {% endif %}
     {% elif counts.total %}
       <div class="empty-state"><h2>No matching listings</h2><p>Try another search or status filter.</p><a class="button button-quiet" href="{% url 'seller_listings' %}">Show all listings</a></div>
     {% else %}

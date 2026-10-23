@@ -31,6 +31,10 @@ services:
         value: "True"
       - key: DJANGO_TRUST_X_FORWARDED_FOR
         value: "True"
+      - key: DJANGO_TRUSTED_PROXY_COUNT   # client IP = 1st entry from the right of X-Forwarded-For
+        value: "1"
+      - key: REDIS_URL                    # shared cache for rate limits (Render Key Value); optional
+        sync: false
       - key: DJANGO_ALLOWED_HOSTS    # Your own domain later, e.g. ghanamarket.com,www.ghanamarket.com
         value: ""
       # First admin account (created once; change the password after first login).

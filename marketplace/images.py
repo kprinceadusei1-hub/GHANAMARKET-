@@ -28,10 +28,15 @@ def _to_rgb(image):
     return image.convert("RGB") if image.mode != "RGB" else image
 
 
+MAX_SOURCE_PIXELS = 40_000_000  # ~40 MP: more than any phone camera; blocks "decompression bomb" files.
+
+
 def normalise_upload(uploaded):
     """Return a metadata-free, size-capped JPEG version of an uploaded image file."""
     uploaded.seek(0)
     with Image.open(uploaded) as source:
+        if source.width * source.height > MAX_SOURCE_PIXELS:
+            raise ValueError("Image dimensions are too large.")
         image = ImageOps.exif_transpose(source)
         image = _to_rgb(image)
         image.thumbnail((MAX_DIMENSION, MAX_DIMENSION), Image.Resampling.LANCZOS)
@@ -66,6 +71,8 @@ def thumbnail_url(image_field, width):
     except Exception:  # A missing or unreadable original must never break a page.
         logger.warning("Could not create %spx thumbnail for %s", width, name, exc_info=True)
         try:
-            return image_field.url
+            fallback = image_field.url
         except ValueError:
-            return ""
+            fallback = ""
+        cache.set(cache_key, fallback, 60 * 10)  # Try again in 10 minutes, not on every request.
+        return fallback

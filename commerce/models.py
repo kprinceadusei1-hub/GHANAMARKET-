@@ -265,7 +265,10 @@ class Refund(models.Model):
         FAILED = "failed", "Failed"
         MANUAL = "manual", "Recorded as refunded outside the platform"
 
-    order = models.ForeignKey(Order, on_delete=models.PROTECT, related_name="refunds")
+    order = models.ForeignKey(
+        Order, on_delete=models.PROTECT, related_name="refunds", null=True, blank=True,
+        help_text="Empty for a refund of a whole payment that did not pay for any order (late or duplicate).",
+    )
     payment = models.ForeignKey(Payment, on_delete=models.PROTECT, related_name="refunds", null=True, blank=True)
     amount = models.DecimalField(max_digits=12, decimal_places=2, validators=[MinValueValidator(0.01)])
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.REQUESTED)
@@ -278,7 +281,7 @@ class Refund(models.Model):
         ordering = ("-created_at",)
 
     def __str__(self):
-        return f"Refund {self.amount} for {self.order}"
+        return f"Refund {self.amount} for {self.order or self.payment}"
 
 
 class OrderIssue(models.Model):

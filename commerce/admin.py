@@ -117,7 +117,21 @@ class PaymentAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
     list_display = ("reference", "provider", "amount", "currency", "status", "channel", "verified_at", "needs_attention")
     list_filter = ("status", "provider", "channel", "created_at")
     search_fields = ("reference", "checkout__reference", "provider_transaction_id", "checkout__buyer__email")
-    actions = ("reverify",)
+    actions = ("reverify", "refund_extra_payment")
+
+    @admin.action(description="Refund selected late or duplicate payments in full", permissions=("refund",))
+    def refund_extra_payment(self, request, queryset):
+        for payment in queryset:
+            if not services.needs_payment_refund(payment):
+                self.message_user(request, f"{payment.reference}: not waiting for a refund.", messages.WARNING)
+                continue
+            refund = services.refund_payment(payment, request.user)
+            self.log_change(request, payment, f"Refunded extra payment: {refund.get_status_display()}")
+            level = messages.ERROR if refund.status == Refund.Status.FAILED else messages.SUCCESS
+            self.message_user(request, f"{payment.reference}: refund {refund.get_status_display().lower()}.", level)
+
+    def has_refund_permission(self, request):
+        return request.user.has_perm("commerce.add_refund")
 
     @admin.display(boolean=True, description="Needs attention")
     def needs_attention(self, payment):
@@ -148,9 +162,19 @@ class PaymentEventAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
 
 @admin.register(Refund)
 class RefundAdmin(ReadOnlyAdminMixin, admin.ModelAdmin):
-    list_display = ("order", "amount", "status", "provider_reference", "created_by", "created_at")
+    list_display = ("order", "payment", "amount", "status", "provider_reference", "created_by", "created_at")
     list_filter = ("status",)
-    search_fields = ("order__number", "provider_reference")
+    search_fields = ("order__number", "payment__reference", "provider_reference")
+    actions = ("recheck_status",)
+
+    @admin.action(description="Re-check selected refunds with the provider", permissions=("view",))
+    def recheck_status(self, request, queryset):
+        for refund in queryset.select_related("payment", "order"):
+            before = refund.status
+            refund = services.recheck_refund(refund)
+            if refund.status != before:
+                self.log_change(request, refund, f"Refund status from provider: {before} → {refund.status}")
+            self.message_user(request, f"{refund.provider_reference or refund.pk}: {refund.get_status_display()}.")
 
 
 @admin.register(OrderIssue)

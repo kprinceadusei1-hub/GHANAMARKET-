@@ -55,54 +55,80 @@ class NearMeTests(TestCase):
         self.assertEqual(len(self.titles(self.client.get(reverse("product_list"), {"near": "1"}))), 3)
 
 
-class WhatsAppTests(TestCase):
+class PhoneContactTests(TestCase):
     def setUp(self):
         self.seller = User.objects.create_user("seller", "s@example.com", PASSWORD, role=User.Role.SELLER,
                                                phone_number="024 111 2222")
         self.product = listing(self.seller, "Fridge", "Accra", GhanaRegion.GREATER_ACCRA)
         self.buyer = User.objects.create_user("buyer", "b@example.com", PASSWORD)
         self.url = reverse("product_detail", args=[self.product.pk])
+        self.reveal = reverse("reveal_phone", args=[self.product.pk])
 
     def test_number_format(self):
         for raw, expected in (("024 111 2222", "233241112222"), ("+233 24 111 2222", "233241112222"), ("12345", "")):
             self.assertEqual(User(phone_number=raw).whatsapp_number, expected)
+        self.assertEqual(self.seller.phone_display, "024 111 2222")
 
-    def test_share_for_everyone_contact_only_when_seller_opts_in(self):
-        response = self.client.get(self.url)
-        self.assertIn("wa.me/?text=", response.context["whatsapp_share_url"])
-        self.assertNotIn("whatsapp_contact_url", response.context)
-        self.client.force_login(self.buyer)
-        self.assertNotContains(self.client.get(self.url), "233241112222")
-
-        User.objects.filter(pk=self.seller.pk).update(whatsapp_contact=True)
-        self.assertTrue(self.client.get(self.url).context["whatsapp_contact_url"].startswith("https://wa.me/233241112222"))
-        self.client.logout()
+    def test_number_hidden_until_signed_in_buyer_asks(self):
         anonymous = self.client.get(self.url)
-        self.assertTrue(anonymous.context["whatsapp_contact_url"].startswith(reverse("login")))
-        self.assertNotContains(anonymous, "233241112222")
+        self.assertContains(anonymous, "Show contact")
+        self.assertNotContains(anonymous, "111 2222")
+        self.assertEqual(self.client.post(self.reveal).status_code, 302)  # sent to sign in
+        self.client.force_login(self.buyer)
+        page = self.client.get(self.url)
+        self.assertContains(page, "Show contact")
+        self.assertNotContains(page, "111 2222")
+        response = self.client.post(self.reveal, follow=True)
+        self.assertContains(response, "024 111 2222")
+        self.assertContains(response, 'href="tel:+233241112222"')
+        self.assertContains(response, "sms:+233241112222")
+        self.assertContains(response, "wa.me/233241112222")
 
-    def test_previews_have_no_whatsapp(self):
-        User.objects.filter(pk=self.seller.pk).update(whatsapp_contact=True)
+    def test_seller_can_hide_number(self):
+        User.objects.filter(pk=self.seller.pk).update(show_phone=False)
+        self.client.force_login(self.buyer)
+        self.assertNotContains(self.client.get(self.url), "Show contact")
+        response = self.client.post(self.reveal, follow=True)
+        self.assertNotContains(response, "111 2222")
+        self.assertContains(response, "prefers to be contacted through chat")
+
+    def test_reveals_are_rate_limited(self):
+        from django.core.cache import cache
+
+        from . import views
+
+        cache.clear()
+        self.client.force_login(self.buyer)
+        for _ in range(views.PHONE_REVEALS_PER_HOUR):
+            self.client.post(self.reveal)
+        response = self.client.post(self.reveal, follow=True)
+        self.assertContains(response, "viewed a lot of phone numbers")
+        cache.clear()
+
+    def test_share_for_everyone_and_previews_have_no_contact(self):
+        self.assertIn("wa.me/?text=", self.client.get(self.url).context["whatsapp_share_url"])
         Product.objects.filter(pk=self.product.pk).update(is_demo=True)
+        self.client.force_login(self.buyer)
         response = self.client.get(self.url)
         self.assertNotIn("whatsapp_share_url", response.context)
-        self.assertNotIn("whatsapp_contact_url", response.context)
+        self.assertFalse(response.context["phone_available"])
 
-    def test_opt_in_needs_a_ghana_number(self):
+    def test_showing_number_needs_a_ghana_number(self):
         self.client.force_login(self.seller)
         data = {"first_name": "", "last_name": "", "email": "s@example.com", "phone_number": "123",
-                "whatsapp_contact": "on", "city": "Madina", "region": "Greater Accra"}
+                "show_phone": "on", "city": "Madina", "region": "Greater Accra"}
         response = self.client.post(reverse("account_settings"), data)
         self.assertContains(response, "Enter a Ghana mobile number")
         data["phone_number"] = "0241112222"
+        data.pop("show_phone")
         self.client.post(reverse("account_settings"), data)
-        self.assertTrue(User.objects.get(pk=self.seller.pk).whatsapp_contact)
+        self.assertFalse(User.objects.get(pk=self.seller.pk).show_phone)
 
-    def test_whatsapp_option_is_only_for_sellers(self):
+    def test_phone_option_is_only_for_sellers(self):
         self.client.force_login(self.buyer)
-        self.assertNotContains(self.client.get(reverse("account_settings")), "contact me on WhatsApp")
+        self.assertNotContains(self.client.get(reverse("account_settings")), "call, text or WhatsApp me")
         self.client.force_login(self.seller)
-        self.assertContains(self.client.get(reverse("account_settings")), "contact me on WhatsApp")
+        self.assertContains(self.client.get(reverse("account_settings")), "call, text or WhatsApp me")
 
 
 class RegisterPageTests(TestCase):

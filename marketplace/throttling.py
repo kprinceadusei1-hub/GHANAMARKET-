@@ -14,9 +14,12 @@ def client_ip(request):
     from django.conf import settings
 
     if getattr(settings, "TRUST_X_FORWARDED_FOR", False):
-        forwarded = request.META.get("HTTP_X_FORWARDED_FOR", "")
+        forwarded = [part.strip() for part in request.META.get("HTTP_X_FORWARDED_FOR", "").split(",") if part.strip()]
         if forwarded:
-            return forwarded.split(",")[0].strip()
+            # Proxies append the address they saw, so the right-most entries are the trustworthy ones;
+            # anything further left was supplied by the client and can be forged.
+            hops = max(1, int(getattr(settings, "TRUSTED_PROXY_COUNT", 1)))
+            return forwarded[-hops] if len(forwarded) >= hops else forwarded[0]
     return request.META.get("REMOTE_ADDR", "")
 
 

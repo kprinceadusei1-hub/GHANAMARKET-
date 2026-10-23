@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% load market %}
 {% block title %}Conversation | GhanaMarket{% endblock %}
 {% block body_class %}page-chat{% endblock %}
@@ -19,21 +20,24 @@
         </div>
       </details>
     </header>
-    <div class="message-thread" aria-label="Conversation messages">
+    <div class="message-thread" aria-label="Conversation messages" aria-live="polite" data-chat-thread
+         data-poll-url="{% url 'conversation_poll' conversation.pk %}" data-seen-until="{{ seen_until|default:'' }}">
       {% for message in thread_messages %}
         {% ifchanged message.created_at.date %}<p class="chat-day">{{ message.created_at|date:"l, j F" }}</p>{% endifchanged %}
-        <article class="chat-message{% if message.sender_id == user.id %} own-message{% endif %}">
+        <article class="chat-message{% if message.sender_id == user.id %} own-message{% endif %}" data-id="{{ message.pk }}" data-day="{{ message.created_at|date:'l, j F' }}" data-iso="{{ message.created_at|date:'c' }}">
           <p>{{ message.body|linebreaksbr }}</p>
           <time datetime="{{ message.created_at|date:'c' }}">{{ message.created_at|date:"g:i a" }}</time>
         </article>
       {% empty %}
-        <p class="chat-day">Start the conversation by sending a message.</p>
+        <p class="chat-day" data-chat-empty>Start the conversation by sending a message.</p>
       {% endfor %}
+      <p class="chat-seen" data-chat-seen hidden>Seen</p>
     </div>
     {% if is_blocked %}
     <p class="chat-blocked">{% if i_blocked %}You blocked this person. Unblock them from the ⋮ menu to message again.{% else %}You can no longer message this person.{% endif %}</p>
     {% else %}
-    <form class="reply-form" method="post">
+    <p class="chat-error" data-chat-error hidden role="alert"></p>
+    <form class="reply-form" method="post" data-chat-form>
       {% csrf_token %}
       {% for field in form %}
         <label class="visually-hidden" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<small class="field-error">{{ error }}</small>{% endfor %}
@@ -54,7 +58,4 @@
   <p class="chat-safety">{% include "partials/icon.html" with name="shield" %}Keep chats on GhanaMarket. Never send Mobile Money before you see the item.</p>
 </div>
 {% endblock %}
-{% block scripts %}<script>
-const thread = document.querySelector(".message-thread");
-if (thread) thread.scrollTop = thread.scrollHeight;
-</script>{% endblock %}
+{% block scripts %}<script src="{% static 'js/chat.js' %}" defer></script>{% endblock %}

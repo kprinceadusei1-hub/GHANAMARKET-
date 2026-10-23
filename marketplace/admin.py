@@ -41,6 +41,16 @@ class CategoryAdmin(admin.ModelAdmin):
     search_fields = ("name", "slug")
     prepopulated_fields = {"slug": ("name",)}
     inlines = (SubcategoryInline, CategoryAttributeInline)
+
+    def get_readonly_fields(self, request, obj=None):
+        readonly = list(super().get_readonly_fields(request, obj))
+        if obj and (Product.objects.filter(category=obj).exists() or Product.objects.filter(subcategory=obj).exists()):
+            readonly.append("slug")  # Listings point at this slug; renaming it would break them.
+        return tuple(readonly)
+
+    def get_prepopulated_fields(self, request, obj=None):
+        return {} if "slug" in self.get_readonly_fields(request, obj) else super().get_prepopulated_fields(request, obj)
+
     fieldsets = (
         (None, {"fields": ("name", "slug", "parent", "icon", "description", "position", "is_active")}),
         ("Selling rules", {"fields": ("price_label", "allows_checkout", "is_restricted", "restriction_note")}),
@@ -158,29 +168,44 @@ class MarketplaceUserAdmin(UserAdmin):
     def active_listing_count(self, user):
         return user.live_listing_count
 
+    PRIVILEGED_FIELDS = ("is_staff", "is_superuser", "groups", "user_permissions")
+
     def get_readonly_fields(self, request, obj=None):
         readonly = list(super().get_readonly_fields(request, obj))
         if obj and (obj.is_staff or obj.is_superuser or obj.pk == request.user.pk):
             readonly.append("is_active")
+        if not request.user.is_superuser:
+            # Only superusers grant staff status, superuser status, groups or permissions (incl. their own).
+            readonly.extend(field for field in self.PRIVILEGED_FIELDS if field not in readonly)
         return tuple(readonly)
+
+    def has_change_permission(self, request, obj=None):
+        # Non-superusers may not edit (or reset the password of) other staff or any superuser.
+        if obj is not None and not request.user.is_superuser and (
+            obj.is_superuser or (obj.is_staff and obj.pk != request.user.pk)
+        ):
+            return False
+        return super().has_change_permission(request, obj)
 
     def has_delete_permission(self, request, obj=None):
         # User deletion cascades to their listings and messages; account access is
         # managed with the reversible suspension/reactivation actions instead.
         return False
 
-    @admin.action(description="Suspend selected member accounts (staff protected)")
+    @admin.action(description="Suspend selected member accounts (staff protected)", permissions=("change",))
     def suspend_member_accounts(self, request, queryset):
         targets = queryset.filter(is_active=True, is_staff=False, is_superuser=False)
         changed = 0
         for member in targets.iterator():
             member.is_active = False
             member.save(update_fields=("is_active",))
-            self.log_change(request, member, "Member account suspended by an administrator.")
+            hidden = Product.objects.filter(seller=member, status=Product.Status.PUBLISHED).update(
+                status=Product.Status.DRAFT, moderation_note="Hidden because the account was suspended.")
+            self.log_change(request, member, f"Member account suspended by an administrator; {hidden} live ad(s) hidden.")
             changed += 1
         self.message_user(request, f"{changed} member account(s) suspended.", messages.WARNING)
 
-    @admin.action(description="Reactivate selected member accounts (staff protected)")
+    @admin.action(description="Reactivate selected member accounts (staff protected)", permissions=("change",))
     def reactivate_member_accounts(self, request, queryset):
         targets = queryset.filter(is_active=False, is_staff=False, is_superuser=False)
         changed = 0
@@ -194,6 +219,11 @@ class MarketplaceUserAdmin(UserAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
+    def has_delete_permission(self, request, obj=None):
+        # Deleting would cascade to conversations, reports and promotions (scam evidence, fee records).
+        # Remove listings from public view by changing their status instead.
+        return False
+
     change_list_template = "admin/marketplace/product/change_list.html"
     change_form_template = "admin/marketplace/product/change_form.html"
     list_display = ("title", "seller", "price", "currency", "category", "region", "status_label", "photo_count", "report_count", "has_risk_flags", "created_at")
@@ -225,7 +255,7 @@ class ProductAdmin(admin.ModelAdmin):
     )
 
     def get_queryset(self, request):
-        return super().get_queryset(request).select_related("seller").annotate(
+        return super().get_queryset(request).select_related("seller", "category").annotate(
             open_report_count=Count(
                 "reports",
                 filter=Q(reports__status=ListingReport.Status.OPEN),
@@ -391,7 +421,7 @@ class ListingReportAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         return super().get_queryset(request).select_related("product", "reporter")
 
-    @admin.action(description="Mark selected reports as reviewed")
+    @admin.action(description="Mark selected reports as reviewed", permissions=("change",))
     def mark_reviewed(self, request, queryset):
         reports = queryset.filter(status=ListingReport.Status.OPEN)
         updated = 0
@@ -402,7 +432,7 @@ class ListingReportAdmin(admin.ModelAdmin):
             updated += 1
         self.message_user(request, f"{updated} report(s) marked reviewed.")
 
-    @admin.action(description="Dismiss selected reports")
+    @admin.action(description="Dismiss selected reports", permissions=("change",))
     def dismiss_reports(self, request, queryset):
         reports = queryset.filter(status=ListingReport.Status.OPEN)
         updated = 0
@@ -413,7 +443,11 @@ class ListingReportAdmin(admin.ModelAdmin):
             updated += 1
         self.message_user(request, f"{updated} report(s) dismissed.")
 
-    @admin.action(description="Remove reported listings from public view")
+    def has_remove_listing_permission(self, request):
+        return request.user.has_perm("marketplace.change_listingreport") and request.user.has_perm(
+            "marketplace.change_product")
+
+    @admin.action(description="Remove reported listings from public view", permissions=("remove_listing",))
     def remove_reported_listings(self, request, queryset):
         reports = queryset.filter(
             status=ListingReport.Status.OPEN,
