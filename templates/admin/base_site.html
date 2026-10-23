@@ -57,6 +57,8 @@
 
 {% block nav-sidebar %}
 <nav class="cc-sidebar" id="nav-sidebar" aria-label="Admin navigation">
+  {# Django's nav_sidebar.js expects its quick-filter box; this hidden one keeps it from erroring. #}
+  <input type="search" id="nav-filter" hidden aria-hidden="true" tabindex="-1">
   <a class="cc-nav-top{% if request.resolver_match.url_name == 'index' %} is-active{% endif %}" href="{% url 'admin:index' %}"{% if request.resolver_match.url_name == 'index' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="dashboard" %}<span>Dashboard</span></a>
   {% if cc_review_total is not None %}<a class="cc-nav-top{% if request.resolver_match.url_name == 'marketplace_review_centre' %} is-active{% endif %}" href="{% url 'marketplace_review_centre' %}">{% include "partials/icon.html" with name="check" %}<span>Review Centre</span>{% if cc_review_total %}<b class="cc-pill is-hot" data-pulse-review>{{ cc_review_total }}</b>{% endif %}</a>{% endif %}
   {% for group in cc_sidebar %}

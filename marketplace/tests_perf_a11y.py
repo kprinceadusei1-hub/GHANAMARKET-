@@ -44,3 +44,13 @@ class FormErrorAccessibilityTests(TestCase):
         self.assertContains(response, 'aria-invalid="true"')
         self.assertContains(response, 'id="id_email_errors"')
         self.assertContains(response, "id_email_errors")
+
+
+class AdminSidebarScriptTests(TestCase):
+    def test_django_sidebar_script_finds_its_filter_box(self):
+        # Django's nav_sidebar.js crashes on every admin page if #nav-sidebar has no #nav-filter.
+        admin = User.objects.create_superuser("boss", "boss@example.com", PASSWORD)
+        self.client.force_login(admin)
+        page = self.client.get(reverse("admin:index")).content.decode()
+        self.assertIn('id="nav-sidebar"', page)
+        self.assertIn('id="nav-filter"', page)
