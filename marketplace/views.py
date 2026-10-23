@@ -99,6 +99,34 @@ class ThrottledPasswordResetView(auth_views.PasswordResetView):
         return super().post(request, *args, **kwargs)
 
 
+class AdminLoginView(ThrottledLoginView):
+    """Staff sign-in for the Control Centre, with the same password-guessing limits as the public login."""
+
+    template_name = "admin/login.html"
+
+    def get_form_class(self):
+        from django.contrib.admin.forms import AdminAuthenticationForm
+
+        return AdminAuthenticationForm
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.method == "GET" and request.user.is_active and request.user.is_staff:
+            return redirect(self.get_success_url())
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_default_redirect_url(self):
+        return reverse("admin:index")
+
+    def get_context_data(self, **kwargs):
+        from django.contrib import admin
+
+        context = super().get_context_data(**kwargs)
+        context.update(admin.site.each_context(self.request))
+        context.setdefault("app_path", self.request.get_full_path())
+        context["title"] = "Log in"
+        return context
+
+
 def _message_limit_reached(request):
     if throttling.hit("message", str(request.user.pk), MESSAGES_PER_WINDOW, MESSAGE_WINDOW_SECONDS):
         messages.error(request, "You are sending messages too quickly. Please wait a few minutes and try again.")

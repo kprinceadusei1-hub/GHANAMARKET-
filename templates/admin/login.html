@@ -1,0 +1,83 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+{% block title %}{% if form.errors %}Error: {% endif %}Staff sign in | GhanaMarket Control Centre{% endblock %}
+{% block bodyclass %}{{ block.super }} login cc-login-page{% endblock %}
+{% block header %}{% endblock %}
+{% block usertools %}{% endblock %}
+{% block nav-global %}{% endblock %}
+{% block nav-sidebar %}{% endblock %}
+{% block content_title %}{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+{% block messages %}{% endblock %}
+
+{% block content %}
+<div class="cc-login">
+  <aside class="cc-login-brand" aria-label="About the Control Centre">
+    <a class="cc-login-logo" href="{% url 'home' %}">
+      <span class="cc-brand-mark" aria-hidden="true"><svg viewBox="0 0 40 42" fill="none"><path d="M8 12h24l2.4 25.5a2 2 0 0 1-2 2.2H7.6a2 2 0 0 1-2-2.2L8 12Z" fill="currentColor"/><path d="M14 15V9.5a6 6 0 0 1 12 0V15" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="m20 19.5 1.9 4.6h4.9l-4 3 1.5 4.7-4.3-2.9-4.3 2.9 1.5-4.7-4-3h4.9z" fill="#fff"/></svg></span>
+      <span><strong>GhanaMarket</strong><small>Marketplace Control Centre</small></span>
+    </a>
+    <div class="cc-login-pitch">
+      <h1>Keep Ghana's marketplace safe and running.</h1>
+      <ul>
+        <li>{% include "partials/icon.html" with name="check" %}Review new ads and seller requests</li>
+        <li>{% include "partials/icon.html" with name="user-check" %}Verify sellers' Ghana Cards</li>
+        <li>{% include "partials/icon.html" with name="wallet" %}Track orders, payments and refunds</li>
+        <li>{% include "partials/icon.html" with name="audit" %}Every action is recorded in the audit log</li>
+      </ul>
+    </div>
+    <p class="cc-login-foot">{% include "partials/gh_flag.html" %}<span>Staff access only</span></p>
+  </aside>
+
+  <section class="cc-login-card" aria-labelledby="cc-login-title">
+    <span class="cc-login-badge" aria-hidden="true">{% include "partials/icon.html" with name="shield" %}</span>
+    <h2 id="cc-login-title">Staff sign in</h2>
+    <p class="cc-login-intro">Use your GhanaMarket staff account to open the Control Centre.</p>
+
+    {% if throttled %}
+      <p class="cc-login-alert" role="alert">{% include "partials/icon.html" with name="alert" %}<span>Too many sign-in attempts. For your security, wait 15 minutes and try again.</span></p>
+    {% elif form.errors %}
+      <p class="cc-login-alert" role="alert">{% include "partials/icon.html" with name="alert" %}<span>{% if form.non_field_errors %}{% for error in form.non_field_errors %}{{ error }}{% endfor %}{% else %}Please check your username and password.{% endif %}</span></p>
+    {% endif %}
+    {% if user.is_authenticated and not user.is_staff %}
+      <p class="cc-login-alert is-info" role="status">{% include "partials/icon.html" with name="user" %}<span>You are signed in as {{ user.get_username }}, which is not a staff account. Sign in with a staff account to continue.</span></p>
+    {% endif %}
+
+    <form action="{{ app_path }}" method="post" id="login-form" class="cc-login-form">
+      {% csrf_token %}
+      <label class="cc-login-field" for="{{ form.username.id_for_label }}">
+        <span>Username</span>
+        <span class="cc-login-input">{% include "partials/icon.html" with name="user" %}<input type="text" name="{{ form.username.html_name }}" id="{{ form.username.id_for_label }}" value="{{ form.username.value|default:'' }}" autocomplete="username" autocapitalize="none" spellcheck="false" required autofocus></span>
+      </label>
+      <label class="cc-login-field" for="{{ form.password.id_for_label }}">
+        <span>Password</span>
+        <span class="cc-login-input">{% include "partials/icon.html" with name="lock" %}<input type="password" name="{{ form.password.html_name }}" id="{{ form.password.id_for_label }}" autocomplete="current-password" required data-password>
+          <button type="button" class="cc-login-show" data-show-password aria-pressed="false" aria-label="Show password">Show</button>
+        </span>
+      </label>
+      <input type="hidden" name="next" value="{{ next }}">
+      <button type="submit" class="cc-login-submit">Sign in to Control Centre {% include "partials/icon.html" with name="chevron" %}</button>
+    </form>
+
+    <div class="cc-login-links">
+      <a href="{% url 'password_reset' %}">Forgot your password?</a>
+      <a href="{% url 'home' %}">{% include "partials/icon.html" with name="back" %}Back to GhanaMarket</a>
+    </div>
+    <p class="cc-login-note">{% include "partials/icon.html" with name="shield" %}Protected sign-in: repeated wrong passwords pause access for 15 minutes.</p>
+  </section>
+</div>
+<script>
+document.querySelectorAll("[data-show-password]").forEach((button) => {
+  const input = button.parentElement.querySelector("[data-password]");
+  button.addEventListener("click", () => {
+    const show = input.type === "password";
+    input.type = show ? "text" : "password";
+    button.textContent = show ? "Hide" : "Show";
+    button.setAttribute("aria-pressed", String(show));
+    button.setAttribute("aria-label", show ? "Hide password" : "Show password");
+    input.focus();
+  });
+});
+</script>
+{% endblock %}
+{% block footer %}{% endblock %}
