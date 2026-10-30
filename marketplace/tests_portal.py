@@ -324,3 +324,19 @@ class AccountSidebarAndSalesChartTests(PortalBase):
         self.assertFalse(chart["has_sales"])
         self.client.force_login(self.other_seller)
         self.assertFalse(self.client.get(reverse("account_overview")).context["seller"]["daily_sales"]["has_sales"])
+
+
+class ErrorPageTests(TestCase):
+    def test_missing_page_shows_branded_404_with_search(self):
+        response = self.client.get("/this-page-does-not-exist/")
+        self.assertEqual(response.status_code, 404)
+        self.assertContains(response, "We couldn't find that page", status_code=404)
+        self.assertContains(response, 'name="q"', status_code=404)
+        self.assertContains(response, reverse("category_index"), status_code=404)
+
+    def test_server_error_page_renders_without_any_context(self):
+        from django.template.loader import render_to_string
+
+        html = render_to_string("500.html")
+        self.assertIn("Something went wrong on our side", html)
+        self.assertNotIn("notified", html)  # no alerting is configured, so the page must not claim it

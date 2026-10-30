@@ -8,7 +8,7 @@
       <section class="panel category-card">
         <a class="category-card-head" href="{% url 'product_list' %}?category={{ category.slug|urlencode }}">
           <span class="side-cat-icon cat-{{ category.slug }}">{% include "partials/icon.html" with name=category.icon_key %}</span>
-          <span><strong>{{ category.name }}</strong><small>{{ count }} ad{{ count|pluralize }}</small></span>
+          <span><strong>{{ category.name }}</strong>{% if count %}<small>{{ count }} ad{{ count|pluralize }}</small>{% endif %}</span>
         </a>
         {% if category.children.all %}
           <ul>

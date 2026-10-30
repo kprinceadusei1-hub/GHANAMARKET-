@@ -1,0 +1,29 @@
+{% load static %}<!doctype html>
+<html lang="en-GH">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Something went wrong | GhanaMarket</title>
+  <link rel="icon" href="{% static 'marketplace/brand/favicon.svg' %}" type="image/svg+xml">
+  <style>
+    /* Self-contained: this page must render even when the database or other services are down. */
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; padding: 24px; box-sizing: border-box;
+           background: #f5f7f6; color: #17231c; font: 16px/1.55 Inter, system-ui, -apple-system, "Segoe UI", sans-serif; }
+    main { max-width: 520px; padding: 36px 32px; border-radius: 18px; background: #fff; border: 1px solid #e4eae6;
+           box-shadow: 0 12px 30px rgb(23 35 28 / .08); text-align: center; }
+    .mark { width: 56px; height: 56px; color: #087a48; }
+    h1 { margin: 16px 0 8px; font-size: 1.5rem; }
+    p { margin: 0 0 22px; color: #68756d; }
+    a { display: inline-block; padding: 12px 22px; border-radius: 10px; background: #087a48; color: #fff; font-weight: 700; text-decoration: none; }
+    a:hover { background: #075b38; }
+  </style>
+</head>
+<body>
+  <main>
+    <svg class="mark" viewBox="0 0 48 48" fill="none" aria-hidden="true"><path d="M37.5 13.5A17 17 0 1 0 41 27" stroke="currentColor" stroke-width="9" stroke-linecap="round"/><path d="M41 27H26" stroke="#E8B83F" stroke-width="9" stroke-linecap="round"/></svg>
+    <h1>Something went wrong on our side</h1>
+    <p>This page couldn't load right now. Please try again in a few minutes. If it keeps happening, contact support from the Help centre.</p>
+    <a href="/">Back to GhanaMarket</a>
+  </main>
+</body>
+</html>

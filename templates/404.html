@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Page not found | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container error-page">
+  <section class="panel error-card" aria-labelledby="error-title">
+    <span class="error-code" aria-hidden="true">404</span>
+    <h1 id="error-title">We couldn't find that page</h1>
+    <p>The ad may have been sold or removed, or the link may be mistyped. Try a search, or pick up where most people start.</p>
+    <form class="error-search" action="{% url 'product_list' %}" method="get" role="search">
+      <label class="visually-hidden" for="error-search-input">Search listings</label>
+      <input id="error-search-input" type="search" name="q" placeholder="Search for phones, cars, fashion…">
+      <button class="button button-primary" type="submit">{% include "partials/icon.html" with name="search" %}Search</button>
+    </form>
+    <nav class="error-links" aria-label="Popular pages">
+      <a href="{% url 'home' %}">{% include "partials/icon.html" with name="home" %}Home</a>
+      <a href="{% url 'category_index' %}">{% include "partials/icon.html" with name="grid" %}All categories</a>
+      <a href="{% url 'product_list' %}?sort=newest">{% include "partials/icon.html" with name="trending" %}New arrivals</a>
+      <a href="{% url 'help' %}">{% include "partials/icon.html" with name="support" %}Help centre</a>
+    </nav>
+  </section>
+</div>
+{% endblock %}

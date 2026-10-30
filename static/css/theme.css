@@ -1810,3 +1810,26 @@ a.stat-card:hover { border-color: var(--green); box-shadow: var(--shadow-md); }
 .side-card { padding: 16px 18px; }
 .side-card:hover { border-color: var(--green); box-shadow: var(--shadow-md); }
 @media (max-width: 759px) { .hero-banner:not(.has-photo) .hero-art { display: none; } }
+
+/* ===== Error page ===== */
+.error-page { display: grid; place-items: center; padding-top: 48px; padding-bottom: 64px; }
+.error-card { width: 100%; max-width: 640px; padding: 40px 32px; text-align: center; }
+.error-code { display: block; font-size: 4.5rem; font-weight: 800; line-height: 1; letter-spacing: -.04em; color: var(--green); }
+.error-code::after { content: ""; display: block; width: 48px; height: 4px; margin: 14px auto 0; border-radius: 4px; background: var(--accent); }
+.error-card h1 { margin: 18px 0 8px; font-size: 1.6rem; }
+.error-card > p { max-width: 46ch; margin: 0 auto 22px; color: var(--ink-2); }
+.error-search { display: flex; gap: 8px; max-width: 480px; margin: 0 auto 22px; }
+.error-search input { flex: 1; min-width: 0; height: 46px; padding: 0 14px; border: 1.5px solid var(--line-strong); border-radius: 10px; font: inherit; }
+.error-search input:focus { outline: none; border-color: var(--green); box-shadow: var(--focus); }
+.error-search .button { min-height: 46px; }
+.error-search .icon { width: 17px; height: 17px; }
+.error-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.error-links a { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border: 1px solid var(--line); border-radius: 999px; color: var(--ink-2); font-size: .88rem; font-weight: 600; text-decoration: none; }
+.error-links a:hover { border-color: var(--green); color: var(--green); }
+.error-links .icon { width: 16px; height: 16px; color: var(--green); }
+
+/* ===== Sign-in and registration panels on the brand emerald ===== */
+@media (min-width: 860px) {
+  .auth-aside { background: radial-gradient(420px 260px at 100% 0%, rgb(232 184 63 / .18), transparent 70%), linear-gradient(160deg, var(--green-deep), #075b38); }
+  .auth-aside li .icon, .auth-aside li svg { color: var(--accent); }
+}
