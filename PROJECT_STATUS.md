@@ -168,3 +168,12 @@ Honesty adaptations (the board's wording was not used where the site cannot back
 - [x] Stage 3 — shared account sidebar on 13 account pages (selling tools for sellers only; swipeable shortcuts on phones), seller 14-day sales chart from verified paid orders, Recent sales
 - [x] Stage 4 — admin control centre: brand palette, dark-green sidebar with gold active state, G logo (also on staff sign-in), KPI amounts fit their cards; permission checks unchanged
 - [ ] Stage 5 — buyer account pages, mobile pass across all pages, full functionality audit table
+
+## Design and UX ownership — 2026-10-30 (late)
+The user handed over full control of UI/UX. Work since the reference-board stages:
+- [x] Homepage matched to the reference board (two-column layout, hero badge and trust badges, sidebar cards, six products per row, region chip in header, plain Sell button) — wording kept truthful (see "Honesty adaptations" above)
+- [x] Footer rebuilt as one area plus one bottom bar
+- [x] Product page polish: equal-height cards, neutral photo backdrop, brand/model subtitle, cleaner seller card; signed-in header keeps a full-width search
+- [x] Branded 404 page and a self-contained 500 page (the live site previously showed Django's bare "Not Found")
+- [x] All categories shows counts only where there are ads; Messages list uses the account sidebar; sign-in panels on the brand emerald
+- [ ] Hero photo: generated in Canva (https://www.canva.com/M/MAHZgGzDkwM) but only a preview could be fetched. Save the full image as static/marketplace/brand/hero-tech.jpg and the homepage switches to it automatically

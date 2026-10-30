@@ -1833,3 +1833,6 @@ a.stat-card:hover { border-color: var(--green); box-shadow: var(--shadow-md); }
   .auth-aside { background: radial-gradient(420px 260px at 100% 0%, rgb(232 184 63 / .18), transparent 70%), linear-gradient(160deg, var(--green-deep), #075b38); }
   .auth-aside li .icon, .auth-aside li svg { color: var(--accent); }
 }
+
+/* Phone overview: the shortcut tiles already cover the sidebar links. */
+@media (max-width: 959px) { .account-shell:has(.account-overview) > .account-nav { display: none; } }
