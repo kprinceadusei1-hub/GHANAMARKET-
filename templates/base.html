@@ -21,7 +21,7 @@
     <div class="header-main">
       <div class="container header-row">
         <a class="brand" href="{% url 'home' %}" aria-label="GhanaMarket home">
-          <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 42" fill="none"><path d="M8 12h24l2.4 25.5a2 2 0 0 1-2 2.2H7.6a2 2 0 0 1-2-2.2L8 12Z" fill="currentColor"/><path d="M14 15V9.5a6 6 0 0 1 12 0V15" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="m20 19.5 1.9 4.6h4.9l-4 3 1.5 4.7-4.3-2.9-4.3 2.9 1.5-4.7-4-3h4.9z" fill="#fff"/></svg></span>
+          <span class="brand-mark" aria-hidden="true">{% include "partials/brand_mark.html" %}</span>
           <span class="brand-text"><span class="brand-name">GhanaMarket</span><small>Buy · Sell · Connect</small></span>
         </a>
 
@@ -174,7 +174,7 @@
 
     <div class="container footer-main">
       <div class="footer-brand">
-        <a class="brand" href="{% url 'home' %}"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 42" fill="none"><path d="M8 12h24l2.4 25.5a2 2 0 0 1-2 2.2H7.6a2 2 0 0 1-2-2.2L8 12Z" fill="currentColor"/><path d="M14 15V9.5a6 6 0 0 1 12 0V15" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="m20 19.5 1.9 4.6h4.9l-4 3 1.5 4.7-4.3-2.9-4.3 2.9 1.5-4.7-4-3h4.9z" fill="#fff"/></svg></span><span class="brand-text"><span class="brand-name">GhanaMarket</span><small>Buy · Sell · Connect</small></span></a>
+        <a class="brand" href="{% url 'home' %}"><span class="brand-mark" aria-hidden="true">{% include "partials/brand_mark.html" %}</span><span class="brand-text"><span class="brand-name">GhanaMarket</span><small>Buy · Sell · Connect</small></span></a>
         <p>Buy and sell locally across all 16 regions of Ghana. Free listings during launch, prices in Ghana cedis.</p>
         <div class="footer-cta">
           <div><strong>Have something to sell?</strong><small>Post it free in about two minutes.</small></div>
@@ -211,6 +211,14 @@
           <a href="{% url 'help_page' 'prohibited-items' %}">Prohibited items</a>
         </div>
       </nav>
+    </div>
+
+    <div class="footer-band">
+      <div class="container footer-band-row">
+        <a class="brand brand-lg" href="{% url 'home' %}"><span class="brand-mark" aria-hidden="true">{% include "partials/brand_mark.html" %}</span><span class="brand-text"><span class="brand-name">GhanaMarket</span><small>Buy · Sell · Connect</small></span></a>
+        <p class="footer-band-motto"><strong>From Ghana, to the world</strong><small>Start local. Grow global.</small></p>
+        <p class="footer-band-proud">{% include "partials/gh_flag.html" %}<span><strong>Proudly Ghanaian</strong><small>Built for the future</small></span></p>
+      </div>
     </div>
 
     <div class="footer-bottom">

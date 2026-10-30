@@ -6,17 +6,19 @@
 <div class="container home-top">
   <section class="hero-banner" aria-labelledby="hero-title">
     <div class="hero-copy">
+      <p class="hero-eyebrow">Ghana's Premier Buying &amp; Selling Marketplace</p>
       <h1 id="hero-title">Everything You Need,<br> <span>All in One Place</span></h1>
-      <p>Buy and sell new and used products, find services, and discover great listings from sellers across Ghana.</p>
-      <ul class="hero-trust">
-        <li>{% include "partials/icon.html" with name="shield" %}Every ad reviewed</li>
-        <li>{% include "partials/icon.html" with name="shield" %}Private chat, number hidden</li>
-        <li>{% include "partials/icon.html" with name="shield" %}Free to post</li>
-      </ul>
+      <p>Buy and sell new and used products, find services, and discover great deals across Ghana.</p>
       <div class="hero-actions">
-        <a class="button button-primary" href="{% url 'product_list' %}">{% include "partials/icon.html" with name="search" %}Browse listings</a>
-        <a class="button button-quiet" href="{% url 'product_list' %}?checkout=1">{% include "partials/icon.html" with name="wallet" %}Buy online</a>
+        <a class="button hero-shop" href="{% url 'product_list' %}">Shop Now {% include "partials/icon.html" with name="chevron" %}</a>
+        <a class="button hero-secondary" href="{% url 'product_list' %}?checkout=1">{% include "partials/icon.html" with name="wallet" %}Buy online</a>
       </div>
+      <ul class="hero-trust">
+        <li>{% include "partials/icon.html" with name="wallet" %}Mobile Money &amp; card</li>
+        <li>{% include "partials/icon.html" with name="user-check" %}Verified sellers</li>
+        <li>{% include "partials/icon.html" with name="shield" %}Every ad reviewed</li>
+        <li>{% include "partials/icon.html" with name="chat" %}Private chat</li>
+      </ul>
       {% if has_demo_listings %}<span class="preview-pill">Preview catalogue</span>{% endif %}
     </div>
     <div class="hero-art" aria-hidden="true">
@@ -68,17 +70,16 @@
   </div>
   <div class="category-tiles">
     {% for category in categories|slice:":11" %}
-      <a class="category-tile cat-{{ category.value }}" href="{% url 'product_list' %}?category={{ category.value|urlencode }}">
-        {% if category.count %}<span class="category-tile-count">{{ category.count }} ad{{ category.count|pluralize }}</span>{% endif %}
+      <a class="category-tile cat-{{ category.value }}" href="{% url 'product_list' %}?category={{ category.value|urlencode }}"{% if category.subcategories %} title="{{ category.subcategories|join:', ' }}"{% endif %}>
         <span class="category-tile-icon">{% include "partials/icon.html" with name=category.icon %}</span>
         <span class="category-tile-name">{{ category.label }}</span>
-        {% if category.subcategories %}<span class="category-tile-subs">{{ category.subcategories|join:" · " }}</span>{% endif %}
+        {% if category.count %}<span class="category-tile-count">{{ category.count }} ad{{ category.count|pluralize }}</span>{% endif %}
       </a>
     {% endfor %}
     <a class="category-tile category-tile-all" href="{% url 'category_index' %}">
       <span class="category-tile-icon">{% include "partials/icon.html" with name="grid" %}</span>
-      <span class="category-tile-name">All Categories</span>
-      <span class="category-tile-subs">Browse all {{ categories|length }} categories</span>
+      <span class="category-tile-name">More</span>
+      <span class="category-tile-count">{{ categories|length }} categories</span>
     </a>
   </div>
 </section>
@@ -169,13 +170,13 @@
   </div>
 
   <aside class="home-aside">
-    <a class="promo-card" href="{% url 'product_list' %}?checkout=1">
-      <span class="promo-copy">
-        <strong>Buy Online, Pay Your Way</strong>
-        <small>Mobile Money or card on items marked “Buy online”.</small>
-        <span class="promo-button">Shop Online {% include "partials/icon.html" with name="chevron" %}</span>
+    <a class="pay-card" href="{% url 'product_list' %}?checkout=1">
+      <strong>Buy Online, Pay Your Way</strong>
+      <small>Pay with Mobile Money or card on items marked “Buy online”.</small>
+      <span class="pay-methods" aria-label="Payment methods">
+        <span>MTN MoMo</span><span>Telecel Cash</span><span>AirtelTigo Money</span><span>Visa · Mastercard</span>
       </span>
-      <img class="promo-photo" src="{% static 'marketplace/brand/deals-headphones.png' %}" alt="" width="174" height="142" loading="lazy">
+      <span class="pay-card-link">Shop online {% include "partials/icon.html" with name="chevron" %}</span>
     </a>
 
     <section class="panel side-list" aria-labelledby="popular-searches-heading">
@@ -189,13 +190,13 @@
 
     <a class="side-card side-card-green" href="{% url 'product_list' %}?verified=1">
       <span class="side-card-icon">{% include "partials/icon.html" with name="shield" %}</span>
-      <span><strong>Verified Sellers</strong><small>{% if verified_sellers %}{{ verified_sellers|length }} with identity checked{% else %}Identity checked by our team{% endif %}</small></span>
+      <span><strong>Verified Sellers</strong><small>{% if verified_sellers %}{{ verified_sellers|length }} with identity checked{% else %}Ghana Card checked by our team{% endif %}</small><em class="side-card-cta">View sellers {% include "partials/icon.html" with name="chevron" %}</em></span>
       {% include "partials/icon.html" with name="chevron" %}
     </a>
 
     <a class="side-card" href="{{ sell_url }}">
       <span class="side-card-icon">{% include "partials/icon.html" with name="store" %}</span>
-      <span><strong>Become a Seller</strong><small>Grow your business on GhanaMarket</small></span>
+      <span><strong>Become a Seller</strong><small>Grow your business on GhanaMarket</small><em class="side-card-cta">Start now {% include "partials/icon.html" with name="chevron" %}</em></span>
       {% include "partials/icon.html" with name="chevron" %}
     </a>
 
