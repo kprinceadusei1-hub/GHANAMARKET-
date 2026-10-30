@@ -157,3 +157,14 @@ Scope: presentation only, existing layout kept. Checked against a copy of the re
 - [x] Header search wider (up to 760px) with a visible "Search" button label on wide screens
 - [x] Product page seller card: shop logo when set, seller name links to the shop, "View shop"/"View reviews" link instead of a bare "storefront"
 - [x] 330 tests passing; no JS errors, failed requests, broken images or horizontal scrolling on the pages checked (desktop and 390px phone)
+
+## Reference-board redesign — started 2026-10-30
+The user supplied a full design board (homepage, product page, seller and admin dashboards, mobile, palette). Work is staged; each stage is tested and pushed to branch `portal-reliability-ui`.
+
+Honesty adaptations (the board's wording was not used where the site cannot back it up): no "Buyer Protection" (no escrow scheme exists), no "Ghana's Trusted Marketplace" seal, no "reach thousands of buyers", no sample ratings or sales figures. Trust items shown instead: Mobile Money & card checkout, Ghana Card-verified sellers, every ad reviewed, private chat. Payment chips list only the channels the Paystack integration requests (Mobile Money networks and cards).
+
+- [x] Stage 1 — shared look and homepage: G logo (header, footer, favicon), dark-green navigation bar, deep emerald hero with gold, tagline eyebrow, round category icons, dark payment card, deep-green footer band
+- [x] Stage 2 — product page: gallery | info | seller columns, vertical thumbnails, key–value item details; tablet width fix
+- [ ] Stage 3 — seller dashboard with left sidebar (Overview, My listings, Orders, Messages, Storefront, Verification, Settings — only pages that exist), sales chart from real paid orders
+- [ ] Stage 4 — admin control centre: dark-green sidebar and the board's KPI/chart arrangement, keeping permission checks
+- [ ] Stage 5 — buyer account pages, mobile pass across all pages, full functionality audit table
