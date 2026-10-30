@@ -232,20 +232,20 @@ def home(request):
         featured = list(catalog.with_promotion(with_photo_counts.exclude(image=""), catalog.HOMEPAGE_PLACEMENTS).annotate(
             verified=Case(When(seller__verified_at__isnull=False, then=Value(1)), default=Value(0),
                           output_field=IntegerField()),
-        ).order_by("is_demo", "-is_promoted", "-verified", "-created_at")[:8])
+        ).order_by("is_demo", "-is_promoted", "-verified", "-created_at")[:12])
         trending = list(with_photo_counts.annotate(
             saves=Count("favorites", distinct=True), chats=Count("conversations", distinct=True),
-        ).filter(Q(saves__gt=0) | Q(chats__gt=0)).order_by("-saves", "-chats", "-created_at")[:8])
+        ).filter(Q(saves__gt=0) | Q(chats__gt=0)).order_by("-saves", "-chats", "-created_at")[:12])
         viewed_categories = list(Product.objects.filter(
             pk__in=request.session.get(RECENTLY_VIEWED_SESSION_KEY, [])
         ).values_list("category_id", flat=True).distinct())
         recommended = list(with_photo_counts.filter(category_id__in=viewed_categories).exclude(
             pk__in=request.session.get(RECENTLY_VIEWED_SESSION_KEY, [])
-        )[:8]) if viewed_categories else []
+        )[:12]) if viewed_categories else []
         tabs = [tab for tab in (
             ("featured", "Featured", featured),
             ("trending", "Trending", trending),
-            ("new", "New Arrivals", products[:8]),
+            ("new", "New Arrivals", products[:12]),
             ("recommended", "Recommended", recommended),
         ) if tab[2]]
     nearby = []
