@@ -3,27 +3,79 @@
 {% block title %}GhanaMarket | Buy and Sell Anything in Ghana{% endblock %}
 {% block body_class %}page-home{% endblock %}
 {% block content %}
-<div class="container home-grid">
-  <div class="home-main">
-  <section class="hero-banner{% if hero_photo %} has-photo{% endif %}" aria-labelledby="hero-title"{% if hero_photo %} style="--hero-photo: url('{{ hero_photo }}')"{% endif %}>
-    <div class="hero-copy">
-      <h1 id="hero-title">Everything You Need,<br> <span>All in One Place</span></h1>
-      <p>Buy and sell new and used products, find services, and discover great deals across Ghana.</p>
-      <div class="hero-actions">
-        <a class="button hero-shop" href="{% url 'product_list' %}">Shop Now {% include "partials/icon.html" with name="chevron" %}</a>
+<section class="stage" aria-labelledby="hero-title">
+  <div class="container stage-inner">
+    <div class="stage-copy">
+      <p class="stage-eyebrow"><span aria-hidden="true"></span>Proudly Ghanaian · Built for the world</p>
+      <h1 id="hero-title" class="stage-title">Your World of Shopping. <em>All in One Place.</em></h1>
+      <p class="stage-lead">Discover exceptional products, verified sellers and exciting deals from across Ghana.</p>
+      <div class="stage-actions">
+        <a class="stage-cta stage-cta-primary" href="{% url 'product_list' %}">Explore Marketplace <span class="stage-cta-arrow" aria-hidden="true">{% include "partials/icon.html" with name="chevron" %}</span></a>
+        <a class="stage-cta stage-cta-ghost" href="{{ sell_url }}">{% include "partials/icon.html" with name="plus" %}Start Selling</a>
       </div>
-      <ul class="hero-trust">
-        <li>{% include "partials/icon.html" with name="lock" %}Secure Payments</li>
-        <li>{% include "partials/icon.html" with name="user-check" %}Verified Sellers</li>
-        <li>{% include "partials/icon.html" with name="shield" %}Every Ad Reviewed</li>
-        <li>{% include "partials/icon.html" with name="chat" %}Private Chat</li>
+      <ul class="stage-proof" aria-label="Why shop on GhanaMarket">
+        <li>{% include "partials/icon.html" with name="shield" %}Every ad reviewed</li>
+        <li>{% include "partials/icon.html" with name="user-check" %}Ghana Card–verified sellers</li>
+        <li>{% include "partials/icon.html" with name="wallet" %}Mobile Money &amp; card</li>
       </ul>
     </div>
-    <p class="hero-seal"><span>Proudly</span><strong>Ghanaian</strong><span>Marketplace</span></p>
-    <div class="hero-art" aria-hidden="true">
-      <img class="hero-artwork" src="{% static 'marketplace/brand/hero-products.png' %}" alt="" width="504" height="216" fetchpriority="high">
+
+    <div class="stage-mosaic" aria-label="Shop by category">
+      <span class="stage-ring" aria-hidden="true"></span>
+      <a class="mosaic-tile mosaic-fashion" href="{% url 'product_list' %}?category=fashion">
+        <img src="{% static 'marketplace/brand/hero/kente-cloth.jpg' %}" alt="Handwoven kente cloth" width="760" height="604" fetchpriority="high">
+        <span class="mosaic-label">Fashion {% include "partials/icon.html" with name="chevron" %}</span>
+      </a>
+      <a class="mosaic-tile mosaic-phones" href="{% url 'product_list' %}?category=phones-tech">
+        <img src="{% static 'marketplace/brand/hero/smartphone-display.jpg' %}" alt="Smartphone" width="760" height="481">
+        <span class="mosaic-label">Phones &amp; Tech {% include "partials/icon.html" with name="chevron" %}</span>
+      </a>
+      <a class="mosaic-tile mosaic-property" href="{% url 'product_list' %}?category=electronics">
+        <img src="{% static 'marketplace/brand/hero/canon-camera.jpg' %}" alt="Professional camera" width="760" height="507">
+        <span class="mosaic-label">Electronics {% include "partials/icon.html" with name="chevron" %}</span>
+      </a>
+      <a class="mosaic-tile mosaic-home" href="{% url 'product_list' %}?category=home-living">
+        <img src="{% static 'marketplace/brand/hero/ghana-stool.jpg' %}" alt="Traditional carved wooden stool" width="760" height="333">
+        <span class="mosaic-label">Home &amp; Living {% include "partials/icon.html" with name="chevron" %}</span>
+      </a>
+      <a class="mosaic-tile mosaic-cars" href="{% url 'product_list' %}?category=vehicles">
+        <img src="{% static 'marketplace/brand/hero/corolla.jpg' %}" alt="Silver Toyota estate car" width="960" height="442">
+        <span class="mosaic-label">Cars &amp; Vehicles {% include "partials/icon.html" with name="chevron" %}</span>
+      </a>
     </div>
-  </section>
+  </div>
+</section>
+
+<div class="container promo-ribbon">
+  <a class="promo-tile promo-sell" href="{{ sell_url }}">
+    <span class="promo-tile-copy">
+      <small>For sellers</small>
+      <strong>Sell Your Items</strong>
+      <span>Reach buyers across Ghana. Posting is free during launch.</span>
+      <em>Start Selling {% include "partials/icon.html" with name="chevron" %}</em>
+    </span>
+    <img src="{% static 'marketplace/brand/sell-woman.png' %}" alt="" width="181" height="200" loading="lazy">
+  </a>
+  <a class="promo-tile promo-pay" href="{% url 'product_list' %}?checkout=1">
+    <span class="promo-tile-copy">
+      <small>For buyers</small>
+      <strong>Buy Online, Pay Safely</strong>
+      <span>Mobile Money or card on items marked “Buy online”.</span>
+      <span class="pay-methods" aria-label="Payment methods"><span class="pm"><i style="--dot:#ffcc00"></i>MTN MoMo</span><span class="pm"><i style="--dot:#e30613"></i>Telecel Cash</span><span class="pm"><i style="--dot:#c8102e"></i>AirtelTigo</span><span class="pm"><i style="--dot:#1a1f71"></i>Visa · Mastercard</span></span>
+    </span>
+  </a>
+  <a class="promo-tile promo-verified" href="{% url 'product_list' %}?verified=1">
+    <span class="promo-tile-icon">{% include "partials/icon.html" with name="shield" %}</span>
+    <span class="promo-tile-copy">
+      <small>Shop with confidence</small>
+      <strong>Verified Sellers</strong>
+      <span>Ghana Card checked by our team before the badge appears.</span>
+      <em>View Sellers {% include "partials/icon.html" with name="chevron" %}</em>
+    </span>
+  </a>
+</div>
+
+<div class="container home-flow">
 {% if own_pending %}
   <div>
     <a class="status-banner" href="{% url 'seller_listings' %}">
@@ -139,6 +191,12 @@
     </section>
     {% endif %}
 
+    {% if popular_searches %}
+    <section class="home-section popular-searches" aria-labelledby="popular-searches-heading">
+      <h2 id="popular-searches-heading">Popular searches</h2>
+      <div class="chip-row">{% for search in popular_searches|slice:":10" %}<a class="chip" href="{% url 'product_list' %}?q={{ search.term|urlencode }}">{% include "partials/icon.html" with name="search" %}{{ search.term }}</a>{% endfor %}</div>
+    </section>
+    {% endif %}
     {% if popular_regions %}
     <section class="panel" aria-labelledby="regions-heading">
       <div class="panel-head"><h2 id="regions-heading">Explore Ghana by region</h2></div>
@@ -148,44 +206,6 @@
       </div>
     </section>
     {% endif %}
-  </div>
-
-  <aside class="home-aside">
-  <aside class="sell-card" aria-labelledby="sell-card-title">
-    <div>
-      <h2 id="sell-card-title">Sell Your Items</h2>
-      <p>Reach buyers across Ghana. Posting is free during launch.</p>
-      <a class="button button-primary" href="{{ sell_url }}">Start Selling {% include "partials/icon.html" with name="chevron" %}</a>
-    </div>
-    <img class="sell-card-photo" src="{% static 'marketplace/brand/sell-woman.png' %}" alt="" width="181" height="200" loading="lazy">
-  </aside>
-    <a class="pay-card" href="{% url 'product_list' %}?checkout=1">
-      <strong>Buy Online, Pay Safely</strong>
-      <small>Mobile Money | Card · on items marked “Buy online”</small>
-      <span class="pay-methods" aria-label="Payment methods">
-        <span class="pm"><i style="--dot:#ffcc00"></i>MTN MoMo</span><span class="pm"><i style="--dot:#e30613"></i>Telecel Cash</span><span class="pm"><i style="--dot:#c8102e"></i>AirtelTigo</span><span class="pm"><i style="--dot:#1a1f71"></i>Visa · Mastercard</span>
-      </span>
-      <span class="pay-card-link">Learn more {% include "partials/icon.html" with name="chevron" %}</span>
-    </a>
-
-    {% if popular_searches %}
-    <section class="panel side-list" aria-labelledby="popular-searches-heading">
-      <h2 id="popular-searches-heading">{% include "partials/icon.html" with name="search" %}Popular Searches</h2>
-      {% for search in popular_searches|slice:":6" %}<a href="{% url 'product_list' %}?q={{ search.term|urlencode }}">{% include "partials/icon.html" with name="search" %}<span>{{ search.term }}</span>{% include "partials/icon.html" with name="chevron" %}</a>{% endfor %}
-    </section>
-    {% endif %}
-
-    <a class="side-card side-card-green" href="{% url 'product_list' %}?verified=1">
-      <span class="side-card-icon">{% include "partials/icon.html" with name="shield" %}</span>
-      <span><strong>Verified Sellers</strong><small>Shop with confidence</small><em class="side-card-cta">View Sellers {% include "partials/icon.html" with name="chevron" %}</em></span>
-    </a>
-
-    <a class="side-card" href="{{ sell_url }}">
-      <span class="side-card-icon">{% include "partials/icon.html" with name="store" %}</span>
-      <span><strong>Become a Seller</strong><small>Grow your business on GhanaMarket</small><em class="side-card-cta">Start Now {% include "partials/icon.html" with name="chevron" %}</em></span>
-    </a>
-
-  </aside>
 </div>
 {% if has_demo_listings %}<p class="container preview-disclaimer">Preview listings are examples, not real products or offers. <a href="/static/marketplace/demo/photo-credits.html">View photo credits</a>.</p>{% endif %}
 {% endblock %}
