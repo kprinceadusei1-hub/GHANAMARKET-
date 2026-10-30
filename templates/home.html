@@ -7,21 +7,20 @@
   <div class="home-main">
   <section class="hero-banner{% if hero_photo %} has-photo{% endif %}" aria-labelledby="hero-title"{% if hero_photo %} style="--hero-photo: url('{{ hero_photo }}')"{% endif %}>
     <div class="hero-copy">
-      <p class="hero-eyebrow">Ghana's Premier Buying &amp; Selling Marketplace</p>
       <h1 id="hero-title">Everything You Need,<br> <span>All in One Place</span></h1>
       <p>Buy and sell new and used products, find services, and discover great deals across Ghana.</p>
       <div class="hero-actions">
         <a class="button hero-shop" href="{% url 'product_list' %}">Shop Now {% include "partials/icon.html" with name="chevron" %}</a>
-        <a class="button hero-secondary" href="{% url 'product_list' %}?checkout=1">{% include "partials/icon.html" with name="wallet" %}Buy online</a>
       </div>
       <ul class="hero-trust">
-        <li>{% include "partials/icon.html" with name="wallet" %}Mobile Money &amp; card</li>
-        <li>{% include "partials/icon.html" with name="user-check" %}Verified sellers</li>
-        <li>{% include "partials/icon.html" with name="shield" %}Every ad reviewed</li>
-        <li>{% include "partials/icon.html" with name="chat" %}Private chat</li>
+        <li>{% include "partials/icon.html" with name="lock" %}Secure Payments</li>
+        <li>{% include "partials/icon.html" with name="user-check" %}Verified Sellers</li>
+        <li>{% include "partials/icon.html" with name="shield" %}Every Ad Reviewed</li>
+        <li>{% include "partials/icon.html" with name="chat" %}Private Chat</li>
       </ul>
       {% if has_demo_listings %}<span class="preview-pill">Preview catalogue</span>{% endif %}
     </div>
+    <p class="hero-seal"><span>Proudly</span><strong>Ghanaian</strong><span>Marketplace</span></p>
     <div class="hero-art" aria-hidden="true">
       <img class="hero-artwork" src="{% static 'marketplace/brand/hero-products.png' %}" alt="" width="504" height="216" fetchpriority="high">
     </div>
@@ -84,7 +83,7 @@
       {% for key, label, items in product_tabs %}
         <div class="product-grid" role="tabpanel" id="panel-{{ key }}" aria-labelledby="tab-{{ key }}"{% if not forloop.first %} hidden{% endif %}>
           {% for product in items %}{% include "marketplace/_product_card.html" %}{% endfor %}
-          {% if items|length < 5 %}
+          {% if items|length < 6 %}
             <aside class="invite-card invite-fill-{{ items|length }}" aria-label="Sell on GhanaMarket">
               <span class="invite-card-icon">{% include "partials/icon.html" with name="plus" %}</span>
               <span class="invite-card-text">
@@ -164,12 +163,12 @@
     <img class="sell-card-photo" src="{% static 'marketplace/brand/sell-woman.png' %}" alt="" width="181" height="200" loading="lazy">
   </aside>
     <a class="pay-card" href="{% url 'product_list' %}?checkout=1">
-      <strong>Buy Online, Pay Your Way</strong>
-      <small>Pay with Mobile Money or card on items marked “Buy online”.</small>
+      <strong>Buy Online, Pay Safely</strong>
+      <small>Mobile Money | Card · on items marked “Buy online”</small>
       <span class="pay-methods" aria-label="Payment methods">
-        <span>MTN MoMo</span><span>Telecel Cash</span><span>AirtelTigo Money</span><span>Visa · Mastercard</span>
+        <span class="pm pm-mtn">MTN MoMo</span><span class="pm pm-telecel">Telecel Cash</span><span class="pm pm-at">AirtelTigo</span><span class="pm pm-visa">VISA</span>
       </span>
-      <span class="pay-card-link">Shop online {% include "partials/icon.html" with name="chevron" %}</span>
+      <span class="pay-card-link">Learn more {% include "partials/icon.html" with name="chevron" %}</span>
     </a>
 
     {% if popular_searches %}
@@ -181,21 +180,16 @@
 
     <a class="side-card side-card-green" href="{% url 'product_list' %}?verified=1">
       <span class="side-card-icon">{% include "partials/icon.html" with name="shield" %}</span>
-      <span><strong>Verified Sellers</strong><small>{% if verified_sellers %}{{ verified_sellers|length }} with identity checked{% else %}Ghana Card checked by our team{% endif %}</small><em class="side-card-cta">View sellers {% include "partials/icon.html" with name="chevron" %}</em></span>
+      <span><strong>Verified Sellers</strong><small>Shop with confidence</small><em class="side-card-cta">View Sellers {% include "partials/icon.html" with name="chevron" %}</em></span>
       {% include "partials/icon.html" with name="chevron" %}
     </a>
 
     <a class="side-card" href="{{ sell_url }}">
       <span class="side-card-icon">{% include "partials/icon.html" with name="store" %}</span>
-      <span><strong>Become a Seller</strong><small>Grow your business on GhanaMarket</small><em class="side-card-cta">Start now {% include "partials/icon.html" with name="chevron" %}</em></span>
+      <span><strong>Become a Seller</strong><small>Grow your business on GhanaMarket</small><em class="side-card-cta">Start Now {% include "partials/icon.html" with name="chevron" %}</em></span>
       {% include "partials/icon.html" with name="chevron" %}
     </a>
 
-    <a class="side-card" href="{% url 'help_page' 'safety' %}">
-      <span class="side-card-icon">{% include "partials/icon.html" with name="check" %}</span>
-      <span><strong>Stay Safe</strong><small>Never pay before you see the item</small></span>
-      {% include "partials/icon.html" with name="chevron" %}
-    </a>
   </aside>
 </div>
 {% if has_demo_listings %}<p class="container preview-disclaimer">Preview listings are examples, not real products or offers. <a href="/static/marketplace/demo/photo-credits.html">View photo credits</a>.</p>{% endif %}

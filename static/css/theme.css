@@ -1630,3 +1630,81 @@ a.stat-card:hover { border-color: var(--green); box-shadow: var(--shadow-md); }
 @media (max-width: 959px) {
   .account-nav a { border-color: rgb(255 255 255 / .16); }
 }
+
+/* =====================================================================
+   Reference board, third pass: header tagline, plain Sell, icon search,
+   hero badge and trust row, six products across, sidebar cards,
+   product subtitle and wishlist, seller line chart, phone menu bar
+   ===================================================================== */
+
+/* Header */
+.header-tagline { display: none; }
+@media (min-width: 1440px) {
+  .header-row { grid-template-columns: auto auto minmax(0, 1fr) auto; grid-template-areas: "brand tagline search actions"; gap: 26px; }
+  .header-tagline { grid-area: tagline; display: grid; gap: 3px; max-width: 290px; margin: 0; }
+  .header-tagline strong { font-size: .92rem; line-height: 1.25; color: var(--ink); }
+  .header-tagline small { font-size: .74rem; color: var(--muted); }
+}
+@media (min-width: 1200px) {
+  .header-search button { width: 54px; padding: 0; justify-content: center; }
+  .header-search button span { display: none; }
+}
+.sell-button { padding: 0 28px; border-radius: 12px; font-size: 1rem; font-weight: 700; }
+.sell-button .icon { display: none; }
+
+/* Hero: badge and a single trust row */
+.hero-banner { position: relative; }
+.hero-seal {
+  position: absolute; z-index: 2; top: 22px; right: 26px; display: grid; place-content: center; gap: 0;
+  width: 104px; height: 104px; margin: 0; border-radius: 50%; text-align: center; color: #fff;
+  background: rgb(6 78 59 / .82); border: 2px solid var(--accent); box-shadow: 0 0 0 5px rgb(232 184 63 / .18);
+  font-size: .66rem; line-height: 1.25; letter-spacing: .02em;
+}
+.hero-seal strong { color: var(--accent); font-size: .9rem; }
+@media (max-width: 759px) { .hero-seal { display: none; } }
+.hero-actions .hero-shop { padding: 0 26px; }
+.hero-trust { flex-wrap: nowrap; justify-content: space-between; gap: 12px; }
+.hero-trust li { white-space: nowrap; }
+@media (max-width: 1279px) { .hero-trust { flex-wrap: wrap; justify-content: flex-start; } }
+
+/* Featured products: six across on wide screens */
+@media (min-width: 1280px) {
+  .products-panel .product-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+  .products-panel .invite-card.invite-fill-1 { grid-column: span 5; }
+  .products-panel .invite-card.invite-fill-2 { grid-column: span 4; flex-direction: row; text-align: left; justify-content: flex-start; }
+  .products-panel .invite-card.invite-fill-3 { grid-column: span 3; flex-direction: row; text-align: left; justify-content: flex-start; }
+  .products-panel .invite-card.invite-fill-3 .invite-card-text { flex: 1; }
+  .products-panel .invite-card.invite-fill-4 { grid-column: span 2; }
+  .products-panel .product-card-image { margin: 6px 6px 0; }
+  .products-panel .product-card-body { padding: 8px 9px 10px; gap: 3px; }
+  .products-panel .product-title { font-size: .8rem; }
+  .products-panel .product-price { font-size: .98rem; }
+  .products-panel .product-meta, .products-panel .product-location { font-size: .7rem; }
+  .products-panel .price-note { font-size: .62rem; }
+}
+
+/* Sidebar: payment methods as small brand-coloured tiles, card links */
+.pay-methods .pm { border: 0; padding: 6px 10px; border-radius: 8px; font-weight: 800; letter-spacing: .01em; }
+.pay-methods .pm-mtn { background: #ffcc00; color: #1a1a1a; }
+.pay-methods .pm-telecel { background: #e30613; color: #fff; }
+.pay-methods .pm-at { background: #fff; color: #c8102e; }
+.pay-methods .pm-visa { background: #fff; color: #1a1f71; font-style: italic; }
+
+/* Product page */
+.pc-subtitle { margin: 4px 0 0; color: var(--muted); font-size: .86rem; font-weight: 500; }
+.pc-wish { margin: 0; }
+.pc-wish .button { width: 100%; }
+.pc-wish .button[aria-pressed="true"] { color: var(--red); border-color: #f3c2c6; }
+.seller-storefront-button { width: 100%; margin-top: 12px; }
+
+/* Seller overview: line chart */
+.sales-line { margin: 8px 0 0; }
+.sales-line svg { display: block; width: 100%; height: 180px; }
+.sales-area { fill: rgb(8 122 72 / .12); }
+.sales-stroke { fill: none; stroke: var(--green); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.sales-axis { display: flex; justify-content: space-between; margin-top: 6px; color: var(--muted); font-size: .72rem; }
+
+/* Phone menu bar: Home, Categories, Sell, Messages, Account */
+.mobile-dock a .icon { width: 22px; height: 22px; }
+
+@media (min-width: 1440px) { .container { max-width: 1480px; } .header-search .header-location select { max-width: 120px; } }

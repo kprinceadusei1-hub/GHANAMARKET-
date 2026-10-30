@@ -413,6 +413,11 @@ def _daily_sales(seller):
     }
     days = [start + timedelta(days=offset) for offset in range(SALES_CHART_DAYS)]
     peak = max(totals.values(), default=0)
+    points = [
+        (round(index * 300 / (len(days) - 1), 1), round(112 - (totals.get(day, 0) * 100 / peak if peak else 0), 1))
+        for index, day in enumerate(days)
+    ]
+    line = " ".join(f"{x},{y}" for x, y in points)
     return {
         "has_sales": bool(peak),
         "days": [
@@ -420,6 +425,8 @@ def _daily_sales(seller):
              "height": round(totals.get(day, 0) * 100 / peak) if peak else 0}
             for day in days
         ],
+        "line_points": line,
+        "area_points": f"0,120 {line} 300,120",
     }
 
 

@@ -24,6 +24,7 @@
           <span class="brand-mark" aria-hidden="true">{% include "partials/brand_mark.html" %}</span>
           <span class="brand-text"><span class="brand-name">GhanaMarket</span><small>Buy · Sell · Connect</small></span>
         </a>
+        <p class="header-tagline"><strong>Ghana's Premier Buying &amp; Selling Marketplace</strong><small>Great products · Verified sellers · A stronger Ghana</small></p>
 
         <form class="header-search" action="{% url 'product_list' %}" method="get" role="search" data-search-suggest="{% url 'search_suggestions' %}">
           <span class="header-search-icon">{% include "partials/icon.html" with name="search" %}</span>
@@ -78,7 +79,7 @@
               <span class="account-label"><small>Hello, sign in</small>Account</span>
             </a>
           {% endif %}
-          <a class="sell-button" href="{{ sell_url }}">{% include "partials/icon.html" with name="plus" %}<span>Sell</span></a>
+          <a class="sell-button" href="{{ sell_url }}"><span>Sell</span></a>
         </nav>
       </div>
     </div>
@@ -134,7 +135,6 @@
           <a href="{% url 'help' %}"{% if url_name == 'help' or url_name == 'help_page' or url_name == 'contact_support' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="support" %}Help &amp; Support</a>
         </nav>
         {% endwith %}
-        <p class="header-note">{% include "partials/icon.html" with name="shield" %}Free to post · Every ad reviewed{% include "partials/gh_flag.html" %}</p>
       </div>
     </div>
   </header>
@@ -150,14 +150,14 @@
   <nav class="mobile-dock" aria-label="Quick navigation">
     {% with url_name=request.resolver_match.url_name %}
     <a href="{% url 'home' %}"{% if url_name == 'home' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="home" %}<span>Home</span></a>
-    <a href="{% url 'product_list' %}"{% if url_name == 'product_list' or url_name == 'product_detail' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="search" %}<span>Browse</span></a>
+    <a href="{% url 'category_index' %}"{% if url_name == 'category_index' or url_name == 'product_list' or url_name == 'product_detail' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="grid" %}<span>Categories</span></a>
     <a class="mobile-dock-sell" href="{{ sell_url }}"><span class="mobile-dock-plus">{% include "partials/icon.html" with name="plus" %}</span><span>Sell</span></a>
     {% if user.is_authenticated %}
       <a data-unread="messages" href="{% url 'conversation_list' %}"{% if url_name == 'conversation_list' or url_name == 'conversation_detail' %} aria-current="page"{% endif %}><span class="dock-icon">{% include "partials/icon.html" with name="chat" %}{% if unread_messages %}<b class="badge">{{ unread_messages }}</b>{% endif %}</span><span>Messages</span></a>
       <a href="{% url 'account_overview' %}"{% if url_name == 'account_overview' or url_name == 'seller_listings' or url_name == 'account_settings' or url_name == 'saved_listings' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="user" %}<span>Account</span></a>
     {% else %}
-      <a href="{% url 'login' %}">{% include "partials/icon.html" with name="heart" %}<span>Saved</span></a>
-      <a href="{% url 'login' %}"{% if url_name == 'login' or url_name == 'register' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="user" %}<span>Sign in</span></a>
+      <a href="{% url 'login' %}?next={% url 'conversation_list' %}">{% include "partials/icon.html" with name="chat" %}<span>Messages</span></a>
+      <a href="{% url 'login' %}"{% if url_name == 'login' or url_name == 'register' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="user" %}<span>Account</span></a>
     {% endif %}
     {% endwith %}
   </nav>
