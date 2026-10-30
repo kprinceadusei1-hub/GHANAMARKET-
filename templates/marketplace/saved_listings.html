@@ -1,6 +1,6 @@
-{% extends "account_base.html" %}
+{% extends "base.html" %}
 {% block title %}Saved listings | GhanaMarket{% endblock %}
-{% block account_content %}
+{% block content %}
 <div class="container page-narrow-top">
   <div class="page-heading"><div><h1>Saved listings</h1><p>Items you want to come back to, all in one place.</p></div></div>
   {% if products %}<div class="product-grid">{% for product in products %}{% include "marketplace/_product_card.html" %}{% endfor %}</div>

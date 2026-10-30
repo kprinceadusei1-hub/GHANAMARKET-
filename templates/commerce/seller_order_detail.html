@@ -1,7 +1,7 @@
-{% extends "account_base.html" %}
+{% extends "base.html" %}
 {% load market %}
 {% block title %}Order {{ order.number }} | GhanaMarket{% endblock %}
-{% block account_content %}
+{% block content %}
 <div class="container container-medium page-narrow-top">
   <nav class="breadcrumbs" aria-label="Breadcrumb"><a href="{% url 'commerce:seller_orders' %}">Orders to fulfil</a>{% include "partials/icon.html" with name="chevron" %}<span aria-current="page">{{ order.number }}</span></nav>
   <div class="page-heading">

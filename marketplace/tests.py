@@ -59,7 +59,7 @@ class BasicPageTests(TestCase):
         self.assertContains(response, 'href="#main-content"')
         self.assertContains(response, 'id="main-content"')
         self.assertContains(response, 'aria-label="Quick navigation"')
-        self.assertContains(response, "Categories</span>")
+        self.assertContains(response, "Browse")
         self.assertContains(response, "Sell")
 
     def test_health_endpoint(self):

@@ -19,26 +19,25 @@
 
   <header class="site-header">
     <div class="header-main">
-      <div class="container header-row{% if user.is_authenticated %} is-signed-in{% endif %}">
+      <div class="container header-row">
         <a class="brand" href="{% url 'home' %}" aria-label="GhanaMarket home">
-          <span class="brand-mark" aria-hidden="true">{% include "partials/brand_mark.html" %}</span>
+          <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 42" fill="none"><path d="M8 12h24l2.4 25.5a2 2 0 0 1-2 2.2H7.6a2 2 0 0 1-2-2.2L8 12Z" fill="currentColor"/><path d="M14 15V9.5a6 6 0 0 1 12 0V15" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="m20 19.5 1.9 4.6h4.9l-4 3 1.5 4.7-4.3-2.9-4.3 2.9 1.5-4.7-4-3h4.9z" fill="#fff"/></svg></span>
           <span class="brand-text"><span class="brand-name">GhanaMarket</span><small>Buy · Sell · Connect</small></span>
         </a>
-        <p class="header-tagline"><strong>Ghana's Premier Buying &amp; Selling Marketplace</strong><small>Great products · Verified sellers · A stronger Ghana</small></p>
 
         <form class="header-search" action="{% url 'product_list' %}" method="get" role="search" data-search-suggest="{% url 'search_suggestions' %}">
           <span class="header-search-icon">{% include "partials/icon.html" with name="search" %}</span>
           <label class="visually-hidden" for="header-search-input">Search listings</label>
           <input id="header-search-input" type="search" name="q" value="{{ query|default:header_query|default:'' }}" placeholder="Search for products, brands, categories…" autocomplete="off" enterkeyhint="search">
           <label class="header-location">
-            {% include "partials/gh_flag.html" %}
+            {% include "partials/icon.html" with name="pin" %}
             <span class="visually-hidden">Choose your region</span>
             <select name="region" aria-label="Choose a Ghana region">
               <option value="">All Ghana</option>
               {% for value, label in ghana_regions %}<option value="{{ value }}"{% if selected_region == value or header_region == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
             </select>
           </label>
-          <button type="submit" aria-label="Search">{% include "partials/icon.html" with name="search" %}<span aria-hidden="true">Search</span></button>
+          <button type="submit" aria-label="Search">{% include "partials/icon.html" with name="search" %}</button>
         </form>
 
         <nav class="header-actions" aria-label="Account and shopping">
@@ -79,7 +78,7 @@
               <span class="account-label"><small>Hello, sign in</small>Account</span>
             </a>
           {% endif %}
-          <a class="sell-button" href="{{ sell_url }}"><span>Sell</span></a>
+          <a class="sell-button" href="{{ sell_url }}">{% include "partials/icon.html" with name="plus" %}<span>Sell</span></a>
         </nav>
       </div>
     </div>
@@ -135,6 +134,7 @@
           <a href="{% url 'help' %}"{% if url_name == 'help' or url_name == 'help_page' or url_name == 'contact_support' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="support" %}Help &amp; Support</a>
         </nav>
         {% endwith %}
+        <p class="header-note">{% include "partials/icon.html" with name="shield" %}Free to post · Every ad reviewed{% include "partials/gh_flag.html" %}</p>
       </div>
     </div>
   </header>
@@ -150,71 +150,74 @@
   <nav class="mobile-dock" aria-label="Quick navigation">
     {% with url_name=request.resolver_match.url_name %}
     <a href="{% url 'home' %}"{% if url_name == 'home' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="home" %}<span>Home</span></a>
-    <a href="{% url 'category_index' %}"{% if url_name == 'category_index' or url_name == 'product_list' or url_name == 'product_detail' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="grid" %}<span>Categories</span></a>
+    <a href="{% url 'product_list' %}"{% if url_name == 'product_list' or url_name == 'product_detail' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="search" %}<span>Browse</span></a>
     <a class="mobile-dock-sell" href="{{ sell_url }}"><span class="mobile-dock-plus">{% include "partials/icon.html" with name="plus" %}</span><span>Sell</span></a>
     {% if user.is_authenticated %}
       <a data-unread="messages" href="{% url 'conversation_list' %}"{% if url_name == 'conversation_list' or url_name == 'conversation_detail' %} aria-current="page"{% endif %}><span class="dock-icon">{% include "partials/icon.html" with name="chat" %}{% if unread_messages %}<b class="badge">{{ unread_messages }}</b>{% endif %}</span><span>Messages</span></a>
       <a href="{% url 'account_overview' %}"{% if url_name == 'account_overview' or url_name == 'seller_listings' or url_name == 'account_settings' or url_name == 'saved_listings' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="user" %}<span>Account</span></a>
     {% else %}
-      <a href="{% url 'login' %}?next={% url 'conversation_list' %}">{% include "partials/icon.html" with name="chat" %}<span>Messages</span></a>
-      <a href="{% url 'login' %}"{% if url_name == 'login' or url_name == 'register' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="user" %}<span>Account</span></a>
+      <a href="{% url 'login' %}">{% include "partials/icon.html" with name="heart" %}<span>Saved</span></a>
+      <a href="{% url 'login' %}"{% if url_name == 'login' or url_name == 'register' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="user" %}<span>Sign in</span></a>
     {% endif %}
     {% endwith %}
   </nav>
 
-  <footer class="site-footer gm-footer">
-    <div class="container gm-footer-main">
-      <div class="gm-footer-brand">
-        <a class="brand" href="{% url 'home' %}"><span class="brand-mark" aria-hidden="true">{% include "partials/brand_mark.html" %}</span><span class="brand-text"><span class="brand-name">GhanaMarket</span><small>Buy · Sell · Connect</small></span></a>
-        <p>Buy and sell across all 16 regions of Ghana, with prices in Ghana cedis. Every ad is reviewed before it goes live, and posting is free during launch.</p>
-        <a class="gm-footer-sell" href="{{ sell_url }}">{% include "partials/icon.html" with name="plus" %}Post a free ad</a>
+  <footer class="site-footer">
+    <div class="footer-trust">
+      <ul class="container footer-trust-row" aria-label="Why GhanaMarket">
+        <li><span class="ft-icon">{% include "partials/icon.html" with name="shield" %}</span><span><strong>Every ad reviewed</strong><small>Checked by our team before it goes live</small></span></li>
+        <li><span class="ft-icon">{% include "partials/icon.html" with name="chat" %}</span><span><strong>Private chat</strong><small>Your number stays hidden until you share it</small></span></li>
+        <li><span class="ft-icon">{% include "partials/icon.html" with name="user-check" %}</span><span><strong>Verified ID sellers</strong><small>Ghana Card checked by our staff</small></span></li>
+        <li><span class="ft-icon">{% include "partials/icon.html" with name="wallet" %}</span><span><strong>Buy online</strong><small>Mobile Money or card on marked items</small></span></li>
+      </ul>
+    </div>
+
+    <div class="container footer-main">
+      <div class="footer-brand">
+        <a class="brand" href="{% url 'home' %}"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 42" fill="none"><path d="M8 12h24l2.4 25.5a2 2 0 0 1-2 2.2H7.6a2 2 0 0 1-2-2.2L8 12Z" fill="currentColor"/><path d="M14 15V9.5a6 6 0 0 1 12 0V15" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="m20 19.5 1.9 4.6h4.9l-4 3 1.5 4.7-4.3-2.9-4.3 2.9 1.5-4.7-4-3h4.9z" fill="#fff"/></svg></span><span class="brand-text"><span class="brand-name">GhanaMarket</span><small>Buy · Sell · Connect</small></span></a>
+        <p>Buy and sell locally across all 16 regions of Ghana. Free listings during launch, prices in Ghana cedis.</p>
+        <div class="footer-cta">
+          <div><strong>Have something to sell?</strong><small>Post it free in about two minutes.</small></div>
+          <a class="footer-cta-btn" href="{{ sell_url }}">{% include "partials/icon.html" with name="plus" %}Post a free ad</a>
+        </div>
       </div>
-      <nav class="gm-footer-cols" aria-label="Footer">
+      <nav class="footer-cols" aria-label="Footer">
         <div>
           <h2>Buy</h2>
-          <ul>
-            <li><a href="{% url 'product_list' %}">All listings</a></li>
-            <li><a href="{% url 'category_index' %}">All categories</a></li>
-            <li><a href="{% url 'product_list' %}?checkout=1">Buy online</a></li>
-            <li><a href="{% url 'product_list' %}?verified=1">Verified sellers</a></li>
-            <li><a href="{% url 'help_page' 'buying' %}">How buying works</a></li>
-          </ul>
+          <a href="{% url 'product_list' %}">All listings</a>
+          <a href="{% url 'category_index' %}">All categories</a>
+          <a href="{% url 'product_list' %}?checkout=1">Buy online</a>
+          <a href="{% url 'product_list' %}?verified=1">Verified sellers</a>
+          <a href="{% url 'help_page' 'buying' %}">How buying works</a>
         </div>
         <div>
           <h2>Sell</h2>
-          <ul>
-            <li><a href="{{ sell_url }}">Post a free ad</a></li>
-            {% if user.is_authenticated and user.role == "seller" %}<li><a href="{% url 'seller_listings' %}">My shop</a></li><li><a href="{% url 'seller_verification' %}">Get verified</a></li>{% else %}<li><a href="{% url 'register' %}?role=seller">Become a seller</a></li>{% endif %}
-            <li><a href="{% url 'help_page' 'selling' %}">How selling works</a></li>
-            <li><a href="{% url 'help_page' 'fees' %}">Fees</a></li>
-          </ul>
+          <a href="{{ sell_url }}">Post a free ad</a>
+          {% if user.is_authenticated and user.role == "seller" %}<a href="{% url 'seller_listings' %}">My shop</a><a href="{% url 'seller_verification' %}">Get verified</a>{% else %}<a href="{% url 'register' %}?role=seller">Become a seller</a>{% endif %}
+          <a href="{% url 'help_page' 'selling' %}">How selling works</a>
+          <a href="{% url 'help_page' 'fees' %}">Fees</a>
         </div>
         <div>
           <h2>Help</h2>
-          <ul>
-            <li><a href="{% url 'help' %}">Help centre</a></li>
-            <li><a href="{% url 'help_page' 'safety' %}">Staying safe</a></li>
-            <li><a href="{% url 'help_page' 'refunds' %}">Returns &amp; refunds</a></li>
-            <li><a href="{% url 'contact_support' %}">Contact support</a></li>
-          </ul>
+          <a href="{% url 'help' %}">Help centre</a>
+          <a href="{% url 'help_page' 'safety' %}">Staying safe</a>
+          <a href="{% url 'help_page' 'refunds' %}">Returns &amp; refunds</a>
+          <a href="{% url 'contact_support' %}">Contact support</a>
         </div>
         <div>
           <h2>Policies</h2>
-          <ul>
-            <li><a href="{% url 'help_page' 'terms' %}">Terms of use</a></li>
-            <li><a href="{% url 'help_page' 'privacy' %}">Privacy</a></li>
-            <li><a href="{% url 'help_page' 'prohibited-items' %}">Prohibited items</a></li>
-            <li><a href="/static/marketplace/demo/photo-credits.html">Photo credits</a></li>
-          </ul>
+          <a href="{% url 'help_page' 'terms' %}">Terms of use</a>
+          <a href="{% url 'help_page' 'privacy' %}">Privacy</a>
+          <a href="{% url 'help_page' 'prohibited-items' %}">Prohibited items</a>
         </div>
       </nav>
     </div>
 
-    <div class="gm-footer-bottom">
-      <div class="container gm-footer-bottom-row">
-        <p>© {% now "Y" %} GhanaMarket · From Ghana, to the world</p>
-        <p class="gm-footer-proud">{% include "partials/gh_flag.html" %}Proudly Ghanaian</p>
-        <a class="gm-footer-top" href="#main-content" data-back-to-top>{% include "partials/icon.html" with name="chevron-down" %}Back to top</a>
+    <div class="footer-bottom">
+      <div class="container footer-bottom-row">
+        <p>© {% now "Y" %} GhanaMarket · Made in Ghana {% include "partials/gh_flag.html" with class="gh-flag-inline" %}</p>
+        <p class="footer-bottom-links"><a href="{% url 'help_page' 'terms' %}">Terms</a><a href="{% url 'help_page' 'privacy' %}">Privacy</a><a href="/static/marketplace/demo/photo-credits.html">Photo credits</a></p>
+        <a class="footer-top" href="#main-content" data-back-to-top>{% include "partials/icon.html" with name="chevron-down" %}Back to top</a>
       </div>
     </div>
   </footer>

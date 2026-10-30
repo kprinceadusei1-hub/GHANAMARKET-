@@ -1,7 +1,7 @@
-{% extends "account_base.html" %}
+{% extends "base.html" %}
 {% load market %}
 {% block title %}My shop | GhanaMarket{% endblock %}
-{% block account_content %}
+{% block content %}
 <div class="container page-narrow-top seller-dashboard">
   <div class="page-heading">
     <div>
@@ -26,14 +26,14 @@
   <a class="panel verify-cta" href="{% url 'seller_verification' %}">{% include "partials/icon.html" with name="shield" %}<span><strong>Get the Verified seller badge</strong><small>Buyers trust verified sellers more. Submit your Ghana Card or business registration.</small></span>{% include "partials/icon.html" with name="chevron" %}</a>
   {% endif %}
   <div class="stat-grid" aria-label="Listing summary">
-    <a class="stat-card" href="{% url 'seller_listings' %}">{% include "partials/icon.html" with name="listings" %}<span>Total listings</span><strong>{{ counts.total }}</strong></a>
-    <a class="stat-card stat-live" href="?status=published">{% include "partials/icon.html" with name="check" %}<span>Live in marketplace</span><strong>{{ counts.live }}</strong></a>
-    <a class="stat-card stat-pending" href="?status=pending">{% include "partials/icon.html" with name="clock" %}<span>Awaiting review</span><strong>{{ counts.pending }}</strong></a>
-    <a class="stat-card stat-action" href="?status=rejected">{% include "partials/icon.html" with name="alert" %}<span>Needs your attention</span><strong>{{ counts.needs_changes }}</strong></a>
-    <a class="stat-card" href="?status=sold">{% include "partials/icon.html" with name="package" %}<span>Sold</span><strong>{{ counts.sold }}</strong></a>
-    <div class="stat-card">{% include "partials/icon.html" with name="eye" %}<span>Listing views</span><strong>{{ counts.views }}</strong></div>
-    <a class="stat-card" href="{% url 'conversation_list' %}">{% include "partials/icon.html" with name="chat" %}<span>Buyer enquiries</span><strong>{{ counts.enquiries }}</strong></a>
-    <a class="stat-card{% if orders_to_fulfil %} stat-action{% endif %}" href="{% url 'commerce:seller_orders' %}">{% include "partials/icon.html" with name="truck" %}<span>Orders to fulfil</span><strong>{{ orders_to_fulfil }}</strong></a>
+    <a class="stat-card" href="{% url 'seller_listings' %}"><span>Total listings</span><strong>{{ counts.total }}</strong></a>
+    <a class="stat-card stat-live" href="?status=published"><span>Live in marketplace</span><strong>{{ counts.live }}</strong></a>
+    <a class="stat-card stat-pending" href="?status=pending"><span>Awaiting review</span><strong>{{ counts.pending }}</strong></a>
+    <a class="stat-card stat-action" href="?status=rejected"><span>Needs your attention</span><strong>{{ counts.needs_changes }}</strong></a>
+    <a class="stat-card" href="?status=sold"><span>Sold</span><strong>{{ counts.sold }}</strong></a>
+    <div class="stat-card"><span>Listing views</span><strong>{{ counts.views }}</strong></div>
+    <a class="stat-card" href="{% url 'conversation_list' %}"><span>Buyer enquiries</span><strong>{{ counts.enquiries }}</strong></a>
+    <a class="stat-card{% if orders_to_fulfil %} stat-action{% endif %}" href="{% url 'commerce:seller_orders' %}"><span>Orders to fulfil</span><strong>{{ orders_to_fulfil }}</strong></a>
   </div>
 
   <section class="panel">

@@ -13,11 +13,11 @@
       <h3 class="product-title">{{ product.title }}</h3>
       <p class="product-price">{{ product.price|cedis }}{% if product.price_negotiable %}<span class="price-note">Negotiable</span>{% endif %}</p>
       <p class="product-meta"><span class="meta-condition meta-{{ product.condition }}">{{ product.get_condition_display }}</span><span>{{ product.category_label }}</span></p>
-      <p class="product-location">{% include "partials/icon.html" with name="pin" class="product-location-icon" %}<span>{{ product.city }}{% if product.region %}, {{ product.region }}{% else %}, {{ product.country }}{% endif %}</span>{% if product.seller.is_verified_seller %}<span class="verified-tick" title="Ghana Card Verified Seller">{% include "partials/icon.html" with name="check" %}<span class="visually-hidden">Ghana Card Verified Seller</span></span>{% endif %}<time class="product-age" datetime="{{ product.created_at|date:'c' }}">{{ product.created_at|ago }}</time></p>
+      <p class="product-location">{% include "partials/icon.html" with name="pin" class="product-location-icon" %}<span>{{ product.city }}{% if product.region %}, {{ product.region }}{% else %}, {{ product.country }}{% endif %}</span>{% if product.seller.verified_at %}<span class="verified-tick" title="Verified seller">{% include "partials/icon.html" with name="check" %}<span class="visually-hidden">Verified seller</span></span>{% endif %}</p>
     </div>
   </a>
   {% if product.is_demo %}
-    <p class="card-note">Sample listing · not for sale</p>
+    <div class="card-actions"><span class="card-btn card-btn-disabled" title="Preview examples are not for sale">Preview only</span></div>
   {% elif user != product.seller %}
     <div class="card-actions">
       {% if product.can_checkout %}

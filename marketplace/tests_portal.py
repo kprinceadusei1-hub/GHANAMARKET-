@@ -283,16 +283,14 @@ class StaffRoleTests(TestCase):
         self.assertEqual(self.client.get(reverse("admin:marketplace_homebanner_add")).status_code, 200)
 
 
-class AccountSidebarAndSalesChartTests(PortalBase):
-    def test_sidebar_shows_selling_tools_only_to_sellers(self):
-        self.client.force_login(self.buyer)
-        response = self.client.get(reverse("account_overview"))
-        self.assertContains(response, 'aria-label="Your account"')
-        self.assertNotContains(response, "Orders to fulfil</span>")
+class AccountMenuAndSalesChartTests(PortalBase):
+    def test_account_menu_links_to_new_pages(self):
         self.client.force_login(self.seller)
-        response = self.client.get(reverse("seller_listings"))
-        self.assertContains(response, "Orders to fulfil</span>")
-        self.assertContains(response, f'href="{reverse("seller_listings")}" aria-current="page"')
+        response = self.client.get(reverse("home"))
+        self.assertContains(response, reverse("account_overview"))
+        self.assertContains(response, reverse("storefront_settings"))
+        self.client.force_login(self.buyer)
+        self.assertNotContains(self.client.get(reverse("home")), reverse("storefront_settings"))
 
     def test_sales_chart_counts_only_this_sellers_paid_orders(self):
         from decimal import Decimal

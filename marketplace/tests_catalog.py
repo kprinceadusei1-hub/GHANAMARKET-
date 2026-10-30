@@ -123,7 +123,7 @@ class SearchTests(CatalogFixtures):
 
         self.assertEqual(SearchTerm.objects.get(term="toyota").hits, 2)
         self.assertFalse(SearchTerm.objects.filter(term="nothing matches").exists())
-        self.assertContains(self.client.get(reverse("home")), "Popular searches")
+        self.assertContains(self.client.get(reverse("home")), "Popular Searches")
 
     def test_hidden_terms_are_not_shown(self):
         SearchTerm.objects.create(term="badword", hits=50, is_hidden=True)
