@@ -18,7 +18,6 @@
         <li>{% include "partials/icon.html" with name="shield" %}Every Ad Reviewed</li>
         <li>{% include "partials/icon.html" with name="chat" %}Private Chat</li>
       </ul>
-      {% if has_demo_listings %}<span class="preview-pill">Preview catalogue</span>{% endif %}
     </div>
     <p class="hero-seal"><span>Proudly</span><strong>Ghanaian</strong><span>Marketplace</span></p>
     <div class="hero-art" aria-hidden="true">
@@ -60,13 +59,11 @@
       <a class="category-tile cat-{{ category.value }}" href="{% url 'product_list' %}?category={{ category.value|urlencode }}"{% if category.subcategories %} title="{{ category.subcategories|join:', ' }}"{% endif %}>
         <span class="category-tile-icon">{% include "partials/icon.html" with name=category.icon %}</span>
         <span class="category-tile-name">{{ category.label }}</span>
-        {% if category.count %}<span class="category-tile-count">{{ category.count }} ad{{ category.count|pluralize }}</span>{% endif %}
       </a>
     {% endfor %}
     <a class="category-tile category-tile-all" href="{% url 'category_index' %}">
       <span class="category-tile-icon">{% include "partials/icon.html" with name="grid" %}</span>
       <span class="category-tile-name">More</span>
-      <span class="category-tile-count">{{ categories|length }} categories</span>
     </a>
   </div>
 </section>
@@ -166,7 +163,7 @@
       <strong>Buy Online, Pay Safely</strong>
       <small>Mobile Money | Card · on items marked “Buy online”</small>
       <span class="pay-methods" aria-label="Payment methods">
-        <span class="pm pm-mtn">MTN MoMo</span><span class="pm pm-telecel">Telecel Cash</span><span class="pm pm-at">AirtelTigo</span><span class="pm pm-visa">VISA</span>
+        <span class="pm"><i style="--dot:#ffcc00"></i>MTN MoMo</span><span class="pm"><i style="--dot:#e30613"></i>Telecel Cash</span><span class="pm"><i style="--dot:#c8102e"></i>AirtelTigo</span><span class="pm"><i style="--dot:#1a1f71"></i>Visa · Mastercard</span>
       </span>
       <span class="pay-card-link">Learn more {% include "partials/icon.html" with name="chevron" %}</span>
     </a>
@@ -181,13 +178,11 @@
     <a class="side-card side-card-green" href="{% url 'product_list' %}?verified=1">
       <span class="side-card-icon">{% include "partials/icon.html" with name="shield" %}</span>
       <span><strong>Verified Sellers</strong><small>Shop with confidence</small><em class="side-card-cta">View Sellers {% include "partials/icon.html" with name="chevron" %}</em></span>
-      {% include "partials/icon.html" with name="chevron" %}
     </a>
 
     <a class="side-card" href="{{ sell_url }}">
       <span class="side-card-icon">{% include "partials/icon.html" with name="store" %}</span>
       <span><strong>Become a Seller</strong><small>Grow your business on GhanaMarket</small><em class="side-card-cta">Start Now {% include "partials/icon.html" with name="chevron" %}</em></span>
-      {% include "partials/icon.html" with name="chevron" %}
     </a>
 
   </aside>
