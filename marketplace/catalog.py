@@ -1,7 +1,7 @@
 """Catalogue queries shared by the storefront views: categories, search and attribute filters."""
 from decimal import Decimal, InvalidOperation
 
-from django.db.models import Case, Count, Exists, IntegerField, OuterRef, Q, Value, When
+from django.db.models import Case, Count, Exists, IntegerField, OuterRef, Prefetch, Q, Value, When
 
 from .models import Category, CategoryAttribute, Product, Promotion
 
@@ -36,14 +36,18 @@ def categories_with_counts():
         row["category"]: row["total"]
         for row in published_products().order_by().values("category").annotate(total=Count("id"))
     }
+    children = Prefetch(
+        "children", queryset=Category.objects.filter(is_active=True).order_by("position", "name"), to_attr="active_children",
+    )
     return [
         {
             "value": category.slug,
             "label": category.name,
             "icon": category.icon_key,
             "count": counts.get(category.slug, 0),
+            "subcategories": [child.name for child in category.active_children[:3]],
         }
-        for category in top_categories()
+        for category in top_categories().prefetch_related(children)
     ]
 
 

@@ -69,15 +69,16 @@
   <div class="category-tiles">
     {% for category in categories|slice:":11" %}
       <a class="category-tile cat-{{ category.value }}" href="{% url 'product_list' %}?category={{ category.value|urlencode }}">
+        {% if category.count %}<span class="category-tile-count">{{ category.count }} ad{{ category.count|pluralize }}</span>{% endif %}
         <span class="category-tile-icon">{% include "partials/icon.html" with name=category.icon %}</span>
         <span class="category-tile-name">{{ category.label }}</span>
-        {% if category.count %}<span class="category-tile-count">{{ category.count }} ad{{ category.count|pluralize }}</span>{% endif %}
+        {% if category.subcategories %}<span class="category-tile-subs">{{ category.subcategories|join:" · " }}</span>{% endif %}
       </a>
     {% endfor %}
-    <a class="category-tile" href="{% url 'category_index' %}">
+    <a class="category-tile category-tile-all" href="{% url 'category_index' %}">
       <span class="category-tile-icon">{% include "partials/icon.html" with name="grid" %}</span>
       <span class="category-tile-name">All Categories</span>
-      <span class="category-tile-count">{{ categories|length }} in total</span>
+      <span class="category-tile-subs">Browse all {{ categories|length }} categories</span>
     </a>
   </div>
 </section>
