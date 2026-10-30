@@ -3,74 +3,89 @@
 {% block title %}GhanaMarket | Buy and Sell Anything in Ghana{% endblock %}
 {% block body_class %}page-home{% endblock %}
 {% block content %}
-<section class="hero-split" aria-labelledby="hero-title">
-  <div class="container hero-split-inner">
-    <div class="hero-split-copy">
-      <p class="hero-split-eyebrow">Ghana's marketplace</p>
-      <h1 id="hero-title" class="hero-split-title">Find What You Love. <span>Sell What You Don't.</span></h1>
-      <p class="hero-split-lead">Discover great products, connect with verified sellers and shop confidently across Ghana.</p>
-      <div class="hero-split-actions">
-        <a class="hs-button hs-button-primary" href="{% url 'product_list' %}">Start Shopping {% include "partials/icon.html" with name="chevron" %}</a>
-        <a class="hs-button hs-button-secondary" href="{{ sell_url }}">Sell an Item</a>
+<section class="stage" aria-labelledby="hero-title">
+  <div class="container stage-inner">
+    <div class="stage-copy">
+      <p class="stage-eyebrow"><span aria-hidden="true"></span>Proudly Ghanaian · Built for the world</p>
+      <h1 id="hero-title" class="stage-title">Your World of Shopping. <em>All in One Place.</em></h1>
+      <p class="stage-lead">Discover exceptional products, verified sellers and exciting deals from across Ghana.</p>
+      <div class="stage-actions">
+        <a class="stage-cta stage-cta-primary" href="{% url 'product_list' %}">Explore Marketplace <span class="stage-cta-arrow" aria-hidden="true">{% include "partials/icon.html" with name="chevron" %}</span></a>
+        <a class="stage-cta stage-cta-ghost" href="{{ sell_url }}">{% include "partials/icon.html" with name="plus" %}Start Selling</a>
       </div>
-      <ul class="hero-split-trust" aria-label="Why shop on GhanaMarket">
-        <li>{% include "partials/icon.html" with name="check" %}Every ad reviewed</li>
-        <li>{% include "partials/icon.html" with name="check" %}Ghana Card–verified sellers</li>
-        <li>{% include "partials/icon.html" with name="check" %}Mobile Money &amp; card</li>
+      <ul class="stage-proof" aria-label="Why shop on GhanaMarket">
+        <li>{% include "partials/icon.html" with name="shield" %}Every ad reviewed</li>
+        <li>{% include "partials/icon.html" with name="user-check" %}Ghana Card–verified sellers</li>
+        <li>{% include "partials/icon.html" with name="wallet" %}Mobile Money &amp; card</li>
       </ul>
     </div>
-    <figure class="hero-split-media">
-      <picture>
-        <source media="(max-width: 700px)" srcset="{% static 'marketplace/brand/campaigns/hero-main-720.jpg' %}">
-        <img src="{% static 'marketplace/brand/campaigns/hero-main.jpg' %}" alt="A watch, phone, leather handbag, white sneakers and headphones arranged on display stands" width="1024" height="800" fetchpriority="high">
-      </picture>
-      <figcaption class="hero-split-note"><span class="hero-split-note-icon">{% include "partials/icon.html" with name="grid" %}</span><span><strong>{{ categories|length }} categories</strong><small>Phones, fashion, homes, cars and more</small></span></figcaption>
-    </figure>
+
+    <div class="stage-mosaic" aria-label="Shop by category">
+      <span class="stage-ring" aria-hidden="true"></span>
+      <a class="mosaic-tile mosaic-fashion" href="{% url 'product_list' %}?category=fashion">
+        <img src="{% static 'marketplace/brand/hero/kente-cloth.jpg' %}" alt="Handwoven kente cloth" width="760" height="604" fetchpriority="high">
+        <span class="mosaic-label">Fashion {% include "partials/icon.html" with name="chevron" %}</span>
+      </a>
+      <a class="mosaic-tile mosaic-phones" href="{% url 'product_list' %}?category=phones-tech">
+        <img src="{% static 'marketplace/brand/hero/smartphone-display.jpg' %}" alt="Smartphone" width="760" height="481">
+        <span class="mosaic-label">Phones &amp; Tech {% include "partials/icon.html" with name="chevron" %}</span>
+      </a>
+      <a class="mosaic-tile mosaic-property" href="{% url 'product_list' %}?category=electronics">
+        <img src="{% static 'marketplace/brand/hero/canon-camera.jpg' %}" alt="Professional camera" width="760" height="507">
+        <span class="mosaic-label">Electronics {% include "partials/icon.html" with name="chevron" %}</span>
+      </a>
+      <a class="mosaic-tile mosaic-home" href="{% url 'product_list' %}?category=home-living">
+        <img src="{% static 'marketplace/brand/hero/ghana-stool.jpg' %}" alt="Traditional carved wooden stool" width="760" height="333">
+        <span class="mosaic-label">Home &amp; Living {% include "partials/icon.html" with name="chevron" %}</span>
+      </a>
+      <a class="mosaic-tile mosaic-cars" href="{% url 'product_list' %}?category=vehicles">
+        <img src="{% static 'marketplace/brand/hero/corolla.jpg' %}" alt="Silver Toyota estate car" width="960" height="442">
+        <span class="mosaic-label">Cars &amp; Vehicles {% include "partials/icon.html" with name="chevron" %}</span>
+      </a>
+    </div>
   </div>
 </section>
+
+<div class="container promo-ribbon">
+  <a class="promo-tile promo-sell" href="{{ sell_url }}">
+    <span class="promo-tile-copy">
+      <small>For sellers</small>
+      <strong>Sell Your Items</strong>
+      <span>Reach buyers across Ghana. Posting is free during launch.</span>
+      <em>Start Selling {% include "partials/icon.html" with name="chevron" %}</em>
+    </span>
+    <img src="{% static 'marketplace/brand/sell-woman.png' %}" alt="" width="181" height="200" loading="lazy">
+  </a>
+  <a class="promo-tile promo-pay" href="{% url 'product_list' %}?checkout=1">
+    <span class="promo-tile-copy">
+      <small>For buyers</small>
+      <strong>Buy Online, Pay Safely</strong>
+      <span>Mobile Money or card on items marked “Buy online”.</span>
+      <span class="pay-methods" aria-label="Payment methods"><span class="pm"><i style="--dot:#ffcc00"></i>MTN MoMo</span><span class="pm"><i style="--dot:#e30613"></i>Telecel Cash</span><span class="pm"><i style="--dot:#c8102e"></i>AirtelTigo</span><span class="pm"><i style="--dot:#1a1f71"></i>Visa · Mastercard</span></span>
+    </span>
+  </a>
+  <a class="promo-tile promo-verified" href="{% url 'product_list' %}?verified=1">
+    <span class="promo-tile-icon">{% include "partials/icon.html" with name="shield" %}</span>
+    <span class="promo-tile-copy">
+      <small>Shop with confidence</small>
+      <strong>Verified Sellers</strong>
+      <span>Ghana Card checked by our team before the badge appears.</span>
+      <em>View Sellers {% include "partials/icon.html" with name="chevron" %}</em>
+    </span>
+  </a>
+</div>
 
 <div class="container home-flow">
 {% if own_pending %}
-  <a class="status-banner" href="{% url 'seller_listings' %}">
-    {% include "partials/icon.html" with name="clock" %}
-    <span><strong>{% if own_pending|length == 1 %}Your ad “{{ own_pending.0.title }}” is {% if own_pending.0.status == "rejected" %}waiting for your changes{% else %}being reviewed{% endif %}{% else %}You have {{ own_pending|length }} ads in review or needing changes{% endif %}</strong>
-    <small>Ads go live as soon as our team approves them. Open My shop to check the status.</small></span>
-    {% include "partials/icon.html" with name="chevron" %}
-  </a>
-{% endif %}
-
-<section class="home-block" aria-labelledby="confidence-heading">
-  <div class="block-head"><h2 id="confidence-heading">Shop and sell with confidence</h2></div>
-  <div class="feature-cards">
-    <a class="feature-card" href="{{ sell_url }}">
-      <span class="feature-card-media"><img src="{% static 'marketplace/brand/campaigns/sell-card.jpg' %}" alt="" width="720" height="621" loading="lazy" decoding="async"></span>
-      <span class="feature-card-body">
-        <small>For sellers</small>
-        <strong>Sell for free during launch</strong>
-        <span>Post an ad in about two minutes. Our team reviews every ad before it goes live.</span>
-        <em>Start selling {% include "partials/icon.html" with name="chevron" %}</em>
-      </span>
-    </a>
-    <a class="feature-card" href="{% url 'product_list' %}?checkout=1">
-      <span class="feature-card-media"><img src="{% static 'marketplace/brand/campaigns/online-card.jpg' %}" alt="" width="720" height="621" loading="lazy" decoding="async"></span>
-      <span class="feature-card-body">
-        <small>For buyers</small>
-        <strong>Buy online, pay safely</strong>
-        <span>Mobile Money or card on items marked “Buy online”. Orders are confirmed once the payment provider verifies your payment.</span>
-        <em>Shop online {% include "partials/icon.html" with name="chevron" %}</em>
-      </span>
-    </a>
-    <a class="feature-card" href="{% url 'product_list' %}?verified=1">
-      <span class="feature-card-media"><img src="{% static 'marketplace/brand/campaigns/verified-card.jpg' %}" alt="" width="720" height="621" loading="lazy" decoding="async"></span>
-      <span class="feature-card-body">
-        <small>Trust</small>
-        <strong>Verified sellers</strong>
-        <span>Sellers with the badge have had their Ghana Card checked by our team.</span>
-        <em>View verified sellers {% include "partials/icon.html" with name="chevron" %}</em>
-      </span>
+  <div>
+    <a class="status-banner" href="{% url 'seller_listings' %}">
+      {% include "partials/icon.html" with name="clock" %}
+      <span><strong>{% if own_pending|length == 1 %}Your ad “{{ own_pending.0.title }}” is {% if own_pending.0.status == "rejected" %}waiting for your changes{% else %}being reviewed{% endif %}{% else %}You have {{ own_pending|length }} ads in review or needing changes{% endif %}</strong>
+      <small>Ads go live as soon as our team approves them. Open My shop to check the status.</small></span>
+      {% include "partials/icon.html" with name="chevron" %}
     </a>
   </div>
-</section>
+{% endif %}
 {% if banners %}
 <section class="home-section campaign-strip" aria-label="Current campaigns">
   {% for banner in banners %}
@@ -117,7 +132,7 @@
       {% for key, label, items in product_tabs %}
         <div class="product-grid" role="tabpanel" id="panel-{{ key }}" aria-labelledby="tab-{{ key }}"{% if not forloop.first %} hidden{% endif %}>
           {% for product in items %}{% include "marketplace/_product_card.html" %}{% endfor %}
-          {% if items|length < 6 or items|length > 6 and items|length < 12 %}
+          {% if items|length < 6 %}
             <aside class="invite-card invite-fill-{{ items|length }}" aria-label="Sell on GhanaMarket">
               <span class="invite-card-icon">{% include "partials/icon.html" with name="plus" %}</span>
               <span class="invite-card-text">
@@ -146,18 +161,6 @@
           </ol>
         </div>
       {% endfor %}
-    </section>
-
-
-    <section class="spotlights" aria-label="Category spotlights">
-      <a class="spotlight spotlight-dark" href="{% url 'product_list' %}?category=phones-tech">
-        <picture><source media="(max-width: 700px)" srcset="{% static 'marketplace/brand/campaigns/phones-900.jpg' %}"><img src="{% static 'marketplace/brand/campaigns/phones.jpg' %}" alt="" width="1600" height="800" loading="lazy" decoding="async"></picture>
-        <span class="spotlight-copy"><small>Phones &amp; Tech</small><strong>The latest phones, near you.</strong><em>Shop phones {% include "partials/icon.html" with name="chevron" %}</em></span>
-      </a>
-      <a class="spotlight spotlight-light" href="{% url 'product_list' %}?category=fashion">
-        <picture><source media="(max-width: 700px)" srcset="{% static 'marketplace/brand/campaigns/fashion-900.jpg' %}"><img src="{% static 'marketplace/brand/campaigns/fashion.jpg' %}" alt="" width="1600" height="800" loading="lazy" decoding="async"></picture>
-        <span class="spotlight-copy"><small>Fashion</small><strong>Style, made in Ghana.</strong><em>Shop fashion {% include "partials/icon.html" with name="chevron" %}</em></span>
-      </a>
     </section>
 
     {% if collections|length >= 3 %}
