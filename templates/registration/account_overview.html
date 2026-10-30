@@ -1,7 +1,7 @@
-{% extends "base.html" %}
+{% extends "account_base.html" %}
 {% load market %}
 {% block title %}My account | GhanaMarket{% endblock %}
-{% block content %}
+{% block account_content %}
 <div class="container page-narrow-top account-overview">
   <div class="page-heading">
     <div>
@@ -44,11 +44,39 @@
       <a class="stat-card" href="{% url 'commerce:seller_orders' %}">{% include "partials/icon.html" with name="money" %}<span>Paid sales, 30 days</span><strong>{{ seller.sales_30d|cedis }}</strong><small>{{ seller.orders_30d }} order{{ seller.orders_30d|pluralize }}</small></a>
     </div>
   </section>
+
+  <div class="account-columns">
+    <section class="panel sales-panel" aria-labelledby="sales-heading">
+      <div class="section-heading"><div><h2 id="sales-heading">Sales overview</h2><p class="muted">Paid orders per day, last 14 days</p></div></div>
+      {% if seller.daily_sales.has_sales %}
+        <ol class="sales-bars" aria-label="Paid sales per day">
+          {% for point in seller.daily_sales.days %}
+            <li title="{{ point.day|date:'j M' }}: {{ point.total|cedis }}"><span class="sales-bar" style="--h: {{ point.height }}%"></span><small aria-hidden="true">{{ point.day|date:"j" }}</small><span class="visually-hidden">{{ point.day|date:"j F" }}: {{ point.total|cedis }}</span></li>
+          {% endfor %}
+        </ol>
+      {% else %}
+        <div class="sales-empty">{% include "partials/icon.html" with name="chart" %}<p><strong>No paid orders in the last 14 days</strong><small>Sales appear here once buyers pay online for your listings marked “Sell online”.</small></p></div>
+      {% endif %}
+    </section>
+
+    <section class="panel" aria-labelledby="sales-orders-heading">
+      <div class="section-heading"><h2 id="sales-orders-heading">Recent sales</h2>{% if seller.recent_orders %}<a href="{% url 'commerce:seller_orders' %}">See all {% include "partials/icon.html" with name="chevron" %}</a>{% endif %}</div>
+      {% if seller.recent_orders %}
+        <ul class="account-list">
+          {% for order in seller.recent_orders %}
+            <li><a href="{% url 'commerce:seller_order_detail' order.number %}"><span><strong>{{ order.number }}</strong><small>{{ order.buyer.first_name|default:order.buyer.username }} · {{ order.created_at|date:"j M Y" }}</small></span><span class="account-list-end"><strong>{{ order.total|cedis }}</strong><span class="status status-{{ order.status }}">{{ order.get_status_display }}</span></span></a></li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">No orders yet. Tick “Sell online with checkout” on a listing so buyers can pay with Mobile Money or card.</p>
+      {% endif %}
+    </section>
+  </div>
   {% endif %}
 
   <div class="account-columns">
     <section class="panel" aria-labelledby="orders-heading">
-      <div class="section-heading"><h2 id="orders-heading">Recent orders</h2>{% if recent_orders %}<a href="{% url 'commerce:order_list' %}">See all {% include "partials/icon.html" with name="chevron" %}</a>{% endif %}</div>
+      <div class="section-heading"><h2 id="orders-heading">{% if seller %}My recent purchases{% else %}Recent orders{% endif %}</h2>{% if recent_orders %}<a href="{% url 'commerce:order_list' %}">See all {% include "partials/icon.html" with name="chevron" %}</a>{% endif %}</div>
       {% if recent_orders %}
         <ul class="account-list">
           {% for order in recent_orders %}

@@ -281,3 +281,46 @@ class StaffRoleTests(TestCase):
     def test_administrator_manages_banners(self):
         self.staff("admin2", "Administrator")
         self.assertEqual(self.client.get(reverse("admin:marketplace_homebanner_add")).status_code, 200)
+
+
+class AccountSidebarAndSalesChartTests(PortalBase):
+    def test_sidebar_shows_selling_tools_only_to_sellers(self):
+        self.client.force_login(self.buyer)
+        response = self.client.get(reverse("account_overview"))
+        self.assertContains(response, 'aria-label="Your account"')
+        self.assertNotContains(response, "Orders to fulfil</span>")
+        self.client.force_login(self.seller)
+        response = self.client.get(reverse("seller_listings"))
+        self.assertContains(response, "Orders to fulfil</span>")
+        self.assertContains(response, f'href="{reverse("seller_listings")}" aria-current="page"')
+
+    def test_sales_chart_counts_only_this_sellers_paid_orders(self):
+        from decimal import Decimal
+
+        from commerce import services
+        from commerce.models import DeliveryOption, Order
+        from commerce.payments import VerificationResult
+        from commerce.payments.test_provider import TestProvider
+
+        Product.objects.filter(pk=self.product.pk).update(allows_checkout=True, stock_quantity=5)
+        self.product.refresh_from_db()
+        services.add_to_cart(self.buyer, self.product, 2)
+        checkout = services.create_checkout(self.buyer, {self.seller.pk: DeliveryOption.objects.get(kind="pickup")})
+        services.start_payment(checkout, TestProvider(), "http://testserver/cb")
+        payment = checkout.payments.get()
+        services.apply_verification(payment, VerificationResult(status="success", amount=payment.amount, currency="GHS"))
+        services.add_to_cart(self.buyer, self.product, 1)
+        services.create_checkout(self.buyer, {self.seller.pk: DeliveryOption.objects.get(kind="pickup")})  # unpaid
+
+        self.client.force_login(self.seller)
+        chart = self.client.get(reverse("account_overview")).context["seller"]["daily_sales"]
+        self.assertTrue(chart["has_sales"])
+        self.assertEqual(len(chart["days"]), 14)
+        self.assertEqual(chart["days"][-1]["total"], Decimal("480.00"))
+        self.assertEqual(chart["days"][-1]["height"], 100)
+
+        Order.objects.filter(paid_at__isnull=False).update(status=Order.Status.CANCELLED)
+        chart = self.client.get(reverse("account_overview")).context["seller"]["daily_sales"]
+        self.assertFalse(chart["has_sales"])
+        self.client.force_login(self.other_seller)
+        self.assertFalse(self.client.get(reverse("account_overview")).context["seller"]["daily_sales"]["has_sales"])

@@ -1,0 +1,15 @@
+<nav class="account-nav" aria-label="Your account">
+  <div class="account-nav-head">
+    {% if user.store_logo %}<img class="account-nav-avatar" src="{{ user.store_logo.url }}" alt="" width="44" height="44">
+    {% else %}<span class="account-nav-avatar" aria-hidden="true">{{ user.display_name|slice:":1"|upper }}</span>{% endif %}
+    <span><strong>{{ user.display_name }}</strong><small>{% if is_seller %}Seller account{% else %}Buyer account{% endif %}</small></span>
+  </div>
+  {% for section in sections %}
+    <p class="account-nav-title">{{ section.title }}</p>
+    <ul>
+      {% for item in section.items %}
+        <li><a href="{{ item.url }}"{% if item.active %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name=item.icon %}<span>{{ item.label }}</span>{% if item.count %}<b class="account-nav-count">{{ item.count }}</b>{% endif %}</a></li>
+      {% endfor %}
+    </ul>
+  {% endfor %}
+</nav>

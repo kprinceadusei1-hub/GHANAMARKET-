@@ -1,7 +1,7 @@
-{% extends "base.html" %}
+{% extends "account_base.html" %}
 {% load market %}
 {% block title %}My orders | GhanaMarket{% endblock %}
-{% block content %}
+{% block account_content %}
 <div class="container container-medium page-narrow-top">
   <div class="page-heading"><div><h1>My orders</h1><p>Track payments, deliveries and requests.</p></div></div>
   {% for checkout in checkouts %}

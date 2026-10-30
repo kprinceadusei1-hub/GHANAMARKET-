@@ -380,6 +380,37 @@ def account_settings(request):
     return render(request, "registration/account_settings.html", {"form": form})
 
 
+SALES_CHART_DAYS = 14
+
+
+def _daily_sales(seller):
+    """Paid order value per day for the seller's chart, oldest first, with bar heights in percent."""
+    from datetime import timedelta
+
+    from django.db.models.functions import TruncDate
+    from django.utils import timezone
+
+    from commerce.models import Order
+
+    start = timezone.localdate() - timedelta(days=SALES_CHART_DAYS - 1)
+    totals = {
+        row["day"]: row["total"]
+        for row in seller.seller_orders.filter(paid_at__isnull=False, paid_at__date__gte=start)
+        .exclude(status__in=(Order.Status.CANCELLED, Order.Status.REFUNDED))
+        .annotate(day=TruncDate("paid_at")).values("day").annotate(total=Sum("subtotal"))
+    }
+    days = [start + timedelta(days=offset) for offset in range(SALES_CHART_DAYS)]
+    peak = max(totals.values(), default=0)
+    return {
+        "has_sales": bool(peak),
+        "days": [
+            {"day": day, "total": totals.get(day, 0),
+             "height": round(totals.get(day, 0) * 100 / peak) if peak else 0}
+            for day in days
+        ],
+    }
+
+
 @login_required
 def account_overview(request):
     """One page that summarises everything a buyer (and seller) needs to act on."""
@@ -425,6 +456,9 @@ def account_overview(request):
             "sales_30d": sales.aggregate(total=Sum("subtotal", default=0))["total"],
             "orders_30d": sales.count(),
             "storefront_incomplete": not (user.store_name and user.store_description),
+            "daily_sales": _daily_sales(user),
+            "recent_orders": user.seller_orders.exclude(status=Order.Status.PENDING_PAYMENT)
+            .select_related("buyer").order_by("-created_at")[:5],
         }
     return render(request, "registration/account_overview.html", context)
 

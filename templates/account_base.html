@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% load market %}
+{% block content %}
+<div class="container account-shell">
+  {% account_nav %}
+  <div class="account-main">{% block account_content %}{% endblock %}</div>
+</div>
+{% endblock %}
