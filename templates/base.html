@@ -19,7 +19,7 @@
 
   <header class="site-header">
     <div class="header-main">
-      <div class="container header-row">
+      <div class="container header-row{% if user.is_authenticated %} is-signed-in{% endif %}">
         <a class="brand" href="{% url 'home' %}" aria-label="GhanaMarket home">
           <span class="brand-mark" aria-hidden="true">{% include "partials/brand_mark.html" %}</span>
           <span class="brand-text"><span class="brand-name">GhanaMarket</span><small>Buy · Sell · Connect</small></span>

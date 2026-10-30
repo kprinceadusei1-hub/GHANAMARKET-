@@ -1744,3 +1744,40 @@ a.stat-card:hover { border-color: var(--green); box-shadow: var(--shadow-md); }
   .gm-footer-main { padding-top: 36px; padding-bottom: 28px; }
   .gm-footer-bottom-row { justify-content: center; text-align: center; }
 }
+
+/* ===== Premium polish: signed-in header, product page cards, seller card ===== */
+.account-label { max-width: 140px; }
+.account-label, .account-label small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (min-width: 1440px) {
+  /* Signed-in headers carry four icons and a name: the tagline gives way so search keeps its room. */
+  .header-row.is-signed-in { grid-template-columns: auto minmax(0, 1fr) auto; grid-template-areas: "brand search actions"; }
+  .header-row.is-signed-in .header-tagline { display: none; }
+}
+.header-search input { min-width: 140px; }
+
+/* Product photo on a calm neutral backdrop */
+.detail-image { background: #f1f4f2; }
+.detail-image::before { display: none; }
+
+/* Top row cards share one height; price card actions sit at the bottom */
+@media (min-width: 1280px) {
+  .detail-layout { align-items: stretch; }
+  .detail-side { align-self: start; }
+  .detail-primary { display: flex; flex-direction: column; }
+  .detail-primary > .price-card { flex: 1; display: flex; flex-direction: column; }
+  .price-card .pc-actions { margin-top: auto; padding-top: 14px; }
+}
+.pc-head h1 { font-size: 1.55rem; letter-spacing: -.02em; }
+.pc-subtitle { font-size: .9rem; color: var(--ink-2); }
+
+/* Seller card */
+.seller-card-name { font-size: 1.15rem; }
+.seller-feedback { border: 0; background: var(--bg); color: var(--ink-2); padding: 12px 14px; }
+.seller-feedback:hover { background: var(--green-tint); }
+.seller-feedback strong { color: var(--ink); font-weight: 600; }
+.seller-feedback-icon { color: var(--accent); }
+.seller-own-contact { display: flex; align-items: center; gap: 10px; margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--green-tint); color: var(--ink-2); font-size: .88rem; }
+.seller-own-contact .icon { flex: none; width: 18px; height: 18px; color: var(--green); }
+.seller-own-contact strong { color: var(--ink); }
+.seller-card { display: grid; gap: 12px; }
+.seller-storefront-button { margin-top: 2px; }

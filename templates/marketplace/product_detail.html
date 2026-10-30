@@ -73,7 +73,7 @@
           </div>
           {% endif %}
         </div>
-        <p class="pc-subtitle">{{ product.card_tags|join:" · "|tidy_caps }}</p>
+        <p class="pc-subtitle">{% if product.brand or product.model %}{{ product.brand|tidy_caps }}{% if product.brand and product.model %} · {% endif %}{{ product.model|tidy_caps }}{% else %}{{ product.category_label }}{% endif %}</p>
         <p class="pc-meta">
           <span>{% include "partials/icon.html" with name="pin" %}{{ product|place }}</span>
           <span>{% include "partials/icon.html" with name="clock" %}<time datetime="{{ product.created_at|date:'c' }}">{{ product.created_at|ago }}</time></span>
@@ -171,7 +171,7 @@
 
         {% if product.seller.role == "seller" %}<a class="button button-outline seller-storefront-button" href="{% url 'seller_storefront' product.seller.pk %}">{% include "partials/icon.html" with name="store" %}View Storefront</a>{% endif %}
         {% if user == product.seller %}
-          {% if product.seller.phone_number %}<p class="seller-own-contact">Your contact: {{ product.seller.phone_display|default:product.seller.phone_number }}{% if not product.seller.show_phone %} · hidden from buyers{% endif %}</p>{% endif %}
+          {% if product.seller.phone_number %}<p class="seller-own-contact">{% include "partials/icon.html" with name="phone" %}<span>Your contact: <strong>{{ product.seller.phone_display|default:product.seller.phone_number }}</strong>{% if not product.seller.show_phone %} · hidden from buyers{% endif %}</span></p>{% endif %}
         {% else %}
           <div class="seller-contact">
             {% if seller_phone %}
