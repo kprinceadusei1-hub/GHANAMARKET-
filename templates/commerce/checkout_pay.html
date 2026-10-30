@@ -3,6 +3,7 @@
 {% block title %}Pay for {{ checkout.reference }} | GhanaMarket{% endblock %}
 {% block content %}
 <div class="container container-medium page-narrow-top">
+  {% if checkout.status == "paid" %}{% checkout_steps 4 %}{% elif checkout.status == "pending" %}{% checkout_steps 3 %}{% endif %}
   <div class="page-heading">
     <div><h1>{% if checkout.status == "paid" %}Payment confirmed{% elif checkout.status == "pending" %}Review and pay{% else %}Checkout {{ checkout.get_status_display|lower }}{% endif %}</h1>
     <p>Reference {{ checkout.reference }}</p></div>

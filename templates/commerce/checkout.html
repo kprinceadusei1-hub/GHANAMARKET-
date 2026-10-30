@@ -3,6 +3,7 @@
 {% block title %}Checkout | GhanaMarket{% endblock %}
 {% block content %}
 <div class="container page-narrow-top">
+  {% checkout_steps 2 %}
   <div class="page-heading"><div><h1>Checkout</h1><p>Choose how to receive your items, then pay securely.</p></div></div>
   {% if buy_now and other_cart_items %}<p class="notice">You are buying just this item. The other {{ other_cart_items }} item{{ other_cart_items|pluralize }} in your cart will stay there. <a href="{% url 'commerce:checkout' %}">Check out the whole cart instead</a></p>{% endif %}
   {% if provider.is_test %}<p class="notice notice-warn"><strong>Test mode</strong>Payments are simulated on this server. No real money will move.</p>{% endif %}

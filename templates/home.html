@@ -6,13 +6,17 @@
 <div class="container home-top">
   <section class="hero-banner" aria-labelledby="hero-title">
     <div class="hero-copy">
-      <h1 id="hero-title">Everything You Need,<br><span>All in One Place</span></h1>
+      <h1 id="hero-title">Everything You Need,<br> <span>All in One Place</span></h1>
       <p>Buy and sell new and used products, find services, and discover great listings from sellers across Ghana.</p>
       <ul class="hero-trust">
         <li>{% include "partials/icon.html" with name="shield" %}Every ad reviewed</li>
         <li>{% include "partials/icon.html" with name="shield" %}Private chat, number hidden</li>
         <li>{% include "partials/icon.html" with name="shield" %}Free to post</li>
       </ul>
+      <div class="hero-actions">
+        <a class="button button-primary" href="{% url 'product_list' %}">{% include "partials/icon.html" with name="search" %}Browse listings</a>
+        <a class="button button-quiet" href="{% url 'product_list' %}?checkout=1">{% include "partials/icon.html" with name="wallet" %}Buy online</a>
+      </div>
       {% if has_demo_listings %}<span class="preview-pill">Preview catalogue</span>{% endif %}
     </div>
     <div class="hero-art" aria-hidden="true">

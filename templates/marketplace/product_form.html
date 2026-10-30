@@ -91,4 +91,39 @@ if (categorySelect) {
     else categorySelect.value = original;
   });
 }
+
+// "Units available" only matters for online checkout: show it when that option is ticked.
+const checkoutBox = document.getElementById("id_allows_checkout");
+const stockField = document.getElementById("id_stock_quantity")?.closest(".field");
+if (checkoutBox && stockField && !stockField.classList.contains("has-error")) {
+  const syncStock = () => { stockField.hidden = !checkoutBox.checked; };
+  checkoutBox.addEventListener("change", syncStock);
+  syncStock();
+}
+
+// Live character counts for fields with a length limit.
+["id_title", "id_description"].forEach((id) => {
+  const input = document.getElementById(id);
+  const limit = Number(input?.getAttribute("maxlength"));
+  if (!input || !limit) return;
+  const counter = document.createElement("small");
+  counter.className = "char-count";
+  input.insertAdjacentElement("afterend", counter);
+  const update = () => {
+    counter.textContent = `${input.value.length.toLocaleString()} / ${limit.toLocaleString()}`;
+    counter.classList.toggle("is-near", input.value.length > limit * 0.9);
+  };
+  input.addEventListener("input", update);
+  update();
+});
+
+// Show the currency inside the price box.
+const price = document.getElementById("id_price");
+if (price && !price.parentElement.classList.contains("input-prefix")) {
+  const wrap = document.createElement("span");
+  wrap.className = "input-prefix";
+  wrap.dataset.prefix = "GH₵";
+  price.replaceWith(wrap);
+  wrap.append(price);
+}
 </script>{% endblock %}

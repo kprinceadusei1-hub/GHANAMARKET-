@@ -78,3 +78,12 @@ def with_error_aria(field):
     attrs = field.field.widget.attrs
     described = " ".join(filter(None, [attrs.get("aria-describedby", ""), f"{field.auto_id}_errors"]))
     return field.as_widget(attrs={"aria-invalid": "true", "aria-describedby": described})
+
+
+CHECKOUT_STEPS = ((1, "Cart"), (2, "Delivery"), (3, "Payment"), (4, "Done"))
+
+
+@register.inclusion_tag("commerce/_steps.html")
+def checkout_steps(current):
+    """Progress indicator shown on the cart, checkout and payment pages."""
+    return {"steps": CHECKOUT_STEPS, "current": current}

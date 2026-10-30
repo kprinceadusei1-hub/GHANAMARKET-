@@ -3,6 +3,7 @@
 {% block title %}Your cart | GhanaMarket{% endblock %}
 {% block content %}
 <div class="container page-narrow-top">
+  {% if groups %}{% checkout_steps 1 %}{% endif %}
   <div class="page-heading"><div><h1>Your cart</h1><p>Items are grouped by seller. Each seller ships or hands over their own items.</p></div></div>
   {% if groups %}
     <div class="checkout-layout">
