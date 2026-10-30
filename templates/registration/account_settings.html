@@ -12,10 +12,10 @@
       <button type="submit" class="button button-primary button-block">Save changes</button>
     </form>
     <div class="settings-links">
-      {% if user.role == "seller" %}<a href="{% url 'seller_verification' %}">{% include "partials/icon.html" with name="shield" %}{% if user.is_verified_seller %}Verified seller{% else %}Get verified{% endif %}</a>
+      {% if user.role == "seller" %}<a href="{% url 'storefront_settings' %}">{% include "partials/icon.html" with name="store" %}Storefront name, logo and description</a><a href="{% url 'seller_verification' %}">{% include "partials/icon.html" with name="shield" %}{% if user.is_verified_seller %}Verified seller{% else %}Get verified{% endif %}</a>
       {% else %}<a href="{% url 'become_seller' %}">{% include "partials/icon.html" with name="store" %}Set up a seller account</a>{% endif %}
       <a href="{% url 'commerce:addresses' %}">{% include "partials/icon.html" with name="pin" %}Delivery addresses</a>
-      <a href="{% url 'password_reset' %}">{% include "partials/icon.html" with name="settings" %}Change password</a>
+      <a href="{% url 'password_change' %}">{% include "partials/icon.html" with name="shield" %}Change password</a>
       <a class="danger-link" href="{% url 'delete_account' %}">{% include "partials/icon.html" with name="close" %}Delete my account</a>
     </div>
   </section>

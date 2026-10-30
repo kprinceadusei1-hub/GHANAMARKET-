@@ -4,6 +4,7 @@
 {% block content %}
 <div class="container page-narrow-top">
   <div class="page-heading"><div><h1>Checkout</h1><p>Choose how to receive your items, then pay securely.</p></div></div>
+  {% if buy_now and other_cart_items %}<p class="notice">You are buying just this item. The other {{ other_cart_items }} item{{ other_cart_items|pluralize }} in your cart will stay there. <a href="{% url 'commerce:checkout' %}">Check out the whole cart instead</a></p>{% endif %}
   {% if provider.is_test %}<p class="notice notice-warn"><strong>Test mode</strong>Payments are simulated on this server. No real money will move.</p>{% endif %}
   <form method="post" class="checkout-layout" data-checkout>
     {% csrf_token %}
@@ -11,7 +12,7 @@
       {% if form.non_field_errors %}<div class="notice notice-danger">{{ form.non_field_errors }}</div>{% endif %}
       {% for group in groups %}
         <section class="panel cart-group">
-          <h2 class="cart-seller">{% include "partials/icon.html" with name="store" %}{{ group.seller.get_full_name|default:group.seller.username }}</h2>
+          <h2 class="cart-seller">{% include "partials/icon.html" with name="store" %}{{ group.seller.display_name }}</h2>
           <ul class="checkout-items">
             {% for line in group.items %}<li><span>{{ line.item.quantity }} × {{ line.item.product.title }}</span><strong>{{ line.item.line_total|cedis }}</strong></li>{% endfor %}
           </ul>

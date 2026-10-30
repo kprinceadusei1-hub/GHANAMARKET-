@@ -19,7 +19,7 @@
 
   {% for order in orders %}
     <section class="panel cart-group">
-      <h2 class="cart-seller">{% include "partials/icon.html" with name="store" %}{{ order.seller.get_full_name|default:order.seller.username }}<span class="status status-{{ order.status }}">{{ order.get_status_display }}</span></h2>
+      <h2 class="cart-seller">{% include "partials/icon.html" with name="store" %}{{ order.seller.display_name }}<span class="status status-{{ order.status }}">{{ order.get_status_display }}</span></h2>
       <ul class="checkout-items">
         {% for item in order.items.all %}<li><span>{{ item.quantity }} × {{ item.title }}</span><strong>{{ item.line_total|cedis }}</strong></li>{% endfor %}
         <li><span>{{ order.delivery_method }}</span><strong>{% if order.delivery_fee %}{{ order.delivery_fee|cedis }}{% else %}Free{% endif %}</strong></li>

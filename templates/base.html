@@ -37,7 +37,7 @@
               {% for value, label in ghana_regions %}<option value="{{ value }}"{% if selected_region == value or header_region == value %} selected{% endif %}>{{ label }}</option>{% endfor %}
             </select>
           </label>
-          <button type="submit" aria-label="Search">{% include "partials/icon.html" with name="search" %}</button>
+          <button type="submit" aria-label="Search">{% include "partials/icon.html" with name="search" %}<span aria-hidden="true">Search</span></button>
         </form>
 
         <nav class="header-actions" aria-label="Account and shopping">
@@ -57,6 +57,7 @@
               </summary>
               <div class="account-menu-panel">
                 <p class="account-menu-name">{{ user.get_full_name|default:user.username }}<small>{{ user.email }}</small></p>
+                <a href="{% url 'account_overview' %}">{% include "partials/icon.html" with name="user" %}My account</a>
                 <a href="{% url 'notification_list' %}">{% include "partials/icon.html" with name="bell" %}Notifications{% if unread_notifications %}<b class="menu-count">{{ unread_notifications }}</b>{% endif %}</a>
                 <a href="{% url 'conversation_list' %}">{% include "partials/icon.html" with name="chat" %}Messages{% if unread_messages %}<b class="menu-count">{{ unread_messages }}</b>{% endif %}</a>
                 <a href="{% url 'commerce:order_list' %}">{% include "partials/icon.html" with name="package" %}My orders</a>
@@ -64,7 +65,7 @@
                 {% if user.role == "seller" %}
                   <a href="{% url 'seller_listings' %}">{% include "partials/icon.html" with name="list" %}My shop</a>
                   <a href="{% url 'commerce:seller_orders' %}">{% include "partials/icon.html" with name="truck" %}Orders to fulfil</a>
-                  <a href="{% url 'seller_storefront' user.pk %}">{% include "partials/icon.html" with name="store" %}Public storefront</a>
+                  <a href="{% url 'storefront_settings' %}">{% include "partials/icon.html" with name="store" %}My storefront</a>
                 {% endif %}
                 <a href="{% url 'commerce:addresses' %}">{% include "partials/icon.html" with name="pin" %}Delivery addresses</a>
                 <a href="{% url 'account_settings' %}">{% include "partials/icon.html" with name="settings" %}Account settings</a>
@@ -153,7 +154,7 @@
     <a class="mobile-dock-sell" href="{{ sell_url }}"><span class="mobile-dock-plus">{% include "partials/icon.html" with name="plus" %}</span><span>Sell</span></a>
     {% if user.is_authenticated %}
       <a data-unread="messages" href="{% url 'conversation_list' %}"{% if url_name == 'conversation_list' or url_name == 'conversation_detail' %} aria-current="page"{% endif %}><span class="dock-icon">{% include "partials/icon.html" with name="chat" %}{% if unread_messages %}<b class="badge">{{ unread_messages }}</b>{% endif %}</span><span>Messages</span></a>
-      <a href="{% if user.role == 'seller' %}{% url 'seller_listings' %}{% else %}{% url 'account_settings' %}{% endif %}"{% if url_name == 'seller_listings' or url_name == 'account_settings' or url_name == 'saved_listings' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="user" %}<span>Account</span></a>
+      <a href="{% url 'account_overview' %}"{% if url_name == 'account_overview' or url_name == 'seller_listings' or url_name == 'account_settings' or url_name == 'saved_listings' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="user" %}<span>Account</span></a>
     {% else %}
       <a href="{% url 'login' %}">{% include "partials/icon.html" with name="heart" %}<span>Saved</span></a>
       <a href="{% url 'login' %}"{% if url_name == 'login' or url_name == 'register' %} aria-current="page"{% endif %}>{% include "partials/icon.html" with name="user" %}<span>Sign in</span></a>

@@ -5,7 +5,7 @@ from django.contrib.auth import views as auth_views
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from decimal import Decimal, InvalidOperation
-from django.db.models import Case, Count, F, IntegerField, OuterRef, Prefetch, Q, Subquery, Value, When
+from django.db.models import Case, Count, F, Sum, IntegerField, OuterRef, Prefetch, Q, Subquery, Value, When
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
@@ -20,9 +20,11 @@ from .forms import (
     ProfileForm,
     RegistrationForm,
     SellerUpgradeForm,
+    StorefrontForm,
 )
 from .models import (
-    Category, Conversation, Favorite, GhanaRegion, Message, Product, ProductPhoto, SearchTerm, User,
+    Category, Conversation, Favorite, GhanaRegion, HomeBanner, Message, Notification, Product, ProductPhoto,
+    SearchTerm, User,
 )
 from . import catalog, throttling, trust
 from .images import thumbnail_url
@@ -151,6 +153,20 @@ def _remember_viewed(request, product):
     request.session[RECENTLY_VIEWED_SESSION_KEY] = [product.pk, *viewed][:RECENTLY_VIEWED_LIMIT]
 
 
+COUNTED_VIEWS_SESSION_KEY = "counted_views"
+
+
+def _count_view(request, product):
+    """Add one view per visitor session; the seller's own visits and preview listings never count."""
+    if product.is_demo or request.user.pk == product.seller_id:
+        return
+    counted = request.session.get(COUNTED_VIEWS_SESSION_KEY, [])
+    if product.pk in counted:
+        return
+    Product.objects.filter(pk=product.pk).update(view_count=F("view_count") + 1)
+    request.session[COUNTED_VIEWS_SESSION_KEY] = (counted + [product.pk])[-200:]
+
+
 def _recently_viewed(request, exclude=None, limit=6):
     ids = [pk for pk in request.session.get(RECENTLY_VIEWED_SESSION_KEY, []) if pk != exclude][:limit]
     if not ids:
@@ -244,6 +260,7 @@ def home(request):
             seller=request.user, status__in=(Product.Status.PENDING, Product.Status.REJECTED)
         ).order_by("-updated_at")[:3])
     return render(request, "home.html", {
+        "banners": HomeBanner.objects.live()[:3],
         "own_pending": own_pending,
         "product_tabs": tabs,
         "nearby": nearby,
@@ -361,6 +378,89 @@ def account_settings(request):
         messages.success(request, "Your account details have been updated.")
         return redirect("account_settings")
     return render(request, "registration/account_settings.html", {"form": form})
+
+
+@login_required
+def account_overview(request):
+    """One page that summarises everything a buyer (and seller) needs to act on."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+
+    from commerce.models import Order
+
+    user = request.user
+    orders = user.orders.exclude(status=Order.Status.PENDING_PAYMENT)
+    context = {
+        "recent_orders": orders.order_by("-created_at")[:3],
+        "open_order_count": orders.filter(status__in=(
+            Order.Status.PAID, Order.Status.PROCESSING, Order.Status.SHIPPED,
+            Order.Status.READY_FOR_PICKUP, Order.Status.DELIVERED,
+        )).count(),
+        "saved_count": user.favorites.filter(product__status=Product.Status.PUBLISHED).count(),
+        "conversation_count": Conversation.objects.filter(Q(buyer=user) | Q(seller=user)).count(),
+        "address_count": user.addresses.count(),
+        "recent_notifications": Notification.objects.filter(user=user)[:4],
+        "recently_viewed": _recently_viewed(request, limit=4),
+        "favorite_ids": _favorite_ids(request),
+        "favorite_return": "list",
+    }
+    if user.role == User.Role.SELLER:
+        listings = Product.objects.filter(seller=user)
+        since = timezone.now() - timedelta(days=30)
+        sales = user.seller_orders.filter(paid_at__isnull=False).exclude(
+            status__in=(Order.Status.CANCELLED, Order.Status.REFUNDED)
+        ).filter(paid_at__gte=since)
+        context["seller"] = {
+            **listings.aggregate(
+                total=Count("id"),
+                live=Count("id", filter=Q(status=Product.Status.PUBLISHED)),
+                pending=Count("id", filter=Q(status=Product.Status.PENDING)),
+                rejected=Count("id", filter=Q(status=Product.Status.REJECTED)),
+                sold=Count("id", filter=Q(status=Product.Status.SOLD)),
+                views=Sum("view_count", default=0),
+            ),
+            "enquiries": Conversation.objects.filter(seller=user).count(),
+            "to_fulfil": user.seller_orders.filter(status__in=(Order.Status.PAID, Order.Status.PROCESSING)).count(),
+            "sales_30d": sales.aggregate(total=Sum("subtotal", default=0))["total"],
+            "orders_30d": sales.count(),
+            "storefront_incomplete": not (user.store_name and user.store_description),
+        }
+    return render(request, "registration/account_overview.html", context)
+
+
+@login_required
+def storefront_settings(request):
+    if request.user.role != User.Role.SELLER:
+        messages.error(request, "Storefronts are for seller accounts.")
+        return redirect("account_overview")
+    old_images = {name: getattr(request.user, name).name for name in ("store_logo", "store_cover")}
+    form = StorefrontForm(
+        request.POST if request.method == "POST" else None,
+        request.FILES if request.method == "POST" else None,
+        instance=request.user,
+    )
+    if request.method == "POST" and form.is_valid():
+        user = form.save()
+        for name, old in old_images.items():
+            # Replaced or cleared images are removed from storage, not left behind.
+            if old and getattr(user, name).name != old:
+                getattr(user, name).storage.delete(old)
+        messages.success(request, "Your storefront has been updated.")
+        return redirect("storefront_settings")
+    return render(request, "marketplace/storefront_settings.html", {"form": form})
+
+
+class AccountPasswordChangeView(auth_views.PasswordChangeView):
+    template_name = "registration/password_change.html"
+
+    def get_success_url(self):
+        return reverse("account_settings")
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        messages.success(self.request, "Your password has been changed.")
+        return response
 
 
 @login_required
@@ -736,6 +836,7 @@ def product_detail(request, pk):
     context = _detail_context(request, product)
     if product.status == Product.Status.PUBLISHED:
         _remember_viewed(request, product)
+        _count_view(request, product)
     return render(request, "marketplace/product_detail.html", context)
 
 
@@ -786,9 +887,12 @@ def seller_listings(request):
         pending=Count("id", filter=Q(status=Product.Status.PENDING)),
         needs_changes=Count("id", filter=Q(status=Product.Status.REJECTED)),
         sold=Count("id", filter=Q(status=Product.Status.SOLD)),
+        views=Sum("view_count", default=0),
     )
+    counts["enquiries"] = Conversation.objects.filter(seller=request.user).count()
     products = seller_products.select_related("category", "subcategory").annotate(
-        extra_photo_count=Count("photos", distinct=True)
+        extra_photo_count=Count("photos", distinct=True),
+        enquiry_count=Count("conversations", distinct=True),
     )
     query = request.GET.get("q", "").strip()
     status = request.GET.get("status", "").strip()
@@ -956,6 +1060,15 @@ def seller_listing_status(request, pk):
             for image in image_files:
                 image.delete(save=False)
             messages.success(request, f"“{title}” was permanently deleted.")
+    elif action == "mark_sold" and product.status == Product.Status.PUBLISHED:
+        product.status = Product.Status.SOLD
+        product.save(update_fields=("status", "updated_at"))
+        messages.success(request, f"“{product.title}” is marked as sold and no longer shown to buyers.")
+    elif action == "relist" and product.status == Product.Status.SOLD:
+        product.status = Product.Status.PENDING
+        product.moderation_note = ""
+        product.save(update_fields=("status", "moderation_note", "updated_at"))
+        messages.success(request, "Listing sent for review. It will be live again once approved.")
     elif action == "reactivate" and product.status == Product.Status.DRAFT:
         product.status = Product.Status.PENDING
         product.moderation_note = ""

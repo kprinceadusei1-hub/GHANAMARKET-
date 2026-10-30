@@ -156,6 +156,38 @@ class ProfileForm(TownFieldMixin, forms.ModelForm):
         return cleaned_data
 
 
+class SingleImageField(forms.ImageField):
+    """One photo, with the same size cap and re-encoding (EXIF/GPS removed) as listing photos."""
+
+    def clean(self, data, initial=None):
+        if data and getattr(data, "size", 0) > MAX_PRODUCT_IMAGE_SIZE:
+            raise ValidationError("The image must be 5 MB or smaller. Please resize it and try again.")
+        cleaned = super().clean(data, initial)
+        if not cleaned or cleaned is initial or not hasattr(cleaned, "seek"):
+            return cleaned
+        try:
+            return normalise_upload(cleaned)
+        except (OSError, ValueError) as exc:
+            raise ValidationError("Upload a valid image. The file you uploaded was not an image or is damaged.") from exc
+
+
+class StorefrontForm(forms.ModelForm):
+    store_logo = SingleImageField(required=False, label="Logo", help_text="Square image works best. JPG or PNG, up to 5 MB.")
+    store_cover = SingleImageField(required=False, label="Cover photo", help_text="Wide photo shown at the top of your storefront.")
+
+    class Meta:
+        model = User
+        fields = ("store_name", "store_description", "store_logo", "store_cover")
+        labels = {"store_name": "Shop or business name", "store_description": "About your shop"}
+        help_texts = {
+            "store_description": "What you sell, opening hours, where buyers can collect. Up to 1,000 characters.",
+        }
+        widgets = {"store_description": forms.Textarea(attrs={"rows": 5, "maxlength": 1000})}
+
+    def clean_store_name(self):
+        return " ".join(self.cleaned_data["store_name"].split())
+
+
 def _check_whatsapp(form, cleaned_data):
     if cleaned_data.get("show_phone"):
         probe = User(phone_number=cleaned_data.get("phone_number", ""))

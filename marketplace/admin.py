@@ -11,7 +11,7 @@ from django.utils import timezone
 from . import moderation
 from .notifications import notify
 from .models import (
-    Promotion,
+    HomeBanner, Promotion,
     ProhibitedTerm, SellerReview, SellerVerification, SupportRequest, UserBlock, UserReport,
     Category, CategoryAttribute, Conversation, Favorite, ListingReport, Message, Product, ProductPhoto, SearchTerm, User,
 )
@@ -142,13 +142,14 @@ class ProductPhotoInline(admin.TabularInline):
 class MarketplaceUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
         ("Marketplace profile", {"fields": ("role", "seller_status", "seller_requested_at", "seller_review_note", "phone_number", "city", "region", "country")}),
+        ("Storefront", {"classes": ("collapse",), "fields": ("store_name", "store_description", "store_logo", "store_cover")}),
     )
     add_fieldsets = UserAdmin.add_fieldsets + (
         ("Marketplace profile", {"fields": ("email", "role", "phone_number", "city", "region", "country")}),
     )
     list_display = ("username", "email", "role", "seller_status", "city", "region", "active_listing_count", "is_staff", "is_active")
     list_filter = ("role", "seller_status", "region", "is_staff", "is_active", SellerActivityFilter)
-    search_fields = ("username", "email", "phone_number", "city")
+    search_fields = ("username", "email", "phone_number", "city", "store_name")
     actions = ("suspend_member_accounts", "reactivate_member_accounts")
     list_per_page = 50
 
@@ -223,6 +224,12 @@ class ProductAdmin(admin.ModelAdmin):
         # Deleting would cascade to conversations, reports and promotions (scam evidence, fee records).
         # Remove listings from public view by changing their status instead.
         return False
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name in ("category", "subcategory"):
+            # Subcategory labels include the parent name; load parents in the same query.
+            kwargs["queryset"] = Category.objects.select_related("parent")
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
     change_list_template = "admin/marketplace/product/change_list.html"
     change_form_template = "admin/marketplace/product/change_form.html"
@@ -669,6 +676,33 @@ class PromotionAdmin(admin.ModelAdmin):
     @admin.display(boolean=True, description="Running now")
     def running(self, promotion):
         return promotion.is_running
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.created_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(HomeBanner)
+class HomeBannerAdmin(admin.ModelAdmin):
+    list_display = ("title", "preview", "position", "starts_at", "ends_at", "live", "is_sponsored", "created_by")
+    list_filter = ("is_active", "is_sponsored", "starts_at")
+    list_editable = ("position",)
+    search_fields = ("title", "subtitle", "link_url")
+    readonly_fields = ("preview", "created_by", "created_at")
+    fields = ("title", "subtitle", "image", "preview", "link_url", "button_label", "is_sponsored", "position",
+              "starts_at", "ends_at", "is_active", "created_by", "created_at")
+    date_hierarchy = "starts_at"
+
+    @admin.display(description="Image")
+    def preview(self, banner):
+        if not banner.image:
+            return "-"
+        return format_html('<img src="{}" alt="" style="height:48px;border-radius:6px">', banner.image.url)
+
+    @admin.display(boolean=True, description="Showing now")
+    def live(self, banner):
+        return HomeBanner.objects.live().filter(pk=banner.pk).exists()
 
     def save_model(self, request, obj, form, change):
         if not change:

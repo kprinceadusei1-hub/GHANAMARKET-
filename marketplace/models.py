@@ -57,9 +57,20 @@ class User(AbstractUser):
         help_text="Set only when staff approve a seller verification. Drives the 'Verified seller' badge.",
     )
     deleted_at = models.DateTimeField(null=True, blank=True, editable=False)
+    store_name = models.CharField(
+        max_length=80, blank=True, help_text="Business or shop name shown on your storefront and ads.",
+    )
+    store_description = models.TextField(max_length=1000, blank=True)
+    store_logo = models.ImageField(upload_to="stores/logos/", blank=True)
+    store_cover = models.ImageField(upload_to="stores/covers/", blank=True)
 
     def __str__(self):
         return self.get_full_name() or self.username
+
+    @property
+    def display_name(self):
+        """Shop name for sellers who set one, otherwise the person's name."""
+        return self.store_name or self.get_full_name() or self.username
 
     @property
     def can_sell(self):
@@ -272,6 +283,9 @@ class Product(models.Model):
         help_text="Automatic moderation hints (flagged words, possible duplicates). Never shown to buyers.",
     )
     is_demo = models.BooleanField(default=False)
+    view_count = models.PositiveIntegerField(
+        default=0, editable=False, help_text="Listing page views by other people, counted once per visitor session.",
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -778,3 +792,53 @@ class Promotion(models.Model):
         from django.utils import timezone
 
         return self.is_active and self.starts_at <= timezone.now() < self.ends_at
+
+
+class HomeBannerQuerySet(models.QuerySet):
+    def live(self, now=None):
+        from django.utils import timezone
+
+        now = now or timezone.now()
+        return self.filter(is_active=True, starts_at__lte=now).filter(
+            models.Q(ends_at__isnull=True) | models.Q(ends_at__gt=now)
+        )
+
+
+class HomeBanner(models.Model):
+    """A staff-managed campaign banner on the homepage, shown only between its start and end."""
+
+    title = models.CharField(max_length=80)
+    subtitle = models.CharField(max_length=160, blank=True)
+    image = models.ImageField(upload_to="banners/", help_text="Wide photo, at least 1200 px across.")
+    link_url = models.CharField(
+        max_length=300, help_text="Where the banner leads: a site path such as /listings/?category=fashion, or a full https:// link.",
+    )
+    button_label = models.CharField(max_length=30, default="Shop now")
+    is_sponsored = models.BooleanField(
+        default=False, help_text="Tick for paid advertising; buyers then see a “Sponsored” label.",
+    )
+    position = models.PositiveSmallIntegerField(default=0, help_text="Lower numbers show first.")
+    starts_at = models.DateTimeField()
+    ends_at = models.DateTimeField(null=True, blank=True, help_text="Leave empty to run until switched off.")
+    is_active = models.BooleanField(default=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = HomeBannerQuerySet.as_manager()
+
+    class Meta:
+        ordering = ("position", "-starts_at")
+
+    def __str__(self):
+        return self.title
+
+    def clean(self):
+        from django.core.exceptions import ValidationError
+
+        if self.starts_at and self.ends_at and self.ends_at <= self.starts_at:
+            raise ValidationError({"ends_at": "The banner must end after it starts."})
+        link = (self.link_url or "").strip()
+        if link and not (link.startswith("/") and not link.startswith("//")) and not link.startswith("https://"):
+            raise ValidationError({"link_url": "Use a site path starting with / or a full https:// link."})

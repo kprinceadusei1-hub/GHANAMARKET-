@@ -45,8 +45,9 @@ class AdminOperationsTests(TestCase):
         response = self.client.get(reverse("admin:index"))
 
         queues = {q["label"]: q["count"] for q in response.context["admin_dashboard_queues"]}
-        self.assertEqual(queues["User reports"], 1)
-        self.assertEqual(queues["Support requests"], 1)
+        self.assertEqual(queues["Reported users"], 1)
+        self.assertEqual(queues["Open support tickets"], 1)
+        self.assertEqual(queues["Failed refunds"], 0)
         commerce = response.context["admin_dashboard_commerce"]
         self.assertEqual(commerce["paid_orders"], 1)  # the unpaid checkout is not counted
         self.assertEqual(commerce["paid_value"], 500)
@@ -56,7 +57,7 @@ class AdminOperationsTests(TestCase):
         self.staff.user_permissions.add(Permission.objects.get(codename="view_supportrequest"))
         self.client.force_login(self.staff)
         response = self.client.get(reverse("admin:index"))
-        self.assertEqual([q["label"] for q in response.context["admin_dashboard_queues"]], ["Support requests"])
+        self.assertEqual([q["label"] for q in response.context["admin_dashboard_queues"]], ["Open support tickets"])
         self.assertNotIn("admin_dashboard_commerce", response.context)
 
     def test_analytics_reports_verified_sales_only(self):

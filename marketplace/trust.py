@@ -113,6 +113,11 @@ def delete_account(user):
     user.email = f"deleted-{user.pk}@deleted.invalid"
     user.first_name = user.last_name = user.phone_number = user.city = ""
     user.region = ""
+    for image in (user.store_logo, user.store_cover):
+        if image:
+            image.delete(save=False)
+    user.store_logo = user.store_cover = ""
+    user.store_name = user.store_description = ""
     user.is_active = False
     user.deleted_at = timezone.now()
     user.password = make_password(None)

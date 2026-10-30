@@ -87,8 +87,9 @@ def sidebar_groups(user, queues):
             link("Delivery options", "commerce.view_deliveryoption", "admin:commerce_deliveryoption_changelist"),
         )),
         ("Payments & Finance", "wallet", (
-            link("Payments", "commerce.view_payment", "admin:commerce_payment_changelist"),
-            link("Refunds", "commerce.view_refund", "admin:commerce_refund_changelist"),
+            link("Payments", "commerce.view_payment", "admin:commerce_payment_changelist",
+                 count_key="payment_attention"),
+            link("Refunds", "commerce.view_refund", "admin:commerce_refund_changelist", count_key="failed_refunds"),
             link("Webhook events", "commerce.view_paymentevent", "admin:commerce_paymentevent_changelist"),
         )),
         ("Reports & Analytics", "chart", (
@@ -111,6 +112,7 @@ def sidebar_groups(user, queues):
             link("Running now", "marketplace.view_promotion", "admin:marketplace_promotion_changelist",
                  "?is_active__exact=1"),
             link("Promote a listing", "marketplace.add_promotion", "admin:marketplace_promotion_add"),
+            link("Homepage banners", "marketplace.view_homebanner", "admin:marketplace_homebanner_changelist"),
         )),
         ("Categories", "grid", (
             link("Categories & fields", "marketplace.view_category", "admin:marketplace_category_changelist"),
@@ -135,7 +137,7 @@ def sidebar_groups(user, queues):
 
 def queue_counts(user):
     """Open work queues for the bell, sidebar badges and quick stats."""
-    from commerce.models import Order, OrderIssue
+    from commerce.models import Order, OrderIssue, Payment, Refund
 
     definitions = (
         ("seller_requests", "Seller requests", "marketplace.view_user",
@@ -162,6 +164,14 @@ def queue_counts(user):
         ("disputes", "Disputed orders", "commerce.view_orderissue",
          lambda: OrderIssue.objects.filter(status=OrderIssue.Status.OPEN, kind=OrderIssue.Kind.DISPUTE).count(),
          "admin:commerce_orderissue_changelist", "?status__exact=open&kind__exact=dispute", "alert"),
+        ("failed_refunds", "Failed refunds", "commerce.view_refund",
+         lambda: Refund.objects.filter(status=Refund.Status.FAILED).count(),
+         "admin:commerce_refund_changelist", "?status__exact=failed", "money"),
+        ("payment_attention", "Payments needing attention", "commerce.view_payment",
+         # Paid but flagged (late or duplicate payments to refund), or the amount did not match.
+         lambda: (Payment.objects.exclude(failure_reason="").filter(status=Payment.Status.SUCCEEDED)
+                  | Payment.objects.filter(failure_reason__icontains="mismatch")).count(),
+         "admin:commerce_payment_changelist", "", "wallet"),
     )
     return [
         {"key": key, "label": label, "count": count(), "url": _url(url_name, query=query), "icon": icon}

@@ -27,6 +27,7 @@ Open http://127.0.0.1:8000/ (site) and http://127.0.0.1:8000/admin/ (control roo
 
 - `manage.py seed_demo_marketplace`: optional preview catalogue, clearly labelled "Preview example" and never buyable; remove with `--delete` or the admin button.
 - `manage.py seed_categories`: restores any missing launch categories (already run by migrations).
+- `manage.py setup_staff_roles`: creates/refreshes the Administrator, Moderator, Support agent and Finance staff groups. Give a staff member one of these groups instead of individual permissions.
 - `manage.py expire_checkouts`: releases stock from unpaid checkouts. Schedule it every few minutes in production.
 
 ### Trying online checkout locally
@@ -56,7 +57,7 @@ With `DEBUG=True`, the payment provider defaults to **test mode**: the "Pay" but
 ```powershell
 .\.venv\Scripts\python.exe manage.py test
 ```
-290 tests cover accounts, permissions (including admin privilege escalation), listings, categories and attribute filters, search, messaging, live chat and blocking, reports, checkout and stock (including reservations during seller edits), payment verification, webhooks, duplicates and provider outages, late/duplicate-payment refunds, refund reconciliation, order state rules, verification and the Ghana Card step, reviews, image processing (including oversized images), admin queues and analytics, rate limits, account deletion and accessibility of form errors. Tests write uploads to a temporary folder, never to `media/`.
+330 tests cover accounts, permissions (including admin privilege escalation), listings, categories and attribute filters, search, messaging, live chat and blocking, reports, checkout and stock (including reservations during seller edits), payment verification, webhooks, duplicates and provider outages, late/duplicate-payment refunds, refund reconciliation, order state rules, verification and the Ghana Card step, reviews, image processing (including oversized images), admin queues and analytics, rate limits, account deletion and accessibility of form errors. Tests write uploads to a temporary folder, never to `media/`.
 
 Browser checks (Edge, desktop and phone sizes) were also run for the header, category menu and sidebar, photo viewer, live chat and a complete purchase with the test payment provider.
 
@@ -73,6 +74,5 @@ See `.env.example` for every setting and `DEPLOYMENT.md` for the production chec
 - **Ghana regions** are a code enum (`GhanaRegion`); adding countries needs a region model.
 - The help and policy pages are plain-language drafts and need legal review before launch.
 - Paystack **refund webhooks** are not processed; refunds still "requested" are reconciled with the admin action "Re-check selected refunds with the provider".
-- "Buy now" adds the item to the existing cart, so other cart items are bought too.
 - Staff decisions on order issues (e.g. accepting a cancellation request) do not change the order automatically; staff cancel or refund it separately.
 - Chat messages of a deleted account are kept for the other person; identity documents are deleted.

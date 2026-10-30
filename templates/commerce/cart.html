@@ -9,7 +9,7 @@
       <div class="checkout-main">
         {% for group in groups %}
           <section class="panel cart-group">
-            <h2 class="cart-seller">{% include "partials/icon.html" with name="store" %}{{ group.seller.get_full_name|default:group.seller.username }}</h2>
+            <h2 class="cart-seller">{% include "partials/icon.html" with name="store" %}{{ group.seller.display_name }}</h2>
             {% for line in group.items %}
               {% with item=line.item product=line.item.product %}
               <article class="cart-line{% if line.problem %} has-problem{% endif %}">

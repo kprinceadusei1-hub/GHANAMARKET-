@@ -59,7 +59,7 @@ class CheckoutForm(forms.Form):
             name = self.delivery_field_name(group["seller"].pk)
             self.fields[name] = forms.ModelChoiceField(
                 queryset=options, widget=forms.RadioSelect, empty_label=None,
-                label=f"Delivery for items from {group['seller'].get_full_name() or group['seller'].username}",
+                label=f"Delivery for items from {group['seller'].display_name}",
                 error_messages={"required": "Choose how you want to receive these items."},
             )
             self.fields[name].label_from_instance = delivery_label

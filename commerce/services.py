@@ -35,7 +35,8 @@ class CommerceError(Exception):
 
 # ---------------------------------------------------------------- cart
 
-def add_to_cart(user, product, quantity=1):
+def add_to_cart(user, product, quantity=1, replace=False):
+    """Add ``quantity`` to the cart line, or set it to exactly ``quantity`` when ``replace`` (Buy now)."""
     if product.seller_id == user.pk:
         raise CommerceError("You cannot buy your own listing.")
     if not product.can_checkout:
@@ -43,7 +44,7 @@ def add_to_cart(user, product, quantity=1):
     if User.blocked_between(user, product.seller):
         raise CommerceError("You cannot buy from this seller.")
     item, created = CartItem.objects.get_or_create(user=user, product=product, defaults={"quantity": 0})
-    new_quantity = item.quantity + quantity
+    new_quantity = quantity if replace else item.quantity + quantity
     if new_quantity > product.stock_quantity:
         raise CommerceError(f"Only {product.stock_quantity} available.")
     item.quantity = min(new_quantity, MAX_QUANTITY_PER_ITEM)
@@ -62,10 +63,16 @@ def set_cart_quantity(item, quantity):
     return item
 
 
-def cart_groups(user):
+def _cart_items(user, product_ids=None):
+    """The user's cart lines, or only the lines for ``product_ids`` (a "Buy now" checkout)."""
+    items = CartItem.objects.filter(user=user)
+    return items if product_ids is None else items.filter(product_id__in=product_ids)
+
+
+def cart_groups(user, product_ids=None):
     """Cart lines grouped by seller: [{'seller', 'items', 'subtotal', 'problems'}]."""
     groups = OrderedDict()
-    items = CartItem.objects.filter(user=user).select_related("product__seller", "product__category")
+    items = _cart_items(user, product_ids).select_related("product__seller", "product__category")
     for item in items:
         product = item.product
         group = groups.setdefault(product.seller_id, {
@@ -91,13 +98,14 @@ def cart_count(user):
 # ---------------------------------------------------------------- checkout
 
 @transaction.atomic
-def create_checkout(user, delivery_by_seller, address=None, note=""):
+def create_checkout(user, delivery_by_seller, address=None, note="", product_ids=None):
     """Turn the cart into a pending checkout with one order per seller, reserving stock.
 
     ``delivery_by_seller`` maps seller id -> DeliveryOption chosen for that seller's items.
+    ``product_ids`` limits the checkout to those cart lines; the rest of the cart is left untouched.
     """
     items = list(
-        CartItem.objects.filter(user=user).select_related("product").order_by("product__seller_id", "pk")
+        _cart_items(user, product_ids).select_related("product").order_by("product__seller_id", "pk")
     )
     if not items:
         raise CommerceError("Your cart is empty.")
@@ -156,7 +164,7 @@ def create_checkout(user, delivery_by_seller, address=None, note=""):
         grand_total += order.total
     checkout.total = grand_total
     checkout.save(update_fields=("total",))
-    CartItem.objects.filter(user=user).delete()
+    CartItem.objects.filter(pk__in=[item.pk for item in items]).delete()
     return checkout
 
 

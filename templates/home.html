@@ -17,7 +17,6 @@
     </div>
     <div class="hero-art" aria-hidden="true">
       <img class="hero-artwork" src="{% static 'marketplace/brand/hero-products.png' %}" alt="" width="504" height="216" fetchpriority="high">
-      <span class="hero-seal">Every ad<br>reviewed</span>
     </div>
   </section>
 
@@ -40,6 +39,22 @@
       {% include "partials/icon.html" with name="chevron" %}
     </a>
   </div>
+{% endif %}
+
+{% if banners %}
+<section class="container home-section campaign-strip" aria-label="Current campaigns">
+  {% for banner in banners %}
+    <a class="campaign-banner" href="{{ banner.link_url }}"{% if banner.link_url|slice:":8" == "https://" %} rel="noopener sponsored"{% endif %}>
+      <img src="{{ banner.image|thumbnail:1200 }}" alt="" loading="lazy" decoding="async">
+      <span class="campaign-copy">
+        {% if banner.is_sponsored %}<small class="campaign-label">Sponsored</small>{% endif %}
+        <strong>{{ banner.title }}</strong>
+        {% if banner.subtitle %}<span>{{ banner.subtitle }}</span>{% endif %}
+        <span class="button button-gold">{{ banner.button_label }} {% include "partials/icon.html" with name="chevron" %}</span>
+      </span>
+    </a>
+  {% endfor %}
+</section>
 {% endif %}
 
 <section class="container home-section" id="categories" aria-labelledby="categories-heading">
@@ -79,12 +94,14 @@
         <div class="product-grid" role="tabpanel" id="panel-{{ key }}" aria-labelledby="tab-{{ key }}"{% if not forloop.first %} hidden{% endif %}>
           {% for product in items %}{% include "marketplace/_product_card.html" %}{% endfor %}
           {% if items|length < 4 %}
-            <a class="invite-card" href="{{ sell_url }}">
+            <aside class="invite-card invite-fill-{{ items|length }}" aria-label="Sell on GhanaMarket">
               <span class="invite-card-icon">{% include "partials/icon.html" with name="plus" %}</span>
-              <strong>Your ad could be here</strong>
-              <small>Post for free in about two minutes. Our team reviews every ad before buyers see it.</small>
-              <span class="invite-card-cta">Post a free ad {% include "partials/icon.html" with name="chevron" %}</span>
-            </a>
+              <span class="invite-card-text">
+                <strong>Sell on GhanaMarket</strong>
+                <small>Have something to sell? Post a free ad in about 2 minutes and reach buyers across Ghana.</small>
+              </span>
+              <a class="button button-primary" href="{{ sell_url }}">Post a free ad {% include "partials/icon.html" with name="chevron" %}</a>
+            </aside>
           {% endif %}
         </div>
       {% empty %}

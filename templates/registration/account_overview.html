@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load market %}
+{% block title %}My account | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container page-narrow-top account-overview">
+  <div class="page-heading">
+    <div>
+      <h1>Hello, {{ user.first_name|default:user.username }}</h1>
+      <p>Your orders, saved items, messages and {% if seller %}shop{% else %}settings{% endif %} in one place.</p>
+    </div>
+    <div class="page-heading-actions">
+      <a class="button button-quiet" href="{% url 'account_settings' %}">{% include "partials/icon.html" with name="settings" %}Settings</a>
+      {% if seller %}<a class="button button-gold" href="{% url 'product_create' %}">{% include "partials/icon.html" with name="plus" %}Post an ad</a>
+      {% else %}<a class="button button-primary" href="{% url 'become_seller' %}">{% include "partials/icon.html" with name="store" %}Start selling</a>{% endif %}
+    </div>
+  </div>
+
+  <nav class="account-tiles" aria-label="Your account">
+    <a class="account-tile" href="{% url 'commerce:order_list' %}">{% include "partials/icon.html" with name="package" %}<span><strong>My orders</strong><small>{% if open_order_count %}{{ open_order_count }} in progress{% else %}Track and review purchases{% endif %}</small></span></a>
+    <a class="account-tile" href="{% url 'saved_listings' %}">{% include "partials/icon.html" with name="heart" %}<span><strong>Saved items</strong><small>{{ saved_count }} saved</small></span></a>
+    <a class="account-tile" href="{% url 'conversation_list' %}">{% include "partials/icon.html" with name="chat" %}<span><strong>Messages</strong><small>{% if unread_messages %}{{ unread_messages }} unread{% else %}{{ conversation_count }} conversation{{ conversation_count|pluralize }}{% endif %}</small></span></a>
+    <a class="account-tile" href="{% url 'notification_list' %}">{% include "partials/icon.html" with name="bell" %}<span><strong>Notifications</strong><small>{% if unread_notifications %}{{ unread_notifications }} new{% else %}All caught up{% endif %}</small></span></a>
+    <a class="account-tile" href="{% url 'commerce:addresses' %}">{% include "partials/icon.html" with name="pin" %}<span><strong>Addresses</strong><small>{{ address_count }} saved</small></span></a>
+    <a class="account-tile" href="{% url 'password_change' %}">{% include "partials/icon.html" with name="shield" %}<span><strong>Security</strong><small>Change your password</small></span></a>
+  </nav>
+
+  {% if seller %}
+  <section class="panel" aria-labelledby="shop-heading">
+    <div class="section-heading">
+      <div><h2 id="shop-heading">Your shop</h2><p class="muted">Figures come from your listings, chats and paid orders.</p></div>
+      <a class="button button-quiet" href="{% url 'seller_listings' %}">Manage listings {% include "partials/icon.html" with name="chevron" %}</a>
+    </div>
+    {% if seller.storefront_incomplete %}
+    <a class="verify-cta panel" href="{% url 'storefront_settings' %}">{% include "partials/icon.html" with name="store" %}<span><strong>Finish your storefront</strong><small>Add a shop name, logo and short description so buyers know who they are dealing with.</small></span>{% include "partials/icon.html" with name="chevron" %}</a>
+    {% endif %}
+    <div class="stat-grid stat-grid-wide">
+      <a class="stat-card stat-live" href="{% url 'seller_listings' %}?status=published"><span>Live listings</span><strong>{{ seller.live }}</strong></a>
+      <a class="stat-card stat-pending" href="{% url 'seller_listings' %}?status=pending"><span>Awaiting review</span><strong>{{ seller.pending }}</strong></a>
+      <a class="stat-card stat-action" href="{% url 'seller_listings' %}?status=rejected"><span>Needs changes</span><strong>{{ seller.rejected }}</strong></a>
+      <a class="stat-card" href="{% url 'seller_listings' %}?status=sold"><span>Sold</span><strong>{{ seller.sold }}</strong></a>
+      <div class="stat-card"><span>Listing views</span><strong>{{ seller.views }}</strong></div>
+      <a class="stat-card" href="{% url 'conversation_list' %}"><span>Buyer enquiries</span><strong>{{ seller.enquiries }}</strong></a>
+      <a class="stat-card{% if seller.to_fulfil %} stat-action{% endif %}" href="{% url 'commerce:seller_orders' %}"><span>Orders to fulfil</span><strong>{{ seller.to_fulfil }}</strong></a>
+      <a class="stat-card" href="{% url 'commerce:seller_orders' %}"><span>Paid sales, 30 days</span><strong>{{ seller.sales_30d|cedis }}</strong><small>{{ seller.orders_30d }} order{{ seller.orders_30d|pluralize }}</small></a>
+    </div>
+  </section>
+  {% endif %}
+
+  <div class="account-columns">
+    <section class="panel" aria-labelledby="orders-heading">
+      <div class="section-heading"><h2 id="orders-heading">Recent orders</h2>{% if recent_orders %}<a href="{% url 'commerce:order_list' %}">See all {% include "partials/icon.html" with name="chevron" %}</a>{% endif %}</div>
+      {% if recent_orders %}
+        <ul class="account-list">
+          {% for order in recent_orders %}
+            <li><a href="{% url 'commerce:order_detail' order.number %}"><span><strong>{{ order.number }}</strong><small>{{ order.seller.display_name }} · {{ order.created_at|date:"j M Y" }}</small></span><span class="account-list-end"><strong>{{ order.total|cedis }}</strong><span class="status status-{{ order.status }}">{{ order.get_status_display }}</span></span></a></li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">No orders yet. Items marked “Buy online” can be paid for with Mobile Money or card.</p>
+        <a class="button button-quiet" href="{% url 'product_list' %}?checkout=1">Shop online</a>
+      {% endif %}
+    </section>
+
+    <section class="panel" aria-labelledby="alerts-heading">
+      <div class="section-heading"><h2 id="alerts-heading">Latest notifications</h2>{% if recent_notifications %}<a href="{% url 'notification_list' %}">See all {% include "partials/icon.html" with name="chevron" %}</a>{% endif %}</div>
+      {% if recent_notifications %}
+        <ul class="account-list">
+          {% for note in recent_notifications %}
+            <li><a href="{% url 'notification_open' note.pk %}"><span><strong>{% if not note.is_read %}<b class="dot" aria-label="Unread"></b>{% endif %}{{ note.title }}</strong><small>{{ note.body|truncatechars:90 }}</small></span><span class="account-list-end"><small>{{ note.created_at|ago }}</small></span></a></li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="muted">Order updates, review decisions and messages will appear here.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  {% if recently_viewed %}
+  <section class="similar-section" aria-labelledby="viewed-heading">
+    <div class="section-heading"><h2 id="viewed-heading">Recently viewed</h2></div>
+    <div class="product-grid">{% for product in recently_viewed %}{% include "marketplace/_product_card.html" %}{% endfor %}</div>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load market %}
+{% block title %}Storefront | GhanaMarket{% endblock %}
+{% block content %}
+<div class="container container-narrow page-narrow-top">
+  <section class="auth-card">
+    <h1>Your storefront</h1>
+    <p class="form-intro">This is what buyers see on your shop page and next to your ads.</p>
+    {% if user.store_logo or user.store_cover %}
+    <div class="storefront-preview">
+      {% if user.store_cover %}<figure><img src="{{ user.store_cover|thumbnail:480 }}" alt="Current cover photo"><figcaption>Current cover</figcaption></figure>{% endif %}
+      {% if user.store_logo %}<figure><img class="storefront-logo" src="{{ user.store_logo|thumbnail:160 }}" alt="Current logo"><figcaption>Current logo</figcaption></figure>{% endif %}
+    </div>
+    {% endif %}
+    <form method="post" enctype="multipart/form-data" class="stack-form">
+      {% csrf_token %}
+      {% for field in form %}{% include "partials/field.html" %}{% endfor %}
+      {% for error in form.non_field_errors %}<p class="field-error">{{ error }}</p>{% endfor %}
+      <button type="submit" class="button button-primary button-block">Save storefront</button>
+    </form>
+    <div class="settings-links">
+      <a href="{% url 'seller_storefront' user.pk %}">{% include "partials/icon.html" with name="store" %}View my storefront</a>
+      <a href="{% url 'account_settings' %}">{% include "partials/icon.html" with name="settings" %}Contact details and location</a>
+    </div>
+  </section>
+</div>
+{% endblock %}

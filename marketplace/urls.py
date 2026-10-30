@@ -6,7 +6,10 @@ from . import trust_views, views
 urlpatterns = [
     path("", views.home, name="home"),
     path("accounts/register/", views.register, name="register"),
+    path("accounts/", views.account_overview, name="account_overview"),
     path("accounts/settings/", views.account_settings, name="account_settings"),
+    path("accounts/password/", views.AccountPasswordChangeView.as_view(), name="password_change"),
+    path("accounts/storefront/", views.storefront_settings, name="storefront_settings"),
     path("accounts/start-selling/", views.become_seller, name="become_seller"),
     path("accounts/login/", views.ThrottledLoginView.as_view(), name="login"),
     path("accounts/password-reset/", views.ThrottledPasswordResetView.as_view(), name="password_reset"),

@@ -14,7 +14,7 @@
         <a class="order-row" href="{% if checkout.status == 'pending' %}{% url 'commerce:checkout_pay' checkout.reference %}{% else %}{% url 'commerce:order_detail' order.number %}{% endif %}">
           <span class="order-row-main">
             <strong>{% for item in order.items.all %}{{ item.title }}{% if not forloop.last %}, {% endif %}{% endfor %}</strong>
-            <small>Order {{ order.number }} · from {{ order.seller.get_full_name|default:order.seller.username }} · {{ order.delivery_method }}</small>
+            <small>Order {{ order.number }} · from {{ order.seller.display_name }} · {{ order.delivery_method }}</small>
           </span>
           <span class="status status-{{ order.status }}">{{ order.get_status_display }}</span>
         </a>

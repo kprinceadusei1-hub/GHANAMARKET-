@@ -119,3 +119,41 @@ Database backups taken before each migration batch (kept outside the project). T
 - [x] Double-submit protection, hashed static files in production, lazy images, mid-width header layout
 
 **Outstanding (needs credentials or decisions)** — see README "Known limitations" and `DEPLOYMENT.md`: Paystack keys and live testing, seller payouts, SMTP, SMS provider, legal review of policy pages, delivery fees, PostgreSQL/Redis hosting.
+
+## Portal and admin-roles update — 2026-10-30
+Audit finding: most of the master brief was already built (see sections above). This update closes the concrete gaps.
+Migration `marketplace.0020_storefront_views_banners` is additive only (new columns default to 0/blank, one new table). Local DB backed up to `../db-backups/` first.
+
+- [x] Fixed: the phone-only sticky price/Chat bar showed on desktop, covering the page (uncommitted `theme.css` edit forced `display:flex` at all widths)
+- [x] Removed the unearned "reach verified buyers" claim from the homepage invite card (buyers are not verified)
+- [x] Account overview at `/accounts/`: orders, saved, messages, notifications, addresses, security; sellers also see live/pending/needs-changes/sold counts, listing views, enquiries, orders to fulfil and 30-day paid sales
+- [x] Listing view counts (`Product.view_count`): once per visitor session; the seller's own visits and preview listings never count; does not change `updated_at`
+- [x] Sellers can mark a live listing as sold, and relist a sold one (goes back through review)
+- [x] Seller dashboard shows views and enquiries per listing and in the summary
+- [x] Storefronts: shop name, description, logo and cover photo (`/accounts/storefront/`), re-encoded like listing photos (EXIF/GPS removed, 5 MB cap), old files deleted on replace, cleared on account deletion. The shop name is shown wherever the seller is named
+- [x] In-account password change (`/accounts/password/`), needing the current password; previously "Change password" sent signed-in users through email reset
+- [x] Homepage campaign banners (`HomeBanner`): scheduled start/end, on/off, ordering, "Sponsored" label, links limited to site paths or https; managed under Promotions & Advertising in the control centre
+- [x] Staff roles: Administrator, Moderator, Support agent, Finance (`manage.py setup_staff_roles`, run on every Render build). Super administrator = Django superuser. No role can grant staff access or edit permissions
+- [x] 24 new tests (`marketplace/tests_portal.py`); full suite 321 tests passing
+
+## Reliability pass — 2026-10-30 (afternoon)
+Method: crawled every reachable page as anonymous, buyer, seller, moderator and superuser (2,250 page loads on a copy of the database) and ran a real purchase with the test payment provider. Result before fixes: no broken links or server errors; the issues below were found and fixed. No migrations.
+
+- [x] "Buy now" now pays for that item only (`/checkout/?only=<id>`) and sets its quantity rather than adding to an existing cart line; other cart items stay in the cart, and the checkout page says so
+- [x] Failed refunds and "payments needing attention" were counted but never shown to staff; they are now control-centre queues (bell menu, sidebar badges on Payments and Refunds)
+- [x] Admin queues are counted once per request instead of twice (removed the unused duplicate in `context_processors.py`)
+- [x] Admin listing edit page: 86 → 17 database queries (subcategory dropdown loaded each parent separately)
+- [x] Development console emails no longer fail on Windows when they contain "₵" (`manage.py` switches the console to UTF-8)
+- [x] Checkout names the seller's shop name; Administrator role no longer lists a delete-listing permission the admin never allows
+- [x] 9 new tests (`commerce/tests_buy_now.py`); full suite 330 tests passing
+
+## UI polish pass — 2026-10-30 (evening)
+Scope: presentation only, existing layout kept. Checked against a copy of the real database (1 listing) as well as the preview catalogue.
+
+- [x] Fixed: the "Post a free ad" button on the homepage invite card had invisible text (two conflicting invite-card style blocks; green text on a green button). Replaced both with one component
+- [x] Featured products no longer leave half the panel empty when there are only 1–2 listings: the invitation becomes a banner across the remaining columns (adapts at every width)
+- [x] Brand palette applied as design tokens (`theme.css` :root): emerald #087A48, dark #075B38, soft #EAF6EF, background #F5F7F6, charcoal #17231C, muted #68756D, border #E4EAE6, gold accent #E8B83F; 117 hard-coded colours replaced with tokens
+- [x] Gold accent reserved for earned/paid highlights: Promoted badge and star ratings
+- [x] Header search wider (up to 760px) with a visible "Search" button label on wide screens
+- [x] Product page seller card: shop logo when set, seller name links to the shop, "View shop"/"View reviews" link instead of a bare "storefront"
+- [x] 330 tests passing; no JS errors, failed requests, broken images or horizontal scrolling on the pages checked (desktop and 390px phone)

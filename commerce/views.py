@@ -52,16 +52,17 @@ def cart_add(request, product_id):
     product = get_object_or_404(Product.objects.select_related("category"), pk=product_id)
     try:
         quantity = max(1, int(request.POST.get("quantity", 1)))
-        services.add_to_cart(request.user, product, quantity)
+        services.add_to_cart(request.user, product, quantity, replace=request.POST.get("next") == "checkout")
     except ValueError:
         messages.error(request, "Enter a valid quantity.")
     except services.CommerceError as exc:
         messages.error(request, str(exc))
         return redirect("product_detail", pk=product.pk)
     else:
+        if request.POST.get("next") == "checkout":
+            # Buy now pays for this item only; anything else in the cart stays there.
+            return redirect(f"{reverse('commerce:checkout')}?only={product.pk}")
         messages.success(request, f"“{product.title}” was added to your cart.")
-    if request.POST.get("next") == "checkout":
-        return redirect("commerce:checkout")
     return redirect("commerce:cart")
 
 
@@ -93,7 +94,9 @@ def checkout(request):
     if provider is None:
         messages.info(request, "Online payment is not available yet. You can still message sellers directly.")
         return redirect("commerce:cart")
-    groups = [group for group in services.cart_groups(request.user)]
+    only = request.GET.get("only", "")
+    product_ids = [int(only)] if only.isdigit() else None
+    groups = [group for group in services.cart_groups(request.user, product_ids)]
     if not groups:
         return redirect("commerce:cart")
     if any(group["problems"] for group in groups):
@@ -106,6 +109,7 @@ def checkout(request):
                 address = form.resolve_address()
                 created = services.create_checkout(
                     request.user, form.delivery_by_seller(), address=address, note=form.cleaned_data["note"],
+                    product_ids=product_ids,
                 )
         except services.CommerceError as exc:
             messages.error(request, str(exc))
@@ -114,6 +118,9 @@ def checkout(request):
     subtotal = sum(group["subtotal"] for group in groups)
     return render(request, "commerce/checkout.html", {
         "form": form, "groups": groups, "subtotal": subtotal, "provider": provider,
+        "buy_now": product_ids is not None,
+        "other_cart_items": services.cart_count(request.user) - sum(
+            line["item"].quantity for group in groups for line in group["items"]),
         "address_option_ids": [str(pk) for pk in DeliveryOption.objects.filter(
             is_active=True, requires_address=True).values_list("pk", flat=True)],
     })

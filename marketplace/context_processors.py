@@ -2,7 +2,7 @@ from django.urls import reverse
 from django.utils import timezone
 from datetime import timedelta
 
-from .models import Category, GhanaRegion, ListingReport, Product, User
+from .models import Category, GhanaRegion, Product, User
 
 
 def _category_menu():
@@ -44,39 +44,6 @@ def marketplace_nav(request):
     }
 
 
-def _operations_queues(user):
-    """Open trust, support and money queues the staff member is allowed to see."""
-    from commerce.models import OrderIssue, Payment, Refund
-    from .models import SellerVerification, SupportRequest, UserReport
-
-    definitions = (
-        ("marketplace.view_sellerverification", "Seller verifications",
-         SellerVerification.objects.filter(status=SellerVerification.Status.PENDING),
-         "admin:marketplace_sellerverification_changelist", "?status__exact=pending"),
-        ("marketplace.view_userreport", "User reports",
-         UserReport.objects.filter(status=UserReport.Status.OPEN),
-         "admin:marketplace_userreport_changelist", "?status__exact=open"),
-        ("marketplace.view_supportrequest", "Support requests",
-         SupportRequest.objects.filter(status=SupportRequest.Status.OPEN),
-         "admin:marketplace_supportrequest_changelist", "?status__exact=open"),
-        ("commerce.view_orderissue", "Order issues & disputes",
-         OrderIssue.objects.filter(status=OrderIssue.Status.OPEN),
-         "admin:commerce_orderissue_changelist", "?status__exact=open"),
-        ("commerce.view_refund", "Failed refunds",
-         Refund.objects.filter(status=Refund.Status.FAILED),
-         "admin:commerce_refund_changelist", "?status__exact=failed"),
-        ("commerce.view_payment", "Payments needing attention",
-         Payment.objects.exclude(failure_reason="").filter(status=Payment.Status.SUCCEEDED)
-         | Payment.objects.filter(failure_reason__icontains="mismatch"),
-         "admin:commerce_payment_changelist", ""),
-    )
-    queues = []
-    for permission, label, queryset, url_name, query in definitions:
-        if user.has_perm(permission):
-            queues.append({"label": label, "count": queryset.count(), "url": reverse(url_name) + query})
-    return queues
-
-
 def admin_dashboard(request):
     """Provide permission-aware admin alerts and live overview totals."""
     match = getattr(request, "resolver_match", None)
@@ -100,24 +67,24 @@ def admin_dashboard(request):
         "admin_dashboard_can_view_conversations": can_view_conversations,
     }
 
+    from . import control_centre
+
+    # Every queue is counted once per request; the bell, sidebar and dashboard all read these.
+    cc_queues = control_centre.queue_counts(user)
+    queue_count = {queue["key"]: queue["count"] for queue in cc_queues}
     if can_review:
-        dashboard["admin_dashboard_pending"] = Product.objects.filter(
-            status=Product.Status.PENDING, is_demo=False
-        ).count()
+        dashboard["admin_dashboard_pending"] = queue_count.get("pending_listings", 0)
         dashboard["admin_dashboard_products_url"] = reverse("admin:marketplace_product_changelist")
         dashboard["admin_dashboard_pending_url"] = (
             dashboard["admin_dashboard_products_url"] + "?status__exact=pending"
         )
     if can_view_reports:
-        dashboard["admin_dashboard_open_reports"] = ListingReport.objects.filter(
-            status=ListingReport.Status.OPEN
-        ).count()
+        dashboard["admin_dashboard_open_reports"] = queue_count.get("listing_reports", 0)
         dashboard["admin_dashboard_reports_url"] = reverse("admin:marketplace_listingreport_changelist")
 
-    dashboard["admin_dashboard_queues"] = _operations_queues(user)
-    from . import control_centre
-
-    cc_queues = control_centre.queue_counts(user)
+    dashboard["admin_dashboard_queues"] = [
+        queue for queue in cc_queues if queue["key"] not in {"pending_listings", "listing_reports"}
+    ]
     dashboard["cc_queues"] = cc_queues
     review_keys = {"seller_requests", "pending_listings", "verifications"}
     review_queues = [queue for queue in cc_queues if queue["key"] in review_keys]

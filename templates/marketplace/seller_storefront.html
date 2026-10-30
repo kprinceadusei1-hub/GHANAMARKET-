@@ -1,14 +1,17 @@
 {% extends "base.html" %}
 {% load market %}
-{% block title %}{{ seller_profile.get_full_name|default:seller_profile.username }} | GhanaMarket{% endblock %}
+{% block title %}{{ seller_profile.display_name }} | GhanaMarket{% endblock %}
 {% block content %}
 <div class="container page-narrow-top">
-  <header class="panel storefront-header">
-    <span class="avatar avatar-xl" aria-hidden="true">{{ seller_profile.first_name|default:seller_profile.username|slice:":1"|upper }}</span>
+  <header class="panel storefront-header{% if seller_profile.store_cover %} has-cover{% endif %}">
+    {% if seller_profile.store_cover %}<img class="storefront-cover" src="{{ seller_profile.store_cover|thumbnail:1200 }}" alt="" decoding="async">{% endif %}
+    <div class="storefront-identity">
+    {% if seller_profile.store_logo %}<img class="storefront-logo" src="{{ seller_profile.store_logo|thumbnail:160 }}" alt="{{ seller_profile.display_name }} logo" width="80" height="80">
+    {% else %}<span class="avatar avatar-xl" aria-hidden="true">{{ seller_profile.display_name|slice:":1"|upper }}</span>{% endif %}
     <div>
-      <h1>{{ seller_profile.get_full_name|default:seller_profile.username }}</h1>
+      <h1>{{ seller_profile.display_name }}</h1>
       <p class="storefront-trust">
-        {% if seller_profile.is_verified_seller %}<span class="verified-badge" title="Identity checked by GhanaMarket staff">{% include "partials/icon.html" with name="shield" %}Verified seller</span>{% endif %}
+        {% if seller_profile.is_verified_seller %}<span class="verified-badge" title="Ghana Card checked and verified by GhanaMarket staff">{% include "partials/icon.html" with name="shield" %}Ghana Card Verified</span>{% endif %}
         {% if seller_rating %}<span class="rating" aria-label="Rated {{ seller_rating.average }} out of 5 from {{ seller_rating.count }} review{{ seller_rating.count|pluralize }}"><span aria-hidden="true">★</span> {{ seller_rating.average }} <small>({{ seller_rating.count }} review{{ seller_rating.count|pluralize }})</small></span>{% endif %}
       </p>
       <p class="storefront-meta">
@@ -17,6 +20,9 @@
         <span>{% include "partials/icon.html" with name="list" %}{{ listing_count }} active listing{{ listing_count|pluralize }}</span>
       </p>
     </div>
+    {% if user == seller_profile %}<a class="button button-quiet storefront-edit" href="{% url 'storefront_settings' %}">{% include "partials/icon.html" with name="settings" %}Edit storefront</a>{% endif %}
+    </div>
+    {% if seller_profile.store_description %}<p class="storefront-about">{{ seller_profile.store_description|linebreaksbr }}</p>{% endif %}
   </header>
 
   <section aria-labelledby="seller-listings-heading">
