@@ -54,6 +54,7 @@
     </div>
 
     <div class="detail-summary">
+      <div class="detail-primary">
       {% if product.is_demo %}<div class="notice notice-info"><strong>Preview listing</strong><p>This is sample content to demonstrate the marketplace. It is not a real product or offer, and its photograph is representative only. <a href="/static/marketplace/demo/photo-credits.html">View photo credits</a>.</p></div>{% endif %}
       {% if user == product.seller and product.status == "pending" %}<div class="notice notice-warn"><strong>Awaiting admin approval</strong><p>Your listing is private until an admin approves it. You can still edit it.</p></div>{% endif %}
       {% if user == product.seller and product.status == "rejected" %}<div class="notice notice-danger"><strong>Changes needed</strong><p>{{ product.moderation_note|default:"Please update the listing details and submit it again for review." }}</p></div>{% endif %}
@@ -143,6 +144,9 @@
         {% endif %}
       </section>
 
+      </div>
+
+      <div class="detail-side">
       <section class="panel seller-card" aria-label="Seller">
         <div class="seller-card-head">
           {% if product.seller.store_logo %}<img class="avatar avatar-lg avatar-logo{% if product.seller.is_verified_seller %} avatar-verified{% endif %}" src="{{ product.seller.store_logo|thumbnail:160 }}" alt="" width="52" height="52">
@@ -222,6 +226,7 @@
         </ul>
         {% if product.status == "published" and not product.is_demo and user != product.seller %}<a class="safety-report" href="{% if user.is_authenticated %}#report-listing{% else %}{% url 'login' %}?next={% url 'product_detail' product.pk %}{% endif %}">{% include "partials/icon.html" with name="flag" %}Report this ad</a>{% endif %}
       </section>
+      </div>
     </div>
 
     <div class="detail-info">

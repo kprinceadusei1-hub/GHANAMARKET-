@@ -615,7 +615,7 @@ h1, h2, h3 { color: var(--ink); letter-spacing: -.015em; }
 
 /* Listing detail on phones: details and description before the safety tips */
 @media (max-width: 959px) {
-  .detail-layout { display: flex; flex-direction: column; }
+  .detail-layout { display: flex; flex-direction: column; align-items: stretch; }
   .detail-summary { display: contents; }
   .detail-gallery { order: 0; }
   .price-card { order: 1; }
@@ -1455,3 +1455,40 @@ a.stat-card:hover { border-color: var(--green); box-shadow: var(--shadow-md); }
 
 .hero-copy .hero-eyebrow { display: inline-flex; margin: 0 0 12px; padding: 4px 12px; border-radius: 999px; background: rgb(232 184 63 / .14); border: 1px solid rgb(232 184 63 / .35); color: var(--accent); font-size: .78rem; font-weight: 700; letter-spacing: .02em; line-height: 1.4; max-width: none; }
 @media (max-width: 639px) { .hero-copy .hero-eyebrow { font-size: .7rem; margin-bottom: 8px; } }
+
+/* ===== Product page (reference redesign): gallery | details | seller ===== */
+.detail-primary, .detail-side { display: grid; gap: 14px; align-content: start; min-width: 0; }
+@media (max-width: 959px) {
+  /* Phones keep the existing reading order across both wrappers. */
+  .detail-primary, .detail-side { display: contents; }
+}
+@media (min-width: 1280px) {
+  .detail-layout {
+    grid-template-columns: minmax(0, 1.12fr) minmax(0, .95fr) minmax(0, .85fr);
+    grid-template-areas: "gallery primary side" "info info side"; gap: 18px;
+  }
+  .detail-summary { display: contents; }
+  .detail-primary { grid-area: primary; }
+  .detail-side { grid-area: side; position: sticky; top: 130px; }
+
+  /* Thumbnails run down the left of the main photo. */
+  .detail-gallery { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 10px; padding: 12px; }
+  .detail-gallery .detail-image { grid-column: 2; grid-row: 1; aspect-ratio: 1 / 1; border-radius: 12px; }
+  .detail-gallery:not(:has(.photo-thumbnails)) .detail-image { grid-column: 1 / -1; aspect-ratio: 4 / 3; }
+  .detail-gallery .photo-thumbnails { grid-column: 1; grid-row: 1; flex-direction: column; padding: 0; gap: 8px; overflow-y: auto; overflow-x: hidden; max-height: 100%; scrollbar-width: thin; }
+  .detail-gallery .photo-thumbnail { width: 76px; height: 76px; flex: none; }
+}
+
+/* Item details as a key–value table */
+.spec-tiles { display: grid; grid-template-columns: minmax(0, 1fr); gap: 0; margin: 0; }
+@media (min-width: 640px) { .spec-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 28px; } }
+.spec-tiles > div {
+  display: grid; grid-template-columns: minmax(96px, 40%) minmax(0, 1fr); gap: 12px; align-items: baseline;
+  padding: 11px 0; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; background: none;
+}
+.spec-tiles > div.spec-wide { grid-column: 1 / -1; grid-template-columns: minmax(96px, 20%) minmax(0, 1fr); }
+.spec-tiles dt { margin: 0; color: var(--muted); font-size: .84rem; font-weight: 500; letter-spacing: 0; text-transform: none; }
+.spec-tiles dd { margin: 0; color: var(--ink); font-size: .9rem; font-weight: 600; }
+
+/* Description reads like an article */
+.detail-description p, .detail-description .description-text { font-size: .98rem; line-height: 1.7; color: var(--ink-2); max-width: 72ch; }
