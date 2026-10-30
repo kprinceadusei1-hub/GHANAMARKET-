@@ -195,6 +195,17 @@ def _gallery_photos(product):
     return photos
 
 
+HERO_PHOTO = "marketplace/brand/hero-tech.jpg"
+
+
+def _hero_photo_url():
+    """The homepage hero photo, if one has been added to the static files."""
+    from django.contrib.staticfiles import finders
+    from django.templatetags.static import static
+
+    return static(HERO_PHOTO) if finders.find(HERO_PHOTO) else ""
+
+
 def home(request):
     published_products = catalog.showcase_products()
     real_products = catalog.published_products()
@@ -261,6 +272,7 @@ def home(request):
         ).order_by("-updated_at")[:3])
     return render(request, "home.html", {
         "banners": HomeBanner.objects.live()[:3],
+        "hero_photo": _hero_photo_url(),
         "own_pending": own_pending,
         "product_tabs": tabs,
         "nearby": nearby,

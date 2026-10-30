@@ -90,12 +90,10 @@
           </div>
         </div>
 
-        {% if product.can_checkout or product.allows_direct_contact %}
-        <ul class="pc-features" aria-label="Ways to buy">
-          {% if product.can_checkout %}<li><span class="pc-feature-icon">{% include "partials/icon.html" with name="wallet" %}</span><span><strong>Buy online</strong><small>Mobile Money or card</small></span></li>{% endif %}
-          {% if product.allows_direct_contact %}<li><span class="pc-feature-icon pc-feature-blue">{% include "partials/icon.html" with name="chat" %}</span><span><strong>Chat or call</strong><small>Ask or negotiate</small></span></li>{% endif %}
+        <ul class="pc-chips" aria-label="Key details">
+          {% for tag in product.card_tags %}<li>{% include "partials/icon.html" with name="check" %}{{ tag|tidy_caps }}</li>{% endfor %}
+          {% if product.can_checkout %}<li class="pc-chip-buy">{% include "partials/icon.html" with name="wallet" %}Buy online</li>{% endif %}
         </ul>
-        {% endif %}
 
         {% if user == product.seller %}
           <div class="pc-actions">
@@ -126,6 +124,7 @@
               {% if can_buy and user.is_authenticated %}
                 <button class="button button-outline" type="submit" form="buy-form" name="next" value="cart">{% include "partials/icon.html" with name="cart" %}Add to cart</button>
               {% endif %}
+              {% if can_chat %}<a class="button button-outline" href="#contact">{% include "partials/icon.html" with name="chat" %}Chat with seller</a>{% endif %}
               {% if can_chat %}
                 <details class="callback" id="callback">
                   <summary class="button button-callback">{% include "partials/icon.html" with name="phone" %}Call back</summary>

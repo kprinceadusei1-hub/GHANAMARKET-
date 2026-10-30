@@ -30,7 +30,7 @@
           <label class="visually-hidden" for="header-search-input">Search listings</label>
           <input id="header-search-input" type="search" name="q" value="{{ query|default:header_query|default:'' }}" placeholder="Search for products, brands, categories…" autocomplete="off" enterkeyhint="search">
           <label class="header-location">
-            {% include "partials/icon.html" with name="pin" %}
+            {% include "partials/gh_flag.html" %}
             <span class="visually-hidden">Choose your region</span>
             <select name="region" aria-label="Choose a Ghana region">
               <option value="">All Ghana</option>
