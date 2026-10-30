@@ -14,7 +14,7 @@
 <div class="cc-login">
   <aside class="cc-login-brand" aria-label="About the Control Centre">
     <a class="cc-login-logo" href="{% url 'home' %}">
-      <span class="cc-brand-mark" aria-hidden="true"><svg viewBox="0 0 40 42" fill="none"><path d="M8 12h24l2.4 25.5a2 2 0 0 1-2 2.2H7.6a2 2 0 0 1-2-2.2L8 12Z" fill="currentColor"/><path d="M14 15V9.5a6 6 0 0 1 12 0V15" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><path d="m20 19.5 1.9 4.6h4.9l-4 3 1.5 4.7-4.3-2.9-4.3 2.9 1.5-4.7-4-3h4.9z" fill="#fff"/></svg></span>
+      <span class="cc-brand-mark" aria-hidden="true">{% include "partials/brand_mark.html" %}</span>
       <span><strong>GhanaMarket</strong><small>Marketplace Control Centre</small></span>
     </a>
     <div class="cc-login-pitch">

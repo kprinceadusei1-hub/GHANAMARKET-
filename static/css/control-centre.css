@@ -2,49 +2,49 @@
    admin-review.css, so it maps Django's admin variables onto the GhanaMarket design system. */
 
 :root, html[data-theme="light"], :root[data-theme="auto"] {
-  --cc-green: #13804a;
-  --cc-green-dark: #0e6a3c;
+  --cc-green: #087a48;
+  --cc-green-dark: #075b38;
   --cc-green-soft: #eaf6ef;
   --cc-green-tint: #f3faf6;
-  --cc-ink: #1f2937;
-  --cc-ink-2: #4b5563;
-  --cc-muted: #6b7280;
-  --cc-line: #e7eaee;
-  --cc-bg: #f6f7f9;
+  --cc-ink: #17231c;
+  --cc-ink-2: #3f4b44;
+  --cc-muted: #68756d;
+  --cc-line: #e4eae6;
+  --cc-bg: #f5f7f6;
   --cc-red: #dc2626;
   --cc-orange: #f59e0b;
   --cc-blue: #2563eb;
   --cc-sidebar-w: 256px;
   --cc-top-h: 68px;
-  --primary: #13804a;
-  --secondary: #0e6a3c;
+  --primary: #087a48;
+  --secondary: #075b38;
   --accent: #eaf6ef;
   --primary-fg: #fff;
-  --body-fg: #1f2937;
+  --body-fg: #17231c;
   --body-bg: #fff;
-  --body-quiet-color: #6b7280;
-  --body-loud-color: #111827;
-  --header-color: #1f2937;
-  --header-branding-color: #1f2937;
+  --body-quiet-color: #68756d;
+  --body-loud-color: #17231c;
+  --header-color: #17231c;
+  --header-branding-color: #17231c;
   --header-bg: #fff;
-  --header-link-color: #1f2937;
-  --breadcrumbs-fg: #4b5563;
-  --breadcrumbs-link-fg: #13804a;
-  --breadcrumbs-bg: #f6f7f9;
-  --link-fg: #13804a;
-  --link-hover-color: #0e6a3c;
-  --link-selected-fg: #0e6a3c;
-  --hairline-color: #e7eaee;
-  --border-color: #e7eaee;
-  --button-bg: #13804a;
-  --button-hover-bg: #0e6a3c;
-  --default-button-bg: #13804a;
-  --default-button-hover-bg: #0e6a3c;
+  --header-link-color: #17231c;
+  --breadcrumbs-fg: #3f4b44;
+  --breadcrumbs-link-fg: #087a48;
+  --breadcrumbs-bg: #f5f7f6;
+  --link-fg: #087a48;
+  --link-hover-color: #075b38;
+  --link-selected-fg: #075b38;
+  --hairline-color: #e4eae6;
+  --border-color: #e4eae6;
+  --button-bg: #087a48;
+  --button-hover-bg: #075b38;
+  --default-button-bg: #087a48;
+  --default-button-hover-bg: #075b38;
   --selected-bg: #eaf6ef;
   --selected-row: #f3faf6;
-  --darkened-bg: #f6f7f9;
-  --object-tools-bg: #13804a;
-  --object-tools-hover-bg: #0e6a3c;
+  --darkened-bg: #f5f7f6;
+  --object-tools-bg: #087a48;
+  --object-tools-hover-bg: #075b38;
   --font-family-primary: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -492,7 +492,7 @@ body.cc-login-page #header, body.cc-login-page #footer { display: none !importan
 .cc-login-input input { flex: 1; min-width: 0; height: 100%; padding: 0 !important; border: 0 !important; background: none !important; box-shadow: none !important; outline: none; font: inherit; font-size: 1rem; color: #0f172a; }
 .cc-login-show { flex: none; padding: 6px 10px; border: 0; border-radius: 8px; background: #e2e8f0; color: #334155; font: inherit; font-size: .78rem; font-weight: 700; cursor: pointer; }
 .cc-login-show:hover { background: #cbd5e1; }
-.cc-login-submit { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 54px; margin-top: 6px; border: 0; border-radius: 13px; background: linear-gradient(180deg, #16a34a, #13804a); color: #fff; font: inherit; font-size: 1.02rem; font-weight: 800; cursor: pointer; box-shadow: 0 10px 22px -10px rgb(21 128 61 / .75); transition: transform .15s, box-shadow .15s; }
+.cc-login-submit { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 54px; margin-top: 6px; border: 0; border-radius: 13px; background: linear-gradient(180deg, #16a34a, #087a48); color: #fff; font: inherit; font-size: 1.02rem; font-weight: 800; cursor: pointer; box-shadow: 0 10px 22px -10px rgb(21 128 61 / .75); transition: transform .15s, box-shadow .15s; }
 .cc-login-submit:hover { transform: translateY(-1px); box-shadow: 0 14px 26px -10px rgb(21 128 61 / .8); }
 .cc-login-submit .icon { width: 18px; height: 18px; stroke: #fff; }
 .cc-login-links { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-top: 18px; font-size: .88rem; }
@@ -505,3 +505,24 @@ body.cc-login-page #header, body.cc-login-page #footer { display: none !importan
 .cc-login { position: fixed; inset: 0; overflow-y: auto; z-index: 10; }
 .cc-login-pitch h1 { color: #fff !important; }
 @media (max-width: 899px) { .cc-login { grid-template-rows: auto 1fr; } }
+
+/* ===== Dark green sidebar (2026-10-30 reference board) ===== */
+.cc-body .main > #nav-sidebar.cc-sidebar { background: linear-gradient(180deg, #064e3b 0%, #075b38 100%); border-right: 0; }
+.cc-sidebar .cc-nav-top, .cc-sidebar .cc-nav-group > summary { color: rgb(255 255 255 / .86) !important; }
+.cc-sidebar .cc-nav-top .icon, .cc-sidebar .cc-nav-group > summary > .icon:first-child, .cc-sidebar .cc-caret { color: rgb(255 255 255 / .62); }
+.cc-sidebar .cc-nav-top:hover, .cc-sidebar .cc-nav-group > summary:hover { background: rgb(255 255 255 / .08); color: #fff !important; }
+.cc-sidebar .cc-nav-top.is-active { background: #087a48; color: #fff !important; box-shadow: inset 3px 0 0 #e8b83f; }
+.cc-sidebar .cc-nav-top.is-active .icon { color: #e8b83f; }
+.cc-sidebar .cc-nav-links a { color: rgb(255 255 255 / .74) !important; }
+.cc-sidebar .cc-nav-links a:hover { background: rgb(255 255 255 / .08); color: #fff !important; }
+.cc-sidebar .cc-nav-links a[aria-current="page"] { background: rgb(255 255 255 / .14); color: #fff !important; }
+.cc-sidebar .cc-pill { background: rgb(255 255 255 / .14); color: #fff; }
+.cc-sidebar .cc-pill.is-hot { background: #e8b83f; color: #1f1700; }
+.cc-sidebar .cc-sidebar-note { background: rgb(255 255 255 / .08); border-color: rgb(255 255 255 / .14); color: #fff; }
+.cc-sidebar .cc-sidebar-note .icon { color: #e8b83f; }
+.cc-sidebar .cc-sidebar-note small { color: rgb(255 255 255 / .75); }
+.cc-sidebar .cc-sidebar-note a { color: #e8b83f !important; }
+.cc-brand-mark { width: 36px; height: 36px; }
+
+.cc-kpi-body { min-width: 0; }
+.cc-kpi-value { font-size: clamp(1.2rem, 1.55vw, 1.75rem); overflow-wrap: anywhere; }

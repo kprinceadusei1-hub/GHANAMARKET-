@@ -165,6 +165,6 @@ Honesty adaptations (the board's wording was not used where the site cannot back
 
 - [x] Stage 1 — shared look and homepage: G logo (header, footer, favicon), dark-green navigation bar, deep emerald hero with gold, tagline eyebrow, round category icons, dark payment card, deep-green footer band
 - [x] Stage 2 — product page: gallery | info | seller columns, vertical thumbnails, key–value item details; tablet width fix
-- [ ] Stage 3 — seller dashboard with left sidebar (Overview, My listings, Orders, Messages, Storefront, Verification, Settings — only pages that exist), sales chart from real paid orders
-- [ ] Stage 4 — admin control centre: dark-green sidebar and the board's KPI/chart arrangement, keeping permission checks
+- [x] Stage 3 — shared account sidebar on 13 account pages (selling tools for sellers only; swipeable shortcuts on phones), seller 14-day sales chart from verified paid orders, Recent sales
+- [x] Stage 4 — admin control centre: brand palette, dark-green sidebar with gold active state, G logo (also on staff sign-in), KPI amounts fit their cards; permission checks unchanged
 - [ ] Stage 5 — buyer account pages, mobile pass across all pages, full functionality audit table
