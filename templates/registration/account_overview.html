@@ -34,14 +34,14 @@
     <a class="verify-cta panel" href="{% url 'storefront_settings' %}">{% include "partials/icon.html" with name="store" %}<span><strong>Finish your storefront</strong><small>Add a shop name, logo and short description so buyers know who they are dealing with.</small></span>{% include "partials/icon.html" with name="chevron" %}</a>
     {% endif %}
     <div class="stat-grid stat-grid-wide">
-      <a class="stat-card stat-live" href="{% url 'seller_listings' %}?status=published"><span>Live listings</span><strong>{{ seller.live }}</strong></a>
-      <a class="stat-card stat-pending" href="{% url 'seller_listings' %}?status=pending"><span>Awaiting review</span><strong>{{ seller.pending }}</strong></a>
-      <a class="stat-card stat-action" href="{% url 'seller_listings' %}?status=rejected"><span>Needs changes</span><strong>{{ seller.rejected }}</strong></a>
-      <a class="stat-card" href="{% url 'seller_listings' %}?status=sold"><span>Sold</span><strong>{{ seller.sold }}</strong></a>
-      <div class="stat-card"><span>Listing views</span><strong>{{ seller.views }}</strong></div>
-      <a class="stat-card" href="{% url 'conversation_list' %}"><span>Buyer enquiries</span><strong>{{ seller.enquiries }}</strong></a>
-      <a class="stat-card{% if seller.to_fulfil %} stat-action{% endif %}" href="{% url 'commerce:seller_orders' %}"><span>Orders to fulfil</span><strong>{{ seller.to_fulfil }}</strong></a>
-      <a class="stat-card" href="{% url 'commerce:seller_orders' %}"><span>Paid sales, 30 days</span><strong>{{ seller.sales_30d|cedis }}</strong><small>{{ seller.orders_30d }} order{{ seller.orders_30d|pluralize }}</small></a>
+      <a class="stat-card stat-live" href="{% url 'seller_listings' %}?status=published">{% include "partials/icon.html" with name="check" %}<span>Live listings</span><strong>{{ seller.live }}</strong></a>
+      <a class="stat-card stat-pending" href="{% url 'seller_listings' %}?status=pending">{% include "partials/icon.html" with name="clock" %}<span>Awaiting review</span><strong>{{ seller.pending }}</strong></a>
+      <a class="stat-card stat-action" href="{% url 'seller_listings' %}?status=rejected">{% include "partials/icon.html" with name="alert" %}<span>Needs changes</span><strong>{{ seller.rejected }}</strong></a>
+      <a class="stat-card" href="{% url 'seller_listings' %}?status=sold">{% include "partials/icon.html" with name="package" %}<span>Sold</span><strong>{{ seller.sold }}</strong></a>
+      <div class="stat-card">{% include "partials/icon.html" with name="eye" %}<span>Listing views</span><strong>{{ seller.views }}</strong></div>
+      <a class="stat-card" href="{% url 'conversation_list' %}">{% include "partials/icon.html" with name="chat" %}<span>Buyer enquiries</span><strong>{{ seller.enquiries }}</strong></a>
+      <a class="stat-card{% if seller.to_fulfil %} stat-action{% endif %}" href="{% url 'commerce:seller_orders' %}">{% include "partials/icon.html" with name="truck" %}<span>Orders to fulfil</span><strong>{{ seller.to_fulfil }}</strong></a>
+      <a class="stat-card" href="{% url 'commerce:seller_orders' %}">{% include "partials/icon.html" with name="money" %}<span>Paid sales, 30 days</span><strong>{{ seller.sales_30d|cedis }}</strong><small>{{ seller.orders_30d }} order{{ seller.orders_30d|pluralize }}</small></a>
     </div>
   </section>
   {% endif %}

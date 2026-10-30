@@ -170,7 +170,19 @@
       {% endif %}
 
       {% if products %}
-        <div class="product-grid product-grid-browse">{% for product in products %}{% include "marketplace/_product_card.html" %}{% endfor %}</div>
+        <div class="product-grid product-grid-browse">
+          {% for product in products %}{% include "marketplace/_product_card.html" %}{% endfor %}
+          {% if products|length < 4 and not page.has_other_pages %}
+            <aside class="invite-card invite-fill-{{ products|length }}" aria-label="Sell on GhanaMarket">
+              <span class="invite-card-icon">{% include "partials/icon.html" with name="plus" %}</span>
+              <span class="invite-card-text">
+                <strong>Have something like this to sell?</strong>
+                <small>Post a free ad in about 2 minutes and reach buyers across Ghana.</small>
+              </span>
+              <a class="button button-primary" href="{{ sell_url }}">Post a free ad {% include "partials/icon.html" with name="chevron" %}</a>
+            </aside>
+          {% endif %}
+        </div>
         {% if page.has_other_pages %}
           <nav class="pagination" aria-label="Listing pages">
             {% if page.has_previous %}<a class="button button-quiet" href="{% querystring page=page.previous_page_number %}">{% include "partials/icon.html" with name="back" %}Previous</a>{% else %}<span></span>{% endif %}

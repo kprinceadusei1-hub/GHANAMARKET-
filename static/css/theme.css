@@ -1232,9 +1232,10 @@ a.pc-main { display: flex; align-items: center; justify-content: center; }
   .invite-card.invite-fill-1 .button, .invite-card.invite-fill-2 .button { margin-top: 0; }
 }
 @media (min-width: 1100px) {
-  .products-panel .invite-card.invite-fill-1 { grid-column: span 3; }
-  .products-panel .invite-card.invite-fill-2 { grid-column: span 2; flex-direction: column; text-align: center; justify-content: center; }
-  .products-panel .invite-card.invite-fill-2 .invite-card-text { flex: none; }
+  .product-grid-browse { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  :is(.products-panel, .product-grid-browse) .invite-card.invite-fill-1 { grid-column: span 3; }
+  :is(.products-panel, .product-grid-browse) .invite-card.invite-fill-2 { grid-column: span 2; flex-direction: column; text-align: center; justify-content: center; }
+  :is(.products-panel, .product-grid-browse) .invite-card.invite-fill-2 .invite-card-text { flex: none; }
 }
 .invite-card-text { display: grid; gap: 4px; justify-items: inherit; }
 
@@ -1252,3 +1253,21 @@ a.pc-main { display: flex; align-items: center; justify-content: center; }
 .avatar-logo { object-fit: cover; padding: 0; background: #fff; border: 1px solid var(--line); }
 .seller-card-name { display: block; color: var(--ink); font-size: 1.08rem; font-weight: 800; text-decoration: none; }
 .seller-card-name:hover { color: var(--green); text-decoration: underline; }
+
+/* ===== Stat cards (dashboards): icon chip, label, figure ===== */
+.stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (min-width: 960px) { .stat-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.stat-card {
+  grid-template-columns: auto minmax(0, 1fr); grid-template-areas: "icon label" "icon value" "icon note";
+  align-items: center; column-gap: 12px; row-gap: 0; padding: 14px 16px;
+  border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
+  transition: border-color .15s, box-shadow .15s, transform .15s;
+}
+a.stat-card:hover { border-color: var(--green); box-shadow: var(--shadow-md); }
+.stat-card > .icon { grid-area: icon; width: 40px; height: 40px; padding: 9px; border-radius: 11px; background: var(--green-soft); color: var(--green); }
+.stat-card > span { grid-area: label; color: var(--muted); font-size: .8rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stat-card > strong { grid-area: value; font-size: 1.45rem; line-height: 1.2; font-weight: 800; color: var(--ink); }
+.stat-card > small { grid-area: note; }
+.stat-card.stat-pending > .icon { background: var(--accent-soft); color: var(--accent-ink); }
+.stat-card.stat-action > .icon { background: #fdecee; color: var(--red); }
+@media (prefers-reduced-motion: no-preference) { a.stat-card:hover { transform: translateY(-1px); } }

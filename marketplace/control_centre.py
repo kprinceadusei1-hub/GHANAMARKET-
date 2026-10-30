@@ -190,7 +190,7 @@ def _kpis(user, start, previous_start):
         new_now = User.objects.filter(date_joined__gte=start).count()
         new_before = User.objects.filter(date_joined__gte=previous_start, date_joined__lt=start).count()
         kpis.append({"label": "Total users", "icon": "users", "value": User.objects.filter(is_active=True).count(),
-                     "detail": f"{new_now} new", "change": _change(new_now, new_before),
+                     "detail": f"{new_now} new", "in_period": True, "change": _change(new_now, new_before),
                      "url": _url("admin:marketplace_user_changelist")})
         sellers = User.objects.filter(role=User.Role.SELLER, is_active=True, products__status=Product.Status.PUBLISHED,
                                       products__is_demo=False).distinct().count()
@@ -204,14 +204,14 @@ def _kpis(user, start, previous_start):
         added_before = real.filter(created_at__gte=previous_start, created_at__lt=start).count()
         kpis.append({"label": "Active listings", "icon": "listings",
                      "value": real.filter(status=Product.Status.PUBLISHED).count(),
-                     "detail": f"{added_now} submitted", "change": _change(added_now, added_before),
+                     "detail": f"{added_now} submitted", "in_period": True, "change": _change(added_now, added_before),
                      "url": _url("admin:marketplace_product_changelist", query="?status__exact=published")})
     if user.has_perm("commerce.view_order"):
         paid = Order.objects.filter(paid_at__isnull=False)
         orders_now = paid.filter(paid_at__gte=start).count()
         orders_before = paid.filter(paid_at__gte=previous_start, paid_at__lt=start).count()
         kpis.append({"label": "Paid orders", "icon": "cart", "value": paid.count(),
-                     "detail": f"{orders_now} in period", "change": _change(orders_now, orders_before),
+                     "detail": f"{orders_now} paid", "in_period": True, "change": _change(orders_now, orders_before),
                      "url": _url("admin:commerce_order_changelist", query="?paid_at__isempty=0")})
         value_now = paid.filter(paid_at__gte=start).aggregate(total=Sum("total"))["total"] or Decimal("0")
         value_before = paid.filter(paid_at__gte=previous_start, paid_at__lt=start).aggregate(

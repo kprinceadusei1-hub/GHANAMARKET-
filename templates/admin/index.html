@@ -54,8 +54,8 @@
           <span class="cc-kpi-label">{{ kpi.label }}</span>
           <strong class="cc-kpi-value">{% if kpi.is_money %}GH₵ {{ kpi.value|floatformat:"0g" }}{% else %}{{ kpi.value }}{% endif %}</strong>
           <span class="cc-kpi-foot">
-            {% if kpi.change is not None %}<span class="cc-change {% if kpi.change >= 0 %}is-up{% else %}is-down{% endif %}">{% if kpi.change >= 0 %}▲{% else %}▼{% endif %} {{ kpi.change|stringformat:"d"|cut:"-" }}%</span>{% endif %}
-            <span>{{ kpi.detail }}{% if kpi.change is not None %} · vs previous {{ cc_period }} days{% elif not kpi.is_money %} · last {{ cc_period }} days{% endif %}</span>
+            <span>{{ kpi.detail }}{% if kpi.in_period %} in the last {{ cc_period }} days{% endif %}</span>
+            {% if kpi.change is not None %}<span class="cc-change {% if kpi.change >= 0 %}is-up{% else %}is-down{% endif %}" title="Compared with the {{ cc_period }} days before">{% if kpi.change >= 0 %}▲{% else %}▼{% endif %} {{ kpi.change|stringformat:"d"|cut:"-" }}% vs previous {{ cc_period }} days</span>{% endif %}
           </span>
         </span>
       </a>
