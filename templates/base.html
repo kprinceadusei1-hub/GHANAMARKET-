@@ -162,70 +162,59 @@
     {% endwith %}
   </nav>
 
-  <footer class="site-footer">
-    <div class="footer-trust">
-      <ul class="container footer-trust-row" aria-label="Why GhanaMarket">
-        <li><span class="ft-icon">{% include "partials/icon.html" with name="shield" %}</span><span><strong>Every ad reviewed</strong><small>Checked by our team before it goes live</small></span></li>
-        <li><span class="ft-icon">{% include "partials/icon.html" with name="chat" %}</span><span><strong>Private chat</strong><small>Your number stays hidden until you share it</small></span></li>
-        <li><span class="ft-icon">{% include "partials/icon.html" with name="user-check" %}</span><span><strong>Verified ID sellers</strong><small>Ghana Card checked by our staff</small></span></li>
-        <li><span class="ft-icon">{% include "partials/icon.html" with name="wallet" %}</span><span><strong>Buy online</strong><small>Mobile Money or card on marked items</small></span></li>
-      </ul>
-    </div>
-
-    <div class="container footer-main">
-      <div class="footer-brand">
+  <footer class="site-footer gm-footer">
+    <div class="container gm-footer-main">
+      <div class="gm-footer-brand">
         <a class="brand" href="{% url 'home' %}"><span class="brand-mark" aria-hidden="true">{% include "partials/brand_mark.html" %}</span><span class="brand-text"><span class="brand-name">GhanaMarket</span><small>Buy · Sell · Connect</small></span></a>
-        <p>Buy and sell locally across all 16 regions of Ghana. Free listings during launch, prices in Ghana cedis.</p>
-        <div class="footer-cta">
-          <div><strong>Have something to sell?</strong><small>Post it free in about two minutes.</small></div>
-          <a class="footer-cta-btn" href="{{ sell_url }}">{% include "partials/icon.html" with name="plus" %}Post a free ad</a>
-        </div>
+        <p>Buy and sell across all 16 regions of Ghana, with prices in Ghana cedis. Every ad is reviewed before it goes live, and posting is free during launch.</p>
+        <a class="gm-footer-sell" href="{{ sell_url }}">{% include "partials/icon.html" with name="plus" %}Post a free ad</a>
       </div>
-      <nav class="footer-cols" aria-label="Footer">
+      <nav class="gm-footer-cols" aria-label="Footer">
         <div>
           <h2>Buy</h2>
-          <a href="{% url 'product_list' %}">All listings</a>
-          <a href="{% url 'category_index' %}">All categories</a>
-          <a href="{% url 'product_list' %}?checkout=1">Buy online</a>
-          <a href="{% url 'product_list' %}?verified=1">Verified sellers</a>
-          <a href="{% url 'help_page' 'buying' %}">How buying works</a>
+          <ul>
+            <li><a href="{% url 'product_list' %}">All listings</a></li>
+            <li><a href="{% url 'category_index' %}">All categories</a></li>
+            <li><a href="{% url 'product_list' %}?checkout=1">Buy online</a></li>
+            <li><a href="{% url 'product_list' %}?verified=1">Verified sellers</a></li>
+            <li><a href="{% url 'help_page' 'buying' %}">How buying works</a></li>
+          </ul>
         </div>
         <div>
           <h2>Sell</h2>
-          <a href="{{ sell_url }}">Post a free ad</a>
-          {% if user.is_authenticated and user.role == "seller" %}<a href="{% url 'seller_listings' %}">My shop</a><a href="{% url 'seller_verification' %}">Get verified</a>{% else %}<a href="{% url 'register' %}?role=seller">Become a seller</a>{% endif %}
-          <a href="{% url 'help_page' 'selling' %}">How selling works</a>
-          <a href="{% url 'help_page' 'fees' %}">Fees</a>
+          <ul>
+            <li><a href="{{ sell_url }}">Post a free ad</a></li>
+            {% if user.is_authenticated and user.role == "seller" %}<li><a href="{% url 'seller_listings' %}">My shop</a></li><li><a href="{% url 'seller_verification' %}">Get verified</a></li>{% else %}<li><a href="{% url 'register' %}?role=seller">Become a seller</a></li>{% endif %}
+            <li><a href="{% url 'help_page' 'selling' %}">How selling works</a></li>
+            <li><a href="{% url 'help_page' 'fees' %}">Fees</a></li>
+          </ul>
         </div>
         <div>
           <h2>Help</h2>
-          <a href="{% url 'help' %}">Help centre</a>
-          <a href="{% url 'help_page' 'safety' %}">Staying safe</a>
-          <a href="{% url 'help_page' 'refunds' %}">Returns &amp; refunds</a>
-          <a href="{% url 'contact_support' %}">Contact support</a>
+          <ul>
+            <li><a href="{% url 'help' %}">Help centre</a></li>
+            <li><a href="{% url 'help_page' 'safety' %}">Staying safe</a></li>
+            <li><a href="{% url 'help_page' 'refunds' %}">Returns &amp; refunds</a></li>
+            <li><a href="{% url 'contact_support' %}">Contact support</a></li>
+          </ul>
         </div>
         <div>
           <h2>Policies</h2>
-          <a href="{% url 'help_page' 'terms' %}">Terms of use</a>
-          <a href="{% url 'help_page' 'privacy' %}">Privacy</a>
-          <a href="{% url 'help_page' 'prohibited-items' %}">Prohibited items</a>
+          <ul>
+            <li><a href="{% url 'help_page' 'terms' %}">Terms of use</a></li>
+            <li><a href="{% url 'help_page' 'privacy' %}">Privacy</a></li>
+            <li><a href="{% url 'help_page' 'prohibited-items' %}">Prohibited items</a></li>
+            <li><a href="/static/marketplace/demo/photo-credits.html">Photo credits</a></li>
+          </ul>
         </div>
       </nav>
     </div>
 
-    <div class="footer-band">
-      <div class="container footer-band-row">
-        <a class="brand brand-lg" href="{% url 'home' %}"><span class="brand-mark" aria-hidden="true">{% include "partials/brand_mark.html" %}</span><span class="brand-text"><span class="brand-name">GhanaMarket</span><small>Buy · Sell · Connect</small></span></a>
-        <p class="footer-band-motto"><strong>From Ghana, to the world</strong><small>Start local. Grow global.</small></p>
-        <p class="footer-band-proud">{% include "partials/gh_flag.html" %}<span><strong>Proudly Ghanaian</strong><small>Built for the future</small></span></p>
-      </div>
-    </div>
-
-    <div class="footer-bottom">
-      <div class="container footer-bottom-row">
-        <p>© {% now "Y" %} GhanaMarket · Made in Ghana {% include "partials/gh_flag.html" with class="gh-flag-inline" %}</p>
-        <p class="footer-bottom-links"><a href="{% url 'help_page' 'terms' %}">Terms</a><a href="{% url 'help_page' 'privacy' %}">Privacy</a><a href="/static/marketplace/demo/photo-credits.html">Photo credits</a></p>
-        <a class="footer-top" href="#main-content" data-back-to-top>{% include "partials/icon.html" with name="chevron-down" %}Back to top</a>
+    <div class="gm-footer-bottom">
+      <div class="container gm-footer-bottom-row">
+        <p>© {% now "Y" %} GhanaMarket · From Ghana, to the world</p>
+        <p class="gm-footer-proud">{% include "partials/gh_flag.html" %}Proudly Ghanaian</p>
+        <a class="gm-footer-top" href="#main-content" data-back-to-top>{% include "partials/icon.html" with name="chevron-down" %}Back to top</a>
       </div>
     </div>
   </footer>
