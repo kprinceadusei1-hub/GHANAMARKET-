@@ -1,0 +1,93 @@
+/* GhanaMarket — premium visual refinement layer.
+   Intentionally additive: preserves the approved page structure and existing components. */
+:root {
+  --gm-forest: #075c3b;
+  --gm-forest-2: #0b754b;
+  --gm-mint: #eaf5ee;
+  --gm-ink: #18231d;
+  --gm-muted: #68756d;
+  --gm-border: #e6ebe7;
+  --gm-gold: #e8b83f;
+  --gm-card-shadow: 0 8px 24px rgba(19, 42, 29, .055);
+}
+html { scroll-behavior: smooth; }
+body { color: var(--gm-ink); }
+::selection { background: #cce8d7; color: #123d29; }
+.site-header { border-bottom-color: #e8ede9; }
+.header-row { gap: 12px 18px; }
+.brand-mark { color: var(--gm-forest-2); }
+.brand-name { letter-spacing: -.045em; }
+.header-search { border-color: #dce5df; box-shadow: 0 2px 8px rgba(18, 48, 31, .035); }
+.header-search:focus-within { border-color: var(--gm-forest-2); }
+.header-search button { background: var(--gm-forest); }
+.header-search button:hover { background: #06472f; }
+.header-action:hover, .account-trigger:hover { color: var(--gm-forest); background: #f1f7f3; }
+.button { border-radius: 11px; transition: transform .16s ease, box-shadow .16s ease, background .16s ease; }
+.button-primary { background: var(--gm-forest); box-shadow: 0 4px 10px rgba(7, 92, 59, .13); }
+.button-primary:hover { background: #064a30; box-shadow: 0 7px 16px rgba(7, 92, 59, .18); transform: translateY(-1px); }
+.button-gold { background: var(--gm-gold); color: #2f260d; }
+.panel, .product-card, .category-tile, .sell-card, .hero-banner {
+  box-shadow: var(--gm-card-shadow);
+}
+.panel { border-color: var(--gm-border); }
+.home-top { align-items: stretch; }
+.hero-banner {
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 20px;
+  background: linear-gradient(112deg, #064b32 0%, #08734a 62%, #0b8555 100%);
+  color: #fff;
+}
+.hero-banner h1, .hero-banner h2 { color: #fff; letter-spacing: -.04em; }
+.hero-banner p { color: rgba(255,255,255,.86); }
+.hero-trust { color: rgba(255,255,255,.9); }
+.hero-trust .icon { color: #f1c75b; }
+.hero-seal { border: 1px solid rgba(255,255,255,.35); background: rgba(255,255,255,.13); color: #fff; backdrop-filter: blur(8px); }
+.sell-card { border: 1px solid #e8eee9; border-radius: 18px; background: linear-gradient(145deg,#fff 0%,#f4faf6 100%); }
+.sell-card h2 { color: var(--gm-forest); }
+.home-section, .home-grid { margin-top: 30px; }
+.section-heading h2, .panel-head h2 { letter-spacing: -.035em; }
+.section-heading a, .panel-link { font-weight: 700; }
+.category-tiles { gap: 12px; }
+.category-tile {
+  border: 1px solid #e9efeb;
+  border-radius: 14px;
+  background: #fff;
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+.category-tile:hover { transform: translateY(-3px); border-color: #b9d9c6; box-shadow: 0 10px 22px rgba(7,92,59,.09); text-decoration: none; }
+.category-tile-icon { color: var(--gm-forest-2); background: var(--gm-mint); border-radius: 12px; }
+.category-tile-name { color: #24332a; font-weight: 700; }
+.category-tile-count { color: var(--gm-muted); }
+.product-card {
+  overflow: hidden;
+  border: 1px solid #e8ede9;
+  border-radius: 14px;
+  background: #fff;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.product-card:hover { transform: translateY(-3px); border-color: #c8ddcf; box-shadow: 0 12px 26px rgba(18,48,31,.10); }
+.product-card a { text-decoration: none; }
+.product-card .product-title { color: #26342b; font-weight: 650; }
+.product-card .product-price { color: var(--gm-forest); font-weight: 800; letter-spacing: -.02em; }
+.tabs button[aria-selected="true"] { color: var(--gm-forest); border-color: var(--gm-forest); }
+.status-banner { border-radius: 13px; }
+input, select, textarea { accent-color: var(--gm-forest-2); }
+:focus-visible { outline: 3px solid rgba(11,117,75,.32); outline-offset: 2px; box-shadow: none; }
+@media (min-width: 960px) {
+  .header-row { grid-template-columns: minmax(190px, .72fr) minmax(340px, 1.6fr) auto; grid-template-areas: "brand search actions"; gap: 20px; padding-top: 14px; padding-bottom: 14px; }
+  .header-location { display: flex; }
+  .header-action > span, .account-label { display: inline; }
+  .header-action, .account-trigger { flex-direction: row; min-width: auto; gap: 7px; padding: 9px 10px; font-size: .84rem; }
+  .hero-banner { border-radius: 22px; }
+}
+@media (max-width: 639px) {
+  .container { padding-inline: 14px; }
+  .hero-banner { border-radius: 16px; }
+  .home-section, .home-grid { margin-top: 22px; }
+  .category-tiles { gap: 9px; }
+  .product-card { border-radius: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}

@@ -12,6 +12,7 @@
   <link rel="icon" href="{% static 'marketplace/brand/favicon.svg' %}" type="image/svg+xml">
   <link rel="stylesheet" href="{% static 'css/site.css' %}">
   <link rel="stylesheet" href="{% static 'css/theme.css' %}">
+  <link rel="stylesheet" href="{% static 'css/premium-polish.css' %}">
   <script>document.documentElement.classList.add("js")</script>
 </head>
 <body{% if user.is_authenticated %} data-unread-url="{% url 'unread_counts' %}"{% endif %} class="{% block body_class %}{% endblock %}">
